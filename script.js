@@ -17,69 +17,73 @@ if (hamburger && mobileMenu) {
   });
 }
 
-/* ── Navbar scroll shadow ── */
+/* ── Navbar scroll ── */
 const navbar = document.getElementById('navbar');
 window.addEventListener('scroll', () => {
   navbar.classList.toggle('scrolled', window.scrollY > 16);
 }, { passive: true });
 
-/* ── Scroll-reveal with IntersectionObserver ── */
-const revealEls = document.querySelectorAll('.reveal-up');
-if ('IntersectionObserver' in window) {
-  const io = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        e.target.classList.add('visible');
-        io.unobserve(e.target);
-      }
-    });
-  }, { threshold: 0.12 });
-  revealEls.forEach(el => io.observe(el));
-} else {
-  revealEls.forEach(el => el.classList.add('visible'));
-}
+/* ── Scroll-reveal ── */
+const io = ('IntersectionObserver' in window)
+  ? new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' })
+  : null;
+
+document.querySelectorAll('.reveal-up, .reveal-right').forEach(el => {
+  io ? io.observe(el) : el.classList.add('visible');
+});
 
 /* ── Animated counters ── */
 function animateCounter(el) {
   const target = parseInt(el.dataset.target, 10);
   const suffix = el.dataset.suffix || '';
   if (isNaN(target)) return;
-  const duration = 1200;
+  const duration = 1400;
   const start = performance.now();
-  const step = (now) => {
-    const progress = Math.min((now - start) / duration, 1);
-    const eased = 1 - Math.pow(1 - progress, 3);
+  const tick = (now) => {
+    const t = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - t, 4);
     el.textContent = Math.round(eased * target) + suffix;
-    if (progress < 1) requestAnimationFrame(step);
+    if (t < 1) requestAnimationFrame(tick);
   };
-  requestAnimationFrame(step);
+  requestAnimationFrame(tick);
 }
 
-const statsSection = document.querySelector('.hero__stats');
-if (statsSection && 'IntersectionObserver' in window) {
-  let counted = false;
-  const statsIO = new IntersectionObserver((entries) => {
-    if (entries[0].isIntersecting && !counted) {
-      counted = true;
-      statsSection.querySelectorAll('[data-target]').forEach(animateCounter);
-      statsIO.disconnect();
+const statsEl = document.querySelector('.hero__stats');
+if (statsEl) {
+  let done = false;
+  const sio = new IntersectionObserver(([e]) => {
+    if (e.isIntersecting && !done) {
+      done = true;
+      statsEl.querySelectorAll('[data-target]').forEach(animateCounter);
+      sio.disconnect();
     }
-  }, { threshold: 0.5 });
-  statsIO.observe(statsSection);
+  }, { threshold: 0.4 });
+  sio.observe(statsEl);
 }
 
-/* ── Parallax on background word cloud (mouse move) ── */
+/* ── Parallax on bg word cloud (mouse, desktop only) ── */
 const bgCloud = document.getElementById('bgCloud');
 if (bgCloud && window.matchMedia('(pointer: fine)').matches) {
   let raf;
-  document.addEventListener('mousemove', (e) => {
-    cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(() => {
-      const cx = window.innerWidth / 2;
-      const cy = window.innerHeight / 2;
-      const dx = (e.clientX - cx) / cx;  // -1 … 1
-      const dy = (e.clientY - cy) / cy;
-      bgCloud.style.transform = `translate(${dx * 12}px, ${dy * 8}px)`;
-    });
-  });
+  let tx = 0, ty = 0, cx = 0, cy = 0;
+  const update = () => {
+    const vw = window.innerWidth / 2;
+    const vh = window.innerHeight / 2;
+    tx += ((cx - vw) / vw * 14 - tx) * 0.06;
+    ty += ((cy - vh) / vh * 9  - ty) * 0.06;
+    bgCloud.style.transform = `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px)`;
+    raf = requestAnimationFrame(update);
+  };
+  document.addEventListener('mousemove', (e) => { cx = e.clientX; cy = e.clientY; }, { passive: true });
+  raf = requestAnimationFrame(update);
 }
+
+/* ── Benefit cards grid border fix on hover ──
+   The gap-as-border technique needs no JS — handled in CSS */

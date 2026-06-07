@@ -6,13 +6,13 @@
   <title>Bcarte · Mon identité pro</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
-  <!-- ══════════════════════════════ NAVBAR -->
+  <!-- ══════════════ NAVBAR -->
   <nav class="navbar" id="navbar">
     <div class="navbar__inner">
       <a href="#" class="navbar__logo"><span class="logo-b">b</span>carte</a>
@@ -21,7 +21,10 @@
         <li><a href="#comment">Recruteurs</a></li>
         <li><a href="#nfc">Carte NFC</a></li>
       </ul>
-      <a href="#hero-cta" class="btn-primary navbar__cta">Créer mon profil</a>
+      <div class="navbar__right">
+        <a href="#" class="navbar__signin">Se connecter</a>
+        <a href="#hero-cta" class="btn-primary navbar__cta">Créer mon profil</a>
+      </div>
       <button class="navbar__hamburger" aria-label="Menu" aria-expanded="false">
         <i class="ti ti-menu-2"></i>
       </button>
@@ -30,14 +33,23 @@
       <a href="#benefices">Fonctionnalités</a>
       <a href="#comment">Recruteurs</a>
       <a href="#nfc">Carte NFC</a>
+      <a href="#" class="navbar__signin">Se connecter</a>
       <a href="#hero-cta" class="btn-primary">Créer mon profil</a>
     </div>
   </nav>
 
-  <!-- ══════════════════════════════ HERO -->
+  <!-- ══════════════ HERO -->
   <section class="hero" id="hero">
 
-    <!-- Word cloud background -->
+    <!-- Ambient orbs -->
+    <div class="orb orb--1" aria-hidden="true"></div>
+    <div class="orb orb--2" aria-hidden="true"></div>
+    <div class="orb orb--3" aria-hidden="true"></div>
+
+    <!-- Dot grid -->
+    <div class="hero__grid" aria-hidden="true"></div>
+
+    <!-- Background word cloud -->
     <div class="hero__bg-cloud" aria-hidden="true" id="bgCloud">
       <span class="bgw bgw--1">Vérifié</span>
       <span class="bgw bgw--2">NFC</span>
@@ -51,193 +63,260 @@
     </div>
 
     <div class="hero__inner">
+      <div class="hero__content">
 
-      <div class="hero__headline">
-        <h1>
-          <span class="hl-line hl-black" data-delay="0">Ton profil.</span>
-          <span class="hl-line hl-violet" data-delay="120">Vérifié.</span>
-          <span class="hl-line hl-or" data-delay="240">Sans bruit.</span>
-        </h1>
-      </div>
-
-      <!-- Foreground word cloud -->
-      <div class="hero__wordcloud" id="fgCloud">
-        <span class="wc wc--violet wc--lg">Profil vérifié</span>
-        <span class="wc wc--gray-faint wc--sm">Sans feed</span>
-        <span class="wc wc--violet wc--md">CV par IA</span>
-        <span class="wc wc--gray-faint wc--sm">Sans likes</span>
-        <span class="wc wc--or wc--lg">Carte NFC</span>
-        <span class="wc wc--gray-faint wc--sm">Sans algorithme</span>
-        <span class="wc wc--violet wc--md">Expériences vérifiées</span>
-        <span class="wc wc--gray-light wc--sm">Annuaire</span>
-        <span class="wc wc--or wc--md">Sobre</span>
-        <span class="wc wc--gray-light wc--sm">Connexion WhatsApp</span>
-        <span class="wc wc--gray-light wc--sm">Authentique</span>
-      </div>
-
-      <div class="hero__cta reveal-up" id="hero-cta">
-        <a href="#" class="btn-primary btn-primary--lg">Créer mon profil</a>
-        <a href="#profil" class="link-secondary">Voir un exemple →</a>
-      </div>
-
-      <div class="hero__stats reveal-up" style="--delay:0.1s">
-        <div class="stat">
-          <span class="stat__value" data-target="100">0</span>
-          <span class="stat__label">profils pilotes</span>
+        <!-- Pill badge -->
+        <div class="hero__pill">
+          <span class="hero__pill-dot"></span>
+          Profil pilote · 100 places disponibles
         </div>
-        <div class="stat__divider"></div>
-        <div class="stat">
-          <span class="stat__value" data-suffix=" min" data-target="2">0</span>
-          <span class="stat__label">pour commencer</span>
+
+        <div class="hero__headline">
+          <h1>
+            <span class="hl-line hl-white">Ton profil.</span>
+            <span class="hl-line hl-violet-grad">Vérifié.</span>
+            <span class="hl-line hl-or">Sans bruit.</span>
+          </h1>
         </div>
-        <div class="stat__divider"></div>
-        <div class="stat">
-          <span class="stat__value stat__value--text">Gratuit</span>
-          <span class="stat__label">toujours</span>
+
+        <div class="hero__wordcloud" id="fgCloud">
+          <span class="wc wc--violet wc--lg">Profil vérifié</span>
+          <span class="wc wc--faint wc--sm">Sans feed</span>
+          <span class="wc wc--violet wc--md">CV par IA</span>
+          <span class="wc wc--faint wc--sm">Sans likes</span>
+          <span class="wc wc--or wc--lg">Carte NFC</span>
+          <span class="wc wc--faint wc--sm">Sans algorithme</span>
+          <span class="wc wc--violet wc--md">Expériences vérifiées</span>
+          <span class="wc wc--muted wc--sm">Annuaire</span>
+          <span class="wc wc--or wc--md">Sobre</span>
+          <span class="wc wc--muted wc--sm">WhatsApp</span>
+          <span class="wc wc--muted wc--sm">Authentique</span>
         </div>
-      </div>
 
-    </div>
-  </section>
+        <div class="hero__cta" id="hero-cta">
+          <a href="#" class="btn-primary btn-primary--lg btn-glow">
+            Créer mon profil
+            <i class="ti ti-arrow-right"></i>
+          </a>
+          <a href="#profil" class="link-ghost">
+            Voir un exemple
+            <i class="ti ti-arrow-right"></i>
+          </a>
+        </div>
 
-  <!-- ══════════════════════════════ BÉNÉFICES -->
-  <section class="section benefices" id="benefices">
-    <div class="container">
-      <p class="section__label reveal-up">POURQUOI BCARTE</p>
-      <h2 class="section__title reveal-up" style="--delay:0.05s">Tout ce qu'il te faut</h2>
-      <p class="section__subtitle reveal-up" style="--delay:0.1s">Un seul endroit pour ton profil, ton CV et ta carte.</p>
-
-      <div class="benefits-grid">
-
-        <div class="benefit-card reveal-up" style="--delay:0s">
-          <div class="benefit-card__icon">
-            <i class="ti ti-circle-check"></i>
+        <div class="hero__stats">
+          <div class="stat">
+            <span class="stat__value" data-target="100">0</span>
+            <span class="stat__label">profils pilotes</span>
           </div>
-          <h3 class="benefit-card__title">Profil vérifié</h3>
-          <p class="benefit-card__desc">Tes expériences et diplômes confirmés directement par les institutions.</p>
-        </div>
-
-        <div class="benefit-card reveal-up" style="--delay:0.08s">
-          <div class="benefit-card__icon">
-            <i class="ti ti-sparkles"></i>
+          <div class="stat__divider"></div>
+          <div class="stat">
+            <span class="stat__value" data-target="2" data-suffix=" min">0</span>
+            <span class="stat__label">pour commencer</span>
           </div>
-          <h3 class="benefit-card__title">CV généré par IA</h3>
-          <p class="benefit-card__desc">Colle une offre d'emploi. Ton CV s'adapte automatiquement au poste.</p>
-        </div>
-
-        <div class="benefit-card reveal-up" style="--delay:0.16s">
-          <div class="benefit-card__icon">
-            <i class="ti ti-address-book"></i>
+          <div class="stat__divider"></div>
+          <div class="stat">
+            <span class="stat__value stat__value--text">Gratuit</span>
+            <span class="stat__label">toujours</span>
           </div>
-          <h3 class="benefit-card__title">Annuaire sobre</h3>
-          <p class="benefit-card__desc">Trouve des profils par secteur, ville, compétence ou disponibilité.</p>
-        </div>
-
-        <div class="benefit-card reveal-up" id="nfc" style="--delay:0.24s">
-          <div class="benefit-card__icon">
-            <i class="ti ti-device-mobile-nfc"></i>
-          </div>
-          <h3 class="benefit-card__title">Carte NFC physique</h3>
-          <p class="benefit-card__desc">Un tap suffit. Ton profil s'affiche. Le contact s'enregistre instantanément.</p>
         </div>
 
       </div>
-    </div>
-  </section>
 
-  <!-- ══════════════════════════════ APERÇU PROFIL -->
-  <section class="section profil-section" id="profil">
-    <div class="container">
-      <h2 class="section__title reveal-up" style="text-align:center">Voilà à quoi ressemble ton profil</h2>
-
-      <div class="profil-card-wrap reveal-up" style="--delay:0.1s">
-        <div class="profil-card">
+      <!-- Floating profile card (desktop) -->
+      <div class="hero__card-preview reveal-right">
+        <div class="profil-card profil-card--hero">
           <div class="profil-card__glow" aria-hidden="true"></div>
-
           <div class="profil-card__header">
             <div class="profil-avatar">MM</div>
             <div class="profil-info">
               <h3 class="profil-name">Mamadou Moctar Traoré</h3>
-              <p class="profil-title">Directeur Général · GMC-SA · Abidjan</p>
+              <p class="profil-title">Directeur Général · GMC-SA</p>
               <span class="badge-verified">
                 <i class="ti ti-circle-check"></i> Profil vérifié
               </span>
             </div>
           </div>
-
           <div class="profil-card__skills">
             <span class="skill-tag">Stratégie digitale</span>
             <span class="skill-tag">Gestion de projets</span>
             <span class="skill-tag">Partenariats</span>
           </div>
-
           <div class="profil-card__actions">
-            <a href="#" class="btn-outline">
+            <a href="#" class="btn-outline btn-outline--sm">
               <i class="ti ti-brand-whatsapp"></i> WhatsApp
             </a>
-            <a href="#" class="btn-outline">
-              <i class="ti ti-mail"></i> Email
-            </a>
             <a href="#" class="btn-primary btn-primary--sm">
-              <i class="ti ti-download"></i> Télécharger CV
+              <i class="ti ti-download"></i> CV
             </a>
           </div>
-
+          <!-- Floating NFC badge -->
+          <div class="nfc-badge">
+            <i class="ti ti-wifi"></i>
+            <span>NFC</span>
+          </div>
         </div>
       </div>
+
     </div>
   </section>
 
-  <!-- ══════════════════════════════ COMMENT ÇA MARCHE -->
+  <!-- ══════════════ BÉNÉFICES -->
+  <section class="section benefices" id="benefices">
+    <div class="container">
+
+      <div class="section__header reveal-up">
+        <span class="section__pill">Fonctionnalités</span>
+        <h2 class="section__title">Tout ce qu'il te faut</h2>
+        <p class="section__subtitle">Un seul endroit pour ton profil, ton CV et ta carte.</p>
+      </div>
+
+      <div class="benefits-grid">
+        <div class="benefit-card reveal-up" style="--delay:0s">
+          <div class="benefit-card__icon-wrap">
+            <div class="benefit-card__icon"><i class="ti ti-circle-check"></i></div>
+          </div>
+          <h3 class="benefit-card__title">Profil vérifié</h3>
+          <p class="benefit-card__desc">Tes expériences et diplômes confirmés directement par les institutions.</p>
+          <span class="benefit-card__arrow"><i class="ti ti-arrow-up-right"></i></span>
+        </div>
+        <div class="benefit-card reveal-up" style="--delay:0.07s">
+          <div class="benefit-card__icon-wrap">
+            <div class="benefit-card__icon"><i class="ti ti-sparkles"></i></div>
+          </div>
+          <h3 class="benefit-card__title">CV généré par IA</h3>
+          <p class="benefit-card__desc">Colle une offre d'emploi. Ton CV s'adapte automatiquement au poste.</p>
+          <span class="benefit-card__arrow"><i class="ti ti-arrow-up-right"></i></span>
+        </div>
+        <div class="benefit-card reveal-up" style="--delay:0.14s">
+          <div class="benefit-card__icon-wrap">
+            <div class="benefit-card__icon"><i class="ti ti-address-book"></i></div>
+          </div>
+          <h3 class="benefit-card__title">Annuaire sobre</h3>
+          <p class="benefit-card__desc">Trouve des profils par secteur, ville, compétence ou disponibilité.</p>
+          <span class="benefit-card__arrow"><i class="ti ti-arrow-up-right"></i></span>
+        </div>
+        <div class="benefit-card reveal-up" id="nfc" style="--delay:0.21s">
+          <div class="benefit-card__icon-wrap">
+            <div class="benefit-card__icon"><i class="ti ti-device-mobile-nfc"></i></div>
+          </div>
+          <h3 class="benefit-card__title">Carte NFC physique</h3>
+          <p class="benefit-card__desc">Un tap suffit. Ton profil s'affiche. Le contact s'enregistre instantanément.</p>
+          <span class="benefit-card__arrow"><i class="ti ti-arrow-up-right"></i></span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════ APERÇU PROFIL (dark) -->
+  <section class="section profil-section dark-section" id="profil">
+    <div class="orb orb--dark-1" aria-hidden="true"></div>
+    <div class="orb orb--dark-2" aria-hidden="true"></div>
+    <div class="container profil-section__inner">
+
+      <div class="profil-section__text reveal-up">
+        <span class="section__pill section__pill--dark">Aperçu profil</span>
+        <h2 class="section__title section__title--light">Voilà à quoi ressemble ton profil</h2>
+        <p class="section__subtitle section__subtitle--light">Sobre, structuré, vérifiable. Ton identité professionnelle enfin à ta hauteur.</p>
+        <ul class="profil-features">
+          <li><i class="ti ti-circle-check"></i> Badge de vérification visible</li>
+          <li><i class="ti ti-circle-check"></i> Compétences et disponibilité</li>
+          <li><i class="ti ti-circle-check"></i> Actions directes (WhatsApp, Email, CV)</li>
+          <li><i class="ti ti-circle-check"></i> Compatible carte NFC</li>
+        </ul>
+        <a href="#" class="btn-primary btn-primary--lg" style="margin-top:0.5rem">Créer le mien</a>
+      </div>
+
+      <div class="profil-card-wrap reveal-right">
+        <div class="profil-card profil-card--standalone">
+          <div class="profil-card__glow" aria-hidden="true"></div>
+          <div class="profil-card__header">
+            <div class="profil-avatar">MM</div>
+            <div class="profil-info">
+              <h3 class="profil-name">Mamadou Moctar Traoré</h3>
+              <p class="profil-title">Directeur Général · GMC-SA · Abidjan</p>
+              <span class="badge-verified"><i class="ti ti-circle-check"></i> Profil vérifié</span>
+            </div>
+          </div>
+          <div class="profil-card__skills">
+            <span class="skill-tag">Stratégie digitale</span>
+            <span class="skill-tag">Gestion de projets</span>
+            <span class="skill-tag">Partenariats</span>
+          </div>
+          <div class="profil-card__actions">
+            <a href="#" class="btn-outline"><i class="ti ti-brand-whatsapp"></i> WhatsApp</a>
+            <a href="#" class="btn-outline"><i class="ti ti-mail"></i> Email</a>
+            <a href="#" class="btn-primary btn-primary--sm"><i class="ti ti-download"></i> Télécharger CV</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════ COMMENT ÇA MARCHE -->
   <section class="section steps-section" id="comment">
     <div class="container">
-      <p class="section__label reveal-up">COMMENT ÇA MARCHE</p>
-      <h2 class="section__title reveal-up" style="--delay:0.05s">3 étapes, c'est tout</h2>
+
+      <div class="section__header reveal-up">
+        <span class="section__pill">Process</span>
+        <h2 class="section__title">3 étapes, c'est tout</h2>
+      </div>
 
       <div class="steps">
-
         <div class="step reveal-up" style="--delay:0s">
-          <div class="step__number">1</div>
+          <div class="step__icon">
+            <span class="step__number">1</span>
+          </div>
           <div class="step__content">
             <h3 class="step__title">Crée ton profil en 2 minutes</h3>
             <p class="step__desc">Nom, titre, expériences, compétences, disponibilité. Simple et structuré.</p>
           </div>
         </div>
-
-        <div class="step__connector" aria-hidden="true"></div>
-
+        <div class="step__connector" aria-hidden="true">
+          <div class="step__connector-line"></div>
+        </div>
         <div class="step reveal-up" style="--delay:0.1s">
-          <div class="step__number">2</div>
+          <div class="step__icon">
+            <span class="step__number">2</span>
+          </div>
           <div class="step__content">
             <h3 class="step__title">Fais vérifier tes expériences</h3>
             <p class="step__desc">L'institution reçoit un email, clique pour confirmer. Un badge apparaît sur ton profil.</p>
           </div>
         </div>
-
-        <div class="step__connector" aria-hidden="true"></div>
-
+        <div class="step__connector" aria-hidden="true">
+          <div class="step__connector-line"></div>
+        </div>
         <div class="step reveal-up" style="--delay:0.2s">
-          <div class="step__number">3</div>
+          <div class="step__icon">
+            <span class="step__number">3</span>
+          </div>
           <div class="step__content">
             <h3 class="step__title">Sois trouvé et connecte</h3>
             <p class="step__desc">Les recruteurs te trouvent. Tu génères ton CV. Tu commandes ta carte NFC.</p>
           </div>
         </div>
-
       </div>
+
     </div>
   </section>
 
-  <!-- ══════════════════════════════ TÉMOIGNAGES -->
+  <!-- ══════════════ TÉMOIGNAGES -->
   <section class="section temoignages-section">
     <div class="container">
-      <p class="section__label reveal-up">ILS L'UTILISENT</p>
-      <h2 class="section__title reveal-up" style="--delay:0.05s">Ce qu'ils en disent</h2>
+
+      <div class="section__header reveal-up">
+        <span class="section__pill">Témoignages</span>
+        <h2 class="section__title">Ce qu'ils en disent</h2>
+      </div>
 
       <div class="testimonials-grid">
-
         <div class="testimonial-card reveal-up" style="--delay:0s">
-          <span class="testimonial-card__quote-mark" aria-hidden="true">"</span>
+          <div class="testimonial-card__stars">
+            <i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i>
+          </div>
           <p class="testimonial-quote">Enfin un profil pro qui ne me demande pas de performer. Juste mon parcours, vérifié.</p>
           <div class="testimonial-author">
             <div class="testimonial-avatar">AF</div>
@@ -247,9 +326,10 @@
             </div>
           </div>
         </div>
-
         <div class="testimonial-card reveal-up" style="--delay:0.1s">
-          <span class="testimonial-card__quote-mark" aria-hidden="true">"</span>
+          <div class="testimonial-card__stars">
+            <i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i>
+          </div>
           <p class="testimonial-quote">J'ai généré un CV adapté en 30 secondes. Le recruteur a rappelé le lendemain.</p>
           <div class="testimonial-author">
             <div class="testimonial-avatar">KA</div>
@@ -259,9 +339,10 @@
             </div>
           </div>
         </div>
-
         <div class="testimonial-card reveal-up" style="--delay:0.2s">
-          <span class="testimonial-card__quote-mark" aria-hidden="true">"</span>
+          <div class="testimonial-card__stars">
+            <i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i><i class="ti ti-star-filled"></i>
+          </div>
           <p class="testimonial-quote">La carte NFC c'est un game changer en networking. Un tap et c'est dans leur téléphone.</p>
           <div class="testimonial-author">
             <div class="testimonial-avatar">ID</div>
@@ -271,27 +352,34 @@
             </div>
           </div>
         </div>
-
       </div>
+
     </div>
   </section>
 
-  <!-- ══════════════════════════════ CTA FINAL -->
-  <section class="section cta-final">
+  <!-- ══════════════ CTA FINAL (dark) -->
+  <section class="section cta-final dark-section">
+    <div class="orb orb--dark-3" aria-hidden="true"></div>
+    <div class="orb orb--dark-4" aria-hidden="true"></div>
     <div class="container cta-final__inner">
       <h2 class="cta-final__title reveal-up">
-        <span class="line-black">Ton identité pro,</span>
-        <span class="line-violet">enfin à ta hauteur.</span>
+        <span class="line-light">Ton identité pro,</span>
+        <span class="line-violet-grad">enfin à ta hauteur.</span>
       </h2>
-      <p class="cta-final__subtitle reveal-up" style="--delay:0.08s">Rejoins les premiers professionnels sur Bcarte. Gratuit, sobre, vérifié.</p>
-      <a href="#" class="btn-primary btn-primary--xl reveal-up" style="--delay:0.16s">Créer mon profil maintenant</a>
+      <p class="cta-final__subtitle reveal-up" style="--delay:0.08s">
+        Rejoins les premiers professionnels sur Bcarte.<br>Gratuit, sobre, vérifié.
+      </p>
+      <a href="#" class="btn-primary btn-primary--xl btn-glow reveal-up" style="--delay:0.16s">
+        Créer mon profil maintenant
+        <i class="ti ti-arrow-right"></i>
+      </a>
     </div>
   </section>
 
-  <!-- ══════════════════════════════ FOOTER -->
-  <footer class="footer">
+  <!-- ══════════════ FOOTER (dark) -->
+  <footer class="footer dark-section">
     <div class="container footer__inner">
-      <a href="#" class="navbar__logo footer__logo"><span class="logo-b">b</span>carte</a>
+      <a href="#" class="footer__logo"><span class="logo-b">b</span>carte</a>
       <nav class="footer__links">
         <a href="#benefices">Fonctionnalités</a>
         <a href="#comment">Recruteurs</a>
