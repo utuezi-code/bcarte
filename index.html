@@ -12,8 +12,8 @@
 </head>
 <body>
 
-  <!-- ═══════════════════════════════════════════ NAVBAR -->
-  <nav class="navbar">
+  <!-- ══════════════════════════════ NAVBAR -->
+  <nav class="navbar" id="navbar">
     <div class="navbar__inner">
       <a href="#" class="navbar__logo"><span class="logo-b">b</span>carte</a>
       <ul class="navbar__links">
@@ -34,21 +34,36 @@
     </div>
   </nav>
 
-  <!-- ═══════════════════════════════════════════ HERO -->
+  <!-- ══════════════════════════════ HERO -->
   <section class="hero" id="hero">
+
+    <!-- Word cloud background -->
+    <div class="hero__bg-cloud" aria-hidden="true" id="bgCloud">
+      <span class="bgw bgw--1">Vérifié</span>
+      <span class="bgw bgw--2">NFC</span>
+      <span class="bgw bgw--3">IA</span>
+      <span class="bgw bgw--4">Sobre</span>
+      <span class="bgw bgw--5">Profil</span>
+      <span class="bgw bgw--6">Authentique</span>
+      <span class="bgw bgw--7">Carte</span>
+      <span class="bgw bgw--8">CV</span>
+      <span class="bgw bgw--9">Réseau</span>
+    </div>
+
     <div class="hero__inner">
 
       <div class="hero__headline">
         <h1>
-          <span class="line-black">Ton profil.</span>
-          <span class="line-violet">Vérifié.</span>
-          <span class="line-or">Sans bruit.</span>
+          <span class="hl-line hl-black" data-delay="0">Ton profil.</span>
+          <span class="hl-line hl-violet" data-delay="120">Vérifié.</span>
+          <span class="hl-line hl-or" data-delay="240">Sans bruit.</span>
         </h1>
       </div>
 
-      <div class="hero__wordcloud">
+      <!-- Foreground word cloud -->
+      <div class="hero__wordcloud" id="fgCloud">
         <span class="wc wc--violet wc--lg">Profil vérifié</span>
-        <span class="wc wc--gray-light wc--sm">Sans feed</span>
+        <span class="wc wc--gray-faint wc--sm">Sans feed</span>
         <span class="wc wc--violet wc--md">CV par IA</span>
         <span class="wc wc--gray-faint wc--sm">Sans likes</span>
         <span class="wc wc--or wc--lg">Carte NFC</span>
@@ -60,24 +75,24 @@
         <span class="wc wc--gray-light wc--sm">Authentique</span>
       </div>
 
-      <div class="hero__cta" id="hero-cta">
+      <div class="hero__cta reveal-up" id="hero-cta">
         <a href="#" class="btn-primary btn-primary--lg">Créer mon profil</a>
         <a href="#profil" class="link-secondary">Voir un exemple →</a>
       </div>
 
-      <div class="hero__stats">
+      <div class="hero__stats reveal-up" style="--delay:0.1s">
         <div class="stat">
-          <span class="stat__value">100</span>
+          <span class="stat__value" data-target="100">0</span>
           <span class="stat__label">profils pilotes</span>
         </div>
         <div class="stat__divider"></div>
         <div class="stat">
-          <span class="stat__value">2 min</span>
+          <span class="stat__value" data-suffix=" min" data-target="2">0</span>
           <span class="stat__label">pour commencer</span>
         </div>
         <div class="stat__divider"></div>
         <div class="stat">
-          <span class="stat__value">Gratuit</span>
+          <span class="stat__value stat__value--text">Gratuit</span>
           <span class="stat__label">toujours</span>
         </div>
       </div>
@@ -85,16 +100,16 @@
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════ BÉNÉFICES -->
+  <!-- ══════════════════════════════ BÉNÉFICES -->
   <section class="section benefices" id="benefices">
     <div class="container">
-      <p class="section__label">POURQUOI BCARTE</p>
-      <h2 class="section__title">Tout ce qu'il te faut</h2>
-      <p class="section__subtitle">Un seul endroit pour ton profil, ton CV et ta carte.</p>
+      <p class="section__label reveal-up">POURQUOI BCARTE</p>
+      <h2 class="section__title reveal-up" style="--delay:0.05s">Tout ce qu'il te faut</h2>
+      <p class="section__subtitle reveal-up" style="--delay:0.1s">Un seul endroit pour ton profil, ton CV et ta carte.</p>
 
       <div class="benefits-grid">
 
-        <div class="benefit-card">
+        <div class="benefit-card reveal-up" style="--delay:0s">
           <div class="benefit-card__icon">
             <i class="ti ti-circle-check"></i>
           </div>
@@ -102,7 +117,7 @@
           <p class="benefit-card__desc">Tes expériences et diplômes confirmés directement par les institutions.</p>
         </div>
 
-        <div class="benefit-card">
+        <div class="benefit-card reveal-up" style="--delay:0.08s">
           <div class="benefit-card__icon">
             <i class="ti ti-sparkles"></i>
           </div>
@@ -110,7 +125,7 @@
           <p class="benefit-card__desc">Colle une offre d'emploi. Ton CV s'adapte automatiquement au poste.</p>
         </div>
 
-        <div class="benefit-card">
+        <div class="benefit-card reveal-up" style="--delay:0.16s">
           <div class="benefit-card__icon">
             <i class="ti ti-address-book"></i>
           </div>
@@ -118,7 +133,7 @@
           <p class="benefit-card__desc">Trouve des profils par secteur, ville, compétence ou disponibilité.</p>
         </div>
 
-        <div class="benefit-card" id="nfc">
+        <div class="benefit-card reveal-up" id="nfc" style="--delay:0.24s">
           <div class="benefit-card__icon">
             <i class="ti ti-device-mobile-nfc"></i>
           </div>
@@ -130,13 +145,14 @@
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════ APERÇU PROFIL -->
+  <!-- ══════════════════════════════ APERÇU PROFIL -->
   <section class="section profil-section" id="profil">
     <div class="container">
-      <h2 class="section__title">Voilà à quoi ressemble ton profil</h2>
+      <h2 class="section__title reveal-up" style="text-align:center">Voilà à quoi ressemble ton profil</h2>
 
-      <div class="profil-card-wrap">
+      <div class="profil-card-wrap reveal-up" style="--delay:0.1s">
         <div class="profil-card">
+          <div class="profil-card__glow" aria-hidden="true"></div>
 
           <div class="profil-card__header">
             <div class="profil-avatar">MM</div>
@@ -172,15 +188,15 @@
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════ COMMENT ÇA MARCHE -->
+  <!-- ══════════════════════════════ COMMENT ÇA MARCHE -->
   <section class="section steps-section" id="comment">
     <div class="container">
-      <p class="section__label">COMMENT ÇA MARCHE</p>
-      <h2 class="section__title">3 étapes, c'est tout</h2>
+      <p class="section__label reveal-up">COMMENT ÇA MARCHE</p>
+      <h2 class="section__title reveal-up" style="--delay:0.05s">3 étapes, c'est tout</h2>
 
       <div class="steps">
 
-        <div class="step">
+        <div class="step reveal-up" style="--delay:0s">
           <div class="step__number">1</div>
           <div class="step__content">
             <h3 class="step__title">Crée ton profil en 2 minutes</h3>
@@ -190,7 +206,7 @@
 
         <div class="step__connector" aria-hidden="true"></div>
 
-        <div class="step">
+        <div class="step reveal-up" style="--delay:0.1s">
           <div class="step__number">2</div>
           <div class="step__content">
             <h3 class="step__title">Fais vérifier tes expériences</h3>
@@ -200,7 +216,7 @@
 
         <div class="step__connector" aria-hidden="true"></div>
 
-        <div class="step">
+        <div class="step reveal-up" style="--delay:0.2s">
           <div class="step__number">3</div>
           <div class="step__content">
             <h3 class="step__title">Sois trouvé et connecte</h3>
@@ -212,16 +228,17 @@
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════ TÉMOIGNAGES -->
+  <!-- ══════════════════════════════ TÉMOIGNAGES -->
   <section class="section temoignages-section">
     <div class="container">
-      <p class="section__label">ILS L'UTILISENT</p>
-      <h2 class="section__title">Ce qu'ils en disent</h2>
+      <p class="section__label reveal-up">ILS L'UTILISENT</p>
+      <h2 class="section__title reveal-up" style="--delay:0.05s">Ce qu'ils en disent</h2>
 
       <div class="testimonials-grid">
 
-        <div class="testimonial-card">
-          <p class="testimonial-quote">"Enfin un profil pro qui ne me demande pas de performer. Juste mon parcours, vérifié."</p>
+        <div class="testimonial-card reveal-up" style="--delay:0s">
+          <span class="testimonial-card__quote-mark" aria-hidden="true">"</span>
+          <p class="testimonial-quote">Enfin un profil pro qui ne me demande pas de performer. Juste mon parcours, vérifié.</p>
           <div class="testimonial-author">
             <div class="testimonial-avatar">AF</div>
             <div>
@@ -231,8 +248,9 @@
           </div>
         </div>
 
-        <div class="testimonial-card">
-          <p class="testimonial-quote">"J'ai généré un CV adapté en 30 secondes. Le recruteur a rappelé le lendemain."</p>
+        <div class="testimonial-card reveal-up" style="--delay:0.1s">
+          <span class="testimonial-card__quote-mark" aria-hidden="true">"</span>
+          <p class="testimonial-quote">J'ai généré un CV adapté en 30 secondes. Le recruteur a rappelé le lendemain.</p>
           <div class="testimonial-author">
             <div class="testimonial-avatar">KA</div>
             <div>
@@ -242,8 +260,9 @@
           </div>
         </div>
 
-        <div class="testimonial-card">
-          <p class="testimonial-quote">"La carte NFC c'est un game changer en networking. Un tap et c'est dans leur téléphone."</p>
+        <div class="testimonial-card reveal-up" style="--delay:0.2s">
+          <span class="testimonial-card__quote-mark" aria-hidden="true">"</span>
+          <p class="testimonial-quote">La carte NFC c'est un game changer en networking. Un tap et c'est dans leur téléphone.</p>
           <div class="testimonial-author">
             <div class="testimonial-avatar">ID</div>
             <div>
@@ -257,19 +276,19 @@
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════ CTA FINAL -->
+  <!-- ══════════════════════════════ CTA FINAL -->
   <section class="section cta-final">
     <div class="container cta-final__inner">
-      <h2 class="cta-final__title">
+      <h2 class="cta-final__title reveal-up">
         <span class="line-black">Ton identité pro,</span>
         <span class="line-violet">enfin à ta hauteur.</span>
       </h2>
-      <p class="cta-final__subtitle">Rejoins les premiers professionnels sur Bcarte. Gratuit, sobre, vérifié.</p>
-      <a href="#" class="btn-primary btn-primary--xl">Créer mon profil maintenant</a>
+      <p class="cta-final__subtitle reveal-up" style="--delay:0.08s">Rejoins les premiers professionnels sur Bcarte. Gratuit, sobre, vérifié.</p>
+      <a href="#" class="btn-primary btn-primary--xl reveal-up" style="--delay:0.16s">Créer mon profil maintenant</a>
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════ FOOTER -->
+  <!-- ══════════════════════════════ FOOTER -->
   <footer class="footer">
     <div class="container footer__inner">
       <a href="#" class="navbar__logo footer__logo"><span class="logo-b">b</span>carte</a>
