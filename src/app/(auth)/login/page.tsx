@@ -78,9 +78,6 @@ export default function LoginPage() {
           variants={stagger} initial="initial" animate="animate"
           className="space-y-5"
         >
-          <motion.p variants={item} className="text-[11px] font-bold tracking-[0.15em] text-[#6C47FF] uppercase">
-            Plateforme africaine
-          </motion.p>
           <motion.h2 variants={item} className="text-[52px] font-black text-[#0C0A18] leading-[1.0] tracking-tight">
             Votre identité<br />professionnelle,<br />
             <span className="text-[#6C47FF]">vérifiée.</span>
@@ -90,7 +87,7 @@ export default function LoginPage() {
           </motion.p>
 
           <motion.div variants={item} className="flex flex-wrap gap-2 pt-2">
-            {['Vérification instantanée', 'CV intelligent', '12 000+ professionnels'].map(label => (
+            {['Vérification instantanée', 'CV intelligent', '12 000+ membres'].map(label => (
               <span key={label} className="text-[12px] text-[#6C47FF] font-medium bg-[#6C47FF]/10 px-3 py-1.5 rounded-full">
                 {label}
               </span>
@@ -104,7 +101,7 @@ export default function LoginPage() {
           transition={{ delay: 0.6, duration: 0.5 }}
           className="text-[12px] text-[#9CA3AF]"
         >
-          Rejoignez 12 000+ professionnels africains vérifiés.
+          Rejoignez 12 000+ professionnels vérifiés.
         </motion.p>
       </div>
 
