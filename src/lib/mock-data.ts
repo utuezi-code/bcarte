@@ -1,4 +1,4 @@
-import { Profile, VerificationRequest, JobOffer } from './types'
+import { Profile, VerificationRequest, JobOffer, Experience, Education } from './types'
 
 export const CURRENT_USER = {
   id: 'user-1',
@@ -32,7 +32,7 @@ export const CURRENT_USER = {
       startDate: '2022-03',
       endDate: null,
       current: true,
-      verificationStatus: 'confirmée' as const,
+      verificationStatus: 'confirmée',
     },
     {
       id: 'e2',
@@ -41,7 +41,7 @@ export const CURRENT_USER = {
       startDate: '2019-06',
       endDate: '2022-02',
       current: false,
-      verificationStatus: 'confirmée' as const,
+      verificationStatus: 'confirmée',
     },
     {
       id: 'e3',
@@ -50,9 +50,9 @@ export const CURRENT_USER = {
       startDate: '2017-09',
       endDate: '2019-05',
       current: false,
-      verificationStatus: 'non_demandée' as const,
+      verificationStatus: 'non_demandée',
     },
-  ],
+  ] as Experience[],
   education: [
     {
       id: 'ed1',
@@ -61,7 +61,7 @@ export const CURRENT_USER = {
       startDate: '2015-09',
       endDate: '2017-07',
       current: false,
-      verificationStatus: 'en_attente' as const,
+      verificationStatus: 'en_attente',
     },
     {
       id: 'ed2',
@@ -70,9 +70,9 @@ export const CURRENT_USER = {
       startDate: '2012-09',
       endDate: '2015-06',
       current: false,
-      verificationStatus: 'confirmée' as const,
+      verificationStatus: 'confirmée',
     },
-  ],
+  ] as Education[],
   publications: [
     {
       id: 'p1',
