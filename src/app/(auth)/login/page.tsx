@@ -3,31 +3,10 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import {
-  IconMail, IconLock, IconEye, IconEyeOff, IconUser, IconBuilding,
-  IconArrowLeft, IconShieldCheck, IconBriefcase, IconStar,
-} from '@tabler/icons-react'
+import { IconMail, IconLock, IconEye, IconEyeOff, IconUser, IconBuilding, IconArrowLeft, IconShieldCheck } from '@tabler/icons-react'
 import { useUser } from '@/lib/user-context'
 
 type AccountType = 'professionnel' | 'organisation' | null
-
-const FEATURES = [
-  {
-    icon: IconShieldCheck,
-    title: 'Identité vérifiée',
-    desc: "Chaque expérience est confirmée par l'entreprise concernée",
-  },
-  {
-    icon: IconBriefcase,
-    title: 'CV vivant',
-    desc: 'Un profil toujours à jour, partageable en un lien ou un QR code',
-  },
-  {
-    icon: IconStar,
-    title: 'Réseau africain',
-    desc: 'Connectez-vous aux organisations et talents du continent',
-  },
-]
 
 export default function LoginPage() {
   const router = useRouter()
@@ -51,10 +30,7 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       })
       const data = await res.json()
-      if (!res.ok) {
-        setError(data.error ?? 'Erreur de connexion')
-        return
-      }
+      if (!res.ok) { setError(data.error ?? 'Erreur de connexion'); return }
       const role = data.role === 'ORGANISATION' ? 'organisation' : 'professionnel'
       setRole(role)
       router.push(role === 'organisation' ? '/org/dashboard' : '/dashboard')
@@ -66,239 +42,187 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-white">
 
-      {/* ── Left panel — hero ── */}
-      <div
-        className="hidden lg:flex lg:w-[52%] flex-col justify-between px-14 py-12 relative overflow-hidden"
-        style={{ background: 'linear-gradient(145deg, #0C0A18 0%, #1a1040 55%, #2d1a6e 100%)' }}
-      >
-        {/* Background decoration */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full opacity-10"
-            style={{ background: 'radial-gradient(circle, #6C47FF 0%, transparent 70%)' }} />
-          <div className="absolute bottom-0 -left-16 w-72 h-72 rounded-full opacity-10"
-            style={{ background: 'radial-gradient(circle, #6C47FF 0%, transparent 70%)' }} />
-          {/* Grid dots */}
-          <svg className="absolute inset-0 w-full h-full opacity-5" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <pattern id="dots" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
-                <circle cx="2" cy="2" r="1.5" fill="white" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#dots)" />
-          </svg>
-        </div>
+      {/* ── Colonne gauche ── */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-[#0C0A18] flex-col justify-between p-16">
+
+        {/* Cercles décoratifs */}
+        <div className="absolute top-[-120px] right-[-120px] w-[480px] h-[480px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(108,71,255,0.18) 0%, transparent 65%)' }} />
+        <div className="absolute bottom-[-80px] left-[-80px] w-[360px] h-[360px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(108,71,255,0.12) 0%, transparent 65%)' }} />
 
         {/* Logo */}
         <div className="relative z-10">
-          <span className="text-3xl font-extrabold text-white tracking-tight">bcarte</span>
+          <span className="text-[22px] font-black text-white tracking-tight">bcarte</span>
         </div>
 
-        {/* Center content */}
-        <div className="relative z-10 space-y-10">
-          <div>
-            <h2 className="text-4xl font-bold text-white leading-tight">
-              Votre identité<br />professionnelle<br />
-              <span style={{ color: '#A78BFA' }}>vérifiée.</span>
+        {/* Texte central */}
+        <div className="relative z-10 space-y-6">
+          <div className="space-y-3">
+            <p className="text-xs font-semibold tracking-widest text-[#6C47FF] uppercase">Plateforme africaine</p>
+            <h2 className="text-[42px] font-black text-white leading-[1.1] tracking-tight">
+              Votre identité<br />
+              <span className="text-transparent" style={{ WebkitTextStroke: '1.5px rgba(255,255,255,0.3)' }}>
+                professionnelle
+              </span><br />
+              vérifiée.
             </h2>
-            <p className="mt-4 text-base text-white/60 max-w-xs leading-relaxed">
-              Construisez une présence professionnelle crédible, reconnue par vos employeurs et partenaires.
+            <p className="text-[15px] text-white/40 leading-relaxed max-w-[280px]">
+              Un profil crédible, des expériences confirmées, un réseau qui vous reconnaît.
             </p>
           </div>
 
-          <div className="space-y-5">
-            {FEATURES.map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'rgba(108,71,255,0.25)' }}>
-                  <Icon size={20} style={{ color: '#A78BFA' }} />
-                </div>
-                <div>
-                  <p className="font-semibold text-white text-sm">{title}</p>
-                  <p className="text-xs text-white/50 mt-0.5">{desc}</p>
-                </div>
+          {/* Stats */}
+          <div className="flex gap-8 pt-2">
+            {[['12k+', 'Profils'], ['800+', 'Organisations'], ['95%', 'Vérifications']].map(([val, label]) => (
+              <div key={label}>
+                <p className="text-2xl font-black text-white">{val}</p>
+                <p className="text-xs text-white/35 mt-0.5">{label}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Profile card mockup */}
+        {/* Card profil en bas */}
         <div className="relative z-10">
-          <div className="rounded-2xl p-4 flex items-center gap-3"
-            style={{ background: 'rgba(255,255,255,0.07)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg, #6C47FF, #A78BFA)' }}>
-              AD
+          <div className="rounded-2xl p-4 flex items-center gap-3.5"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-[13px] font-bold text-white"
+              style={{ background: 'linear-gradient(135deg, #6C47FF 0%, #9B7BFF 100%)' }}>
+              KT
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white truncate">Aïssatou Diallo</p>
-              <p className="text-xs text-white/50 truncate">Ingénieure logiciel · Dakar, Sénégal</p>
+              <p className="text-[13px] font-semibold text-white">Kofi Mensah</p>
+              <p className="text-[11px] text-white/40 truncate">Data Engineer · Accra, Ghana</p>
             </div>
-            <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium flex-shrink-0"
-              style={{ background: 'rgba(108,71,255,0.3)', color: '#A78BFA' }}>
-              <IconShieldCheck size={11} />
+            <div className="flex items-center gap-1 bg-[#6C47FF]/20 text-[#9B7BFF] text-[10px] font-semibold px-2 py-1 rounded-full">
+              <IconShieldCheck size={10} />
               Vérifié
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Right panel — form ── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-bg-light">
+      {/* ── Colonne droite ── */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-14 lg:py-0">
 
-        {/* Mobile logo */}
-        <div className="lg:hidden text-center mb-8">
-          <span className="text-3xl font-extrabold text-primary">bcarte</span>
-          <p className="text-text-secondary text-sm mt-1">Votre identité professionnelle vérifiée</p>
+        {/* Logo mobile */}
+        <div className="lg:hidden mb-10 text-center">
+          <span className="text-2xl font-black text-[#0C0A18] tracking-tight">bcarte</span>
         </div>
 
-        <div className="w-full max-w-[400px]">
+        <div className="w-full max-w-[360px] space-y-8">
 
-          {/* Step 1 — choose account type */}
+          {/* Étape 1 — type de compte */}
           {!accountType && (
-            <div className="bg-white border border-[#E5E7EB] rounded-2xl p-8 shadow-sm space-y-5">
+            <>
               <div>
-                <h1 className="text-2xl font-bold text-text-primary">Se connecter</h1>
-                <p className="text-sm text-text-secondary mt-1">Choisissez votre type de compte</p>
+                <h1 className="text-[28px] font-black text-[#0C0A18] tracking-tight">Connexion</h1>
+                <p className="text-[14px] text-[#9CA3AF] mt-1">Choisissez votre espace</p>
               </div>
 
-              <button
-                onClick={() => setAccountType('professionnel')}
-                className="w-full flex items-start gap-4 p-4 rounded-xl border-2 border-[#E5E7EB] hover:border-primary hover:bg-primary-light/30 transition-all text-left group"
-              >
-                <div className="w-11 h-11 rounded-xl bg-primary-light flex items-center justify-center flex-shrink-0 group-hover:bg-primary/10 transition-colors">
-                  <IconUser size={22} className="text-primary" />
-                </div>
-                <div>
-                  <p className="font-semibold text-text-primary">Professionnel</p>
-                  <p className="text-sm text-text-secondary mt-0.5">Gérez votre profil, vérifications et CV</p>
-                </div>
-              </button>
+              <div className="space-y-3">
+                {([
+                  { type: 'professionnel', icon: IconUser,     label: 'Professionnel',  sub: 'Profil · CV · Vérifications' },
+                  { type: 'organisation',  icon: IconBuilding, label: 'Organisation',   sub: 'Entreprise · Université · Institution' },
+                ] as const).map(({ type, icon: Icon, label, sub }) => (
+                  <button key={type} onClick={() => setAccountType(type)}
+                    className="w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl border border-[#F0F0F0] hover:border-[#6C47FF] hover:bg-[#6C47FF]/[0.03] transition-all group text-left">
+                    <div className="w-10 h-10 rounded-xl bg-[#F7F7F8] group-hover:bg-[#6C47FF]/10 flex items-center justify-center flex-shrink-0 transition-colors">
+                      <Icon size={18} className="text-[#9CA3AF] group-hover:text-[#6C47FF] transition-colors" />
+                    </div>
+                    <div>
+                      <p className="text-[14px] font-semibold text-[#0C0A18]">{label}</p>
+                      <p className="text-[12px] text-[#9CA3AF]">{sub}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
 
-              <button
-                onClick={() => setAccountType('organisation')}
-                className="w-full flex items-start gap-4 p-4 rounded-xl border-2 border-[#E5E7EB] hover:border-primary hover:bg-primary-light/30 transition-all text-left group"
-              >
-                <div className="w-11 h-11 rounded-xl bg-[#F3F4F6] flex items-center justify-center flex-shrink-0 group-hover:bg-[#0C0A18]/10 transition-colors">
-                  <IconBuilding size={22} className="text-text-secondary group-hover:text-[#0C0A18]" />
-                </div>
-                <div>
-                  <p className="font-semibold text-text-primary">Organisation</p>
-                  <p className="text-sm text-text-secondary mt-0.5">Entreprise, université ou institution</p>
-                </div>
-              </button>
-
-              <p className="text-center text-sm text-text-secondary pt-1">
-                Pas encore de compte ?{' '}
-                <Link href="/register" className="text-primary font-medium hover:underline">
-                  S&apos;inscrire gratuitement
+              <p className="text-[13px] text-[#9CA3AF] text-center">
+                Pas de compte ?{' '}
+                <Link href="/register" className="text-[#6C47FF] font-semibold hover:underline">
+                  S&apos;inscrire
                 </Link>
               </p>
-            </div>
+            </>
           )}
 
-          {/* Step 2 — login form */}
+          {/* Étape 2 — formulaire */}
           {accountType && (
-            <div className="bg-white border border-[#E5E7EB] rounded-2xl p-8 shadow-sm space-y-5">
-
+            <>
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setAccountType(null)}
-                  className="w-8 h-8 rounded-lg bg-[#F3F4F6] hover:bg-[#E5E7EB] flex items-center justify-center text-text-secondary transition-colors"
-                  aria-label="Retour"
-                >
-                  <IconArrowLeft size={15} />
+                <button onClick={() => setAccountType(null)}
+                  className="w-8 h-8 rounded-xl bg-[#F7F7F8] hover:bg-[#EEEEEE] flex items-center justify-center transition-colors">
+                  <IconArrowLeft size={14} className="text-[#6B7280]" />
                 </button>
                 <div className="flex items-center gap-2">
-                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${accountType === 'professionnel' ? 'bg-primary-light' : 'bg-[#F3F4F6]'}`}>
-                    {accountType === 'professionnel'
-                      ? <IconUser size={13} className="text-primary" />
-                      : <IconBuilding size={13} className="text-text-secondary" />
-                    }
-                  </div>
-                  <span className="text-sm font-semibold text-text-primary capitalize">{accountType}</span>
+                  <span className="text-[13px] font-semibold text-[#0C0A18] capitalize">{accountType}</span>
                 </div>
               </div>
 
               <div>
-                <h1 className="text-2xl font-bold text-text-primary">Connexion</h1>
-                <p className="text-sm text-text-secondary mt-1">
-                  {accountType === 'professionnel'
-                    ? 'Accédez à votre espace professionnel'
-                    : 'Accédez au tableau de bord de votre organisation'
-                  }
+                <h1 className="text-[28px] font-black text-[#0C0A18] tracking-tight">Bon retour.</h1>
+                <p className="text-[14px] text-[#9CA3AF] mt-1">
+                  {accountType === 'professionnel' ? 'Connectez-vous à votre profil' : 'Accédez au tableau de bord'}
                 </p>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label htmlFor="email" className="label">
-                    {accountType === 'organisation' ? 'Email professionnel' : 'Adresse email'}
-                  </label>
-                  <div className="relative">
-                    <IconMail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" size={16} />
-                    <input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="input pl-9"
-                      placeholder={accountType === 'organisation' ? 'contact@organisation.com' : 'vous@email.com'}
-                      required
-                    />
-                  </div>
-                  {accountType === 'organisation' && (
-                    <p className="text-xs text-text-tertiary mt-1.5">
-                      Utilisez l&apos;adresse email de votre domaine pour une vérification automatique
-                    </p>
-                  )}
+                <div className="space-y-1">
+                  <label className="text-[12px] font-semibold text-[#374151] uppercase tracking-wide">Email</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    className="w-full h-11 rounded-xl border border-[#E5E7EB] bg-[#FAFAFA] px-4 text-[14px] text-[#0C0A18] placeholder:text-[#D1D5DB] outline-none focus:border-[#6C47FF] focus:bg-white transition-colors"
+                    placeholder="vous@email.com"
+                    required
+                  />
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label htmlFor="password" className="label mb-0">Mot de passe</label>
-                    <a href="#" className="text-xs text-primary font-medium hover:underline">Mot de passe oublié ?</a>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[12px] font-semibold text-[#374151] uppercase tracking-wide">Mot de passe</label>
+                    <a href="#" className="text-[12px] text-[#6C47FF] hover:underline">Oublié ?</a>
                   </div>
                   <div className="relative">
-                    <IconLock className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" size={16} />
                     <input
-                      id="password"
                       type={showPassword ? 'text' : 'password'}
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="input pl-9 pr-10"
+                      onChange={e => setPassword(e.target.value)}
+                      className="w-full h-11 rounded-xl border border-[#E5E7EB] bg-[#FAFAFA] px-4 pr-11 text-[14px] text-[#0C0A18] placeholder:text-[#D1D5DB] outline-none focus:border-[#6C47FF] focus:bg-white transition-colors"
                       placeholder="••••••••"
                       required
                     />
-                    <button
-                      type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
-                      onClick={() => setShowPassword(!showPassword)}
-                      aria-label={showPassword ? 'Masquer' : 'Afficher'}
-                    >
+                    <button type="button" onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#6B7280]">
                       {showPassword ? <IconEyeOff size={16} /> : <IconEye size={16} />}
                     </button>
                   </div>
                 </div>
 
                 {error && (
-                  <p className="text-sm text-danger bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
+                  <p className="text-[13px] text-red-500 bg-red-50 border border-red-100 rounded-xl px-3.5 py-2.5">{error}</p>
                 )}
 
-                <button type="submit" disabled={loading} className="btn-primary w-full justify-center py-3 disabled:opacity-60">
-                  {loading ? 'Connexion…' : 'Se connecter'}
+                <button type="submit" disabled={loading}
+                  className="w-full h-11 rounded-xl text-[14px] font-bold text-white transition-opacity disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg, #6C47FF 0%, #8B6BFF 100%)' }}>
+                  {loading ? 'Connexion…' : 'Se connecter →'}
                 </button>
               </form>
 
-              <p className="text-center text-sm text-text-secondary">
+              <p className="text-[13px] text-[#9CA3AF] text-center">
                 {accountType === 'professionnel' ? (
-                  <>Pas encore de compte ?{' '}<Link href="/register" className="text-primary font-medium hover:underline">Créer mon profil</Link></>
+                  <>Pas de compte ?{' '}<Link href="/register" className="text-[#6C47FF] font-semibold hover:underline">Créer mon profil</Link></>
                 ) : (
-                  <>Votre organisation n&apos;est pas encore sur bcarte ?{' '}<Link href="/register" className="text-primary font-medium hover:underline">Inscrire mon organisation</Link></>
+                  <>Organisation non inscrite ?{' '}<Link href="/register" className="text-[#6C47FF] font-semibold hover:underline">Inscrire</Link></>
                 )}
               </p>
-            </div>
+            </>
           )}
         </div>
       </div>
