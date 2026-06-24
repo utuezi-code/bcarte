@@ -6,7 +6,7 @@ import {
   IconCircleCheck, IconMapPin, IconWorld, IconUsers,
   IconBriefcase, IconCalendar, IconArrowUpRight,
   IconBrandWhatsapp, IconMail, IconSchool, IconClock,
-  IconBuilding, IconChevronRight,
+  IconBuilding, IconChevronRight, IconSearch,
 } from '@tabler/icons-react'
 import Sidebar from '@/components/layout/Sidebar'
 import BottomNav from '@/components/layout/BottomNav'
@@ -90,10 +90,26 @@ const VERIF = {
 export default function DashboardOrgPage() {
   const [tab, setTab] = useState<'entreprise' | 'formation'>('entreprise')
   const [selectedSchool, setSelectedSchool] = useState(SCHOOLS[0].id)
+  const [colleagueSearch, setColleagueSearch] = useState('')
+  const [alumniSearch, setAlumniSearch] = useState('')
   const myRole = CURRENT_USER.experiences.find(e => e.current)
   const school = SCHOOLS.find(s => s.id === selectedSchool)!
   const v = VERIF[school.verificationStatus]
   const VIcon = v.icon
+
+  const filteredColleagues = COLLEAGUES.filter(c =>
+    !colleagueSearch ||
+    c.name.toLowerCase().includes(colleagueSearch.toLowerCase()) ||
+    c.title.toLowerCase().includes(colleagueSearch.toLowerCase()) ||
+    c.city.toLowerCase().includes(colleagueSearch.toLowerCase())
+  )
+
+  const filteredAlumni = school.alumni.filter(a =>
+    !alumniSearch ||
+    a.name.toLowerCase().includes(alumniSearch.toLowerCase()) ||
+    a.title.toLowerCase().includes(alumniSearch.toLowerCase()) ||
+    a.city.toLowerCase().includes(alumniSearch.toLowerCase())
+  )
 
   return (
     <div className="min-h-screen bg-bg-light">
@@ -198,31 +214,46 @@ export default function DashboardOrgPage() {
 
               {/* Collègues */}
               <div className="bg-white rounded-2xl border border-[#E5E7EB]">
-                <div className="px-5 pt-5 pb-1 flex items-center justify-between">
+                <div className="px-5 pt-5 pb-3 flex items-center justify-between">
                   <h3 className="text-sm font-bold text-text-primary">Collègues sur bcarte</h3>
-                  <span className="text-xs text-text-tertiary">{COLLEAGUES.length} profils</span>
+                  <span className="text-xs text-text-tertiary">
+                    {filteredColleagues.length}/{COLLEAGUES.length}
+                  </span>
                 </div>
                 <div className="px-5 pb-3">
-                  {COLLEAGUES.map(c => (
-                    <div key={c.id} className="flex items-center gap-3 py-3 border-b border-[#F3F4F6] last:border-0">
-                      <div className="w-9 h-9 rounded-xl bg-primary-light flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
-                        {c.initials}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm font-semibold text-text-primary">{c.name}</span>
-                          {c.verified && <IconCircleCheck size={12} className="text-success flex-shrink-0" />}
+                  <div className="relative mb-3">
+                    <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+                    <input
+                      className="w-full pl-8 pr-3 py-2 text-sm bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg focus:outline-none focus:border-primary focus:bg-white transition-colors placeholder:text-text-tertiary"
+                      placeholder="Nom, poste, ville..."
+                      value={colleagueSearch}
+                      onChange={e => setColleagueSearch(e.target.value)}
+                    />
+                  </div>
+                  {filteredColleagues.length === 0 ? (
+                    <p className="text-sm text-text-tertiary text-center py-4">Aucun collègue trouvé</p>
+                  ) : (
+                    filteredColleagues.map(c => (
+                      <div key={c.id} className="flex items-center gap-3 py-3 border-b border-[#F3F4F6] last:border-0">
+                        <div className="w-9 h-9 rounded-xl bg-primary-light flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
+                          {c.initials}
                         </div>
-                        <p className="text-xs text-text-tertiary">{c.title}</p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-semibold text-text-primary">{c.name}</span>
+                            {c.verified && <IconCircleCheck size={12} className="text-success flex-shrink-0" />}
+                          </div>
+                          <p className="text-xs text-text-tertiary">{c.title}</p>
+                        </div>
+                        <Link
+                          href={`/p/${c.slug}`}
+                          className="text-xs font-medium text-text-tertiary hover:text-primary flex items-center gap-1 transition-colors"
+                        >
+                          Voir <IconArrowUpRight size={13} />
+                        </Link>
                       </div>
-                      <Link
-                        href={`/p/${c.slug}`}
-                        className="text-xs font-medium text-text-tertiary hover:text-primary flex items-center gap-1 transition-colors"
-                      >
-                        Voir <IconArrowUpRight size={13} />
-                      </Link>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -280,7 +311,7 @@ export default function DashboardOrgPage() {
                   return (
                     <button
                       key={s.id}
-                      onClick={() => setSelectedSchool(s.id)}
+                      onClick={() => { setSelectedSchool(s.id); setAlumniSearch('') }}
                       className={`flex-1 p-3.5 rounded-xl border text-left transition-all ${
                         selectedSchool === s.id
                           ? 'border-primary bg-white shadow-sm'
@@ -362,31 +393,46 @@ export default function DashboardOrgPage() {
 
               {/* Alumni */}
               <div className="bg-white rounded-2xl border border-[#E5E7EB]">
-                <div className="px-5 pt-5 pb-1 flex items-center justify-between">
+                <div className="px-5 pt-5 pb-3 flex items-center justify-between">
                   <h3 className="text-sm font-bold text-text-primary">Anciens étudiants sur bcarte</h3>
-                  <span className="text-xs text-text-tertiary">{school.alumni.length} profils</span>
+                  <span className="text-xs text-text-tertiary">
+                    {filteredAlumni.length}/{school.alumni.length}
+                  </span>
                 </div>
                 <div className="px-5 pb-3">
-                  {school.alumni.map(a => (
-                    <div key={a.id} className="flex items-center gap-3 py-3 border-b border-[#F3F4F6] last:border-0">
-                      <div className="w-9 h-9 rounded-xl bg-[#F3F4F6] flex items-center justify-center text-text-secondary font-bold text-sm flex-shrink-0">
-                        {a.initials}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm font-semibold text-text-primary">{a.name}</span>
-                          {a.verified && <IconCircleCheck size={12} className="text-success flex-shrink-0" />}
+                  <div className="relative mb-3">
+                    <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+                    <input
+                      className="w-full pl-8 pr-3 py-2 text-sm bg-[#F9FAFB] border border-[#E5E7EB] rounded-lg focus:outline-none focus:border-primary focus:bg-white transition-colors placeholder:text-text-tertiary"
+                      placeholder="Nom, poste, ville..."
+                      value={alumniSearch}
+                      onChange={e => setAlumniSearch(e.target.value)}
+                    />
+                  </div>
+                  {filteredAlumni.length === 0 ? (
+                    <p className="text-sm text-text-tertiary text-center py-4">Aucun résultat trouvé</p>
+                  ) : (
+                    filteredAlumni.map(a => (
+                      <div key={a.id} className="flex items-center gap-3 py-3 border-b border-[#F3F4F6] last:border-0">
+                        <div className="w-9 h-9 rounded-xl bg-[#F3F4F6] flex items-center justify-center text-text-secondary font-bold text-sm flex-shrink-0">
+                          {a.initials}
                         </div>
-                        <p className="text-xs text-text-tertiary">{a.title} · {a.city}</p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-semibold text-text-primary">{a.name}</span>
+                            {a.verified && <IconCircleCheck size={12} className="text-success flex-shrink-0" />}
+                          </div>
+                          <p className="text-xs text-text-tertiary">{a.title} · {a.city}</p>
+                        </div>
+                        <Link
+                          href={`/p/${a.slug}`}
+                          className="text-xs font-medium text-text-tertiary hover:text-primary flex items-center gap-1 transition-colors"
+                        >
+                          Voir <IconArrowUpRight size={13} />
+                        </Link>
                       </div>
-                      <Link
-                        href={`/p/${a.slug}`}
-                        className="text-xs font-medium text-text-tertiary hover:text-primary flex items-center gap-1 transition-colors"
-                      >
-                        Voir <IconArrowUpRight size={13} />
-                      </Link>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
 
