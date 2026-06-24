@@ -1,27 +1,27 @@
 'use client'
 
-import { useState } from 'react'
-import {
-  IconUser, IconLock, IconBell, IconShield,
-  IconCheck, IconEye, IconEyeOff, IconTrash,
-} from '@tabler/icons-react'
-import { CURRENT_USER } from '@/lib/mock-data'
+import { useEffect, useState } from 'react'
+import { IconUser, IconLock, IconBell, IconShield, IconCheck, IconEye, IconEyeOff, IconLoader2 } from '@tabler/icons-react'
 import Sidebar from '@/components/layout/Sidebar'
 import BottomNav from '@/components/layout/BottomNav'
 
 const TABS = ['Compte', 'Sécurité', 'Notifications', 'Confidentialité']
 
 export default function SettingsPage() {
-  const [tab, setTab] = useState(0)
-  const [saved, setSaved] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [showNewPassword, setShowNewPassword] = useState(false)
-  const [notifs, setNotifs] = useState({
+  const [tab, setTab]                     = useState(0)
+  const [saved, setSaved]                 = useState(false)
+  const [showPassword, setShowPassword]   = useState(false)
+  const [me, setMe]                       = useState<any>(null)
+  const [notifs, setNotifs]               = useState({
     verificationConfirmed: true,
     verificationRejected: true,
     profileViews: false,
     newsletter: false,
   })
+
+  useEffect(() => {
+    fetch('/api/me').then(r => r.ok ? r.json() : null).then(d => { if (d) setMe(d) })
+  }, [])
 
   const handleSave = () => {
     setSaved(true)
@@ -33,198 +33,141 @@ export default function SettingsPage() {
       <Sidebar />
       <main className="lg:pl-60 pb-16 lg:pb-0 min-h-screen">
         <div className="max-w-2xl mx-auto px-5 py-6 lg:px-8 lg:py-8 space-y-6">
-
           <div>
             <h1 className="text-2xl font-bold text-text-primary">Paramètres</h1>
-            <p className="text-text-secondary text-sm mt-1">Gérez votre compte et vos préférences</p>
+            <p className="text-sm text-text-secondary mt-1">Gérez votre compte et vos préférences</p>
           </div>
 
           {/* Tabs */}
-          <div className="flex border-b border-[#E5E7EB] overflow-x-auto">
+          <div className="flex gap-1 bg-[#F3F4F6] p-1 rounded-xl w-fit">
             {TABS.map((t, i) => (
-              <button
-                key={i}
-                onClick={() => setTab(i)}
-                className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
-                  tab === i ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'
-                }`}
-              >
+              <button key={t} onClick={() => setTab(i)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === i ? 'bg-white text-text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>
                 {t}
               </button>
             ))}
           </div>
 
-          {/* ── Compte ── */}
+          {/* Compte */}
           {tab === 0 && (
-            <div className="space-y-4">
-              <div className="card space-y-4">
-                <h2 className="font-semibold text-text-primary flex items-center gap-2">
-                  <IconUser size={17} className="text-primary" />
-                  Informations du compte
-                </h2>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="label">Nom complet</label>
-                    <input className="input" defaultValue={CURRENT_USER.fullName} />
-                  </div>
-                  <div>
-                    <label className="label">Adresse email</label>
-                    <input className="input" type="email" defaultValue={CURRENT_USER.email} />
-                  </div>
+            <div className="card space-y-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center">
+                  <IconUser size={20} className="text-primary" />
                 </div>
                 <div>
-                  <label className="label">Rôle</label>
-                  <div className="input bg-bg-light text-text-secondary cursor-not-allowed">Professionnel</div>
-                </div>
-                <div className="flex justify-end">
-                  <button onClick={handleSave} className="btn-primary">
-                    {saved ? <><IconCheck size={15} /> Enregistré</> : 'Enregistrer'}
-                  </button>
+                  <h2 className="font-semibold text-text-primary">Informations du compte</h2>
+                  <p className="text-xs text-text-secondary">{me?.email ?? '…'}</p>
                 </div>
               </div>
-
-              <div className="card border-danger/20 bg-red-50/40 space-y-3">
-                <h2 className="font-semibold text-danger flex items-center gap-2">
-                  <IconTrash size={17} />
-                  Zone dangereuse
-                </h2>
-                <p className="text-sm text-text-secondary">
-                  La suppression de votre compte est irréversible. Toutes vos données seront définitivement effacées.
-                </p>
-                <button className="text-sm font-medium text-danger border border-danger/30 bg-white hover:bg-red-50 px-4 py-2 rounded-btn transition-colors">
-                  Supprimer mon compte
-                </button>
+              <div>
+                <label className="label">Nom affiché</label>
+                <input className="input" defaultValue={me?.name ?? ''} placeholder="Votre nom" />
               </div>
+              <div>
+                <label className="label">Email</label>
+                <input className="input opacity-60 cursor-not-allowed" defaultValue={me?.email ?? ''} disabled />
+              </div>
+              <button onClick={handleSave} className="btn-primary flex items-center gap-2 px-5 py-2.5">
+                {saved && <IconCheck size={16} />}
+                {saved ? 'Enregistré !' : 'Enregistrer'}
+              </button>
             </div>
           )}
 
-          {/* ── Sécurité ── */}
+          {/* Sécurité */}
           {tab === 1 && (
-            <div className="card space-y-5">
-              <h2 className="font-semibold text-text-primary flex items-center gap-2">
-                <IconLock size={17} className="text-primary" />
-                Changer le mot de passe
-              </h2>
+            <div className="card space-y-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center">
+                  <IconLock size={20} className="text-text-secondary" />
+                </div>
+                <h2 className="font-semibold text-text-primary">Changer le mot de passe</h2>
+              </div>
               <div>
                 <label className="label">Mot de passe actuel</label>
                 <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    className="input pr-10"
-                    placeholder="••••••••"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
-                    aria-label="Afficher le mot de passe"
-                  >
-                    {showPassword ? <IconEyeOff size={15} /> : <IconEye size={15} />}
+                  <input type={showPassword ? 'text' : 'password'} className="input pr-10" placeholder="••••••••" />
+                  <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary"
+                    onClick={() => setShowPassword(!showPassword)}>
+                    {showPassword ? <IconEyeOff size={16} /> : <IconEye size={16} />}
                   </button>
                 </div>
               </div>
               <div>
                 <label className="label">Nouveau mot de passe</label>
-                <div className="relative">
-                  <input
-                    type={showNewPassword ? 'text' : 'password'}
-                    className="input pr-10"
-                    placeholder="Minimum 8 caractères"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary"
-                    aria-label="Afficher le nouveau mot de passe"
-                  >
-                    {showNewPassword ? <IconEyeOff size={15} /> : <IconEye size={15} />}
-                  </button>
-                </div>
-              </div>
-              <div>
-                <label className="label">Confirmer le nouveau mot de passe</label>
                 <input type="password" className="input" placeholder="••••••••" />
               </div>
-              <div className="flex justify-end">
-                <button onClick={handleSave} className="btn-primary">
-                  {saved ? <><IconCheck size={15} /> Mis à jour</> : 'Mettre à jour'}
-                </button>
+              <div>
+                <label className="label">Confirmer le mot de passe</label>
+                <input type="password" className="input" placeholder="••••••••" />
               </div>
+              <button onClick={handleSave} className="btn-primary flex items-center gap-2 px-5 py-2.5">
+                {saved && <IconCheck size={16} />}
+                {saved ? 'Modifié !' : 'Modifier le mot de passe'}
+              </button>
             </div>
           )}
 
-          {/* ── Notifications ── */}
+          {/* Notifications */}
           {tab === 2 && (
-            <div className="card space-y-1">
-              <h2 className="font-semibold text-text-primary flex items-center gap-2 mb-4">
-                <IconBell size={17} className="text-primary" />
-                Préférences de notifications
-              </h2>
+            <div className="card space-y-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center">
+                  <IconBell size={20} className="text-text-secondary" />
+                </div>
+                <h2 className="font-semibold text-text-primary">Préférences de notifications</h2>
+              </div>
               {[
-                { key: 'verificationConfirmed', label: 'Vérification confirmée', desc: 'Quand une institution confirme votre expérience ou diplôme' },
-                { key: 'verificationRejected',  label: 'Vérification rejetée',   desc: 'Quand une institution rejette votre demande' },
-                { key: 'profileViews',          label: 'Vues du profil',         desc: 'Résumé hebdomadaire des vues de votre profil' },
-                { key: 'newsletter',            label: 'Newsletter bcarte',      desc: 'Actualités et nouvelles fonctionnalités' },
-              ].map(({ key, label, desc }) => (
-                <div key={key} className="flex items-center justify-between py-4 border-b border-[#F3F4F6] last:border-0">
+                { key: 'verificationConfirmed', label: 'Vérification confirmée',   desc: 'Quand une entreprise confirme votre expérience' },
+                { key: 'verificationRejected',  label: 'Vérification rejetée',     desc: 'Quand une vérification est refusée' },
+                { key: 'profileViews',          label: 'Vues de profil',           desc: 'Rapport hebdomadaire des vues' },
+                { key: 'newsletter',            label: 'Newsletter bcarte',        desc: 'Actualités et conseils' },
+              ].map(n => (
+                <div key={n.key} className="flex items-center justify-between py-2 border-b border-[#F3F4F6] last:border-0">
                   <div>
-                    <p className="text-sm font-medium text-text-primary">{label}</p>
-                    <p className="text-xs text-text-tertiary mt-0.5">{desc}</p>
+                    <p className="text-sm font-medium text-text-primary">{n.label}</p>
+                    <p className="text-xs text-text-secondary">{n.desc}</p>
                   </div>
                   <button
-                    onClick={() => setNotifs(p => ({ ...p, [key]: !p[key as keyof typeof p] }))}
-                    className={`w-11 h-6 rounded-full transition-colors relative flex-shrink-0 ml-4 ${notifs[key as keyof typeof notifs] ? 'bg-primary' : 'bg-[#E5E7EB]'}`}
-                    role="switch"
-                    aria-checked={notifs[key as keyof typeof notifs]}
-                    aria-label={label}
+                    onClick={() => setNotifs({...notifs, [n.key]: !notifs[n.key as keyof typeof notifs]})}
+                    className={`w-10 h-5.5 rounded-full transition-colors relative ${notifs[n.key as keyof typeof notifs] ? 'bg-primary' : 'bg-[#E5E7EB]'}`}
+                    style={{ width: 40, height: 22 }}
                   >
-                    <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${notifs[key as keyof typeof notifs] ? 'translate-x-6' : 'translate-x-1'}`} />
+                    <span className={`absolute top-0.5 w-4.5 h-4.5 rounded-full bg-white shadow transition-all ${notifs[n.key as keyof typeof notifs] ? 'right-0.5' : 'left-0.5'}`}
+                      style={{ width: 18, height: 18 }} />
                   </button>
                 </div>
               ))}
             </div>
           )}
 
-          {/* ── Confidentialité ── */}
+          {/* Confidentialité */}
           {tab === 3 && (
-            <div className="space-y-4">
-              <div className="card space-y-1">
-                <h2 className="font-semibold text-text-primary flex items-center gap-2 mb-4">
-                  <IconShield size={17} className="text-primary" />
-                  Visibilité du profil
-                </h2>
-                {[
-                  { label: 'Profil visible dans l\'annuaire', desc: 'Les recruteurs et visiteurs peuvent vous trouver via /explore' },
-                  { label: 'Afficher le nombre de vues',      desc: 'Visible sur votre tableau de bord uniquement' },
-                  { label: 'Profil indexé par les moteurs',   desc: 'Votre profil peut apparaître dans les résultats Google' },
-                ].map(({ label, desc }, i) => (
-                  <div key={i} className="flex items-center justify-between py-4 border-b border-[#F3F4F6] last:border-0">
-                    <div>
-                      <p className="text-sm font-medium text-text-primary">{label}</p>
-                      <p className="text-xs text-text-tertiary mt-0.5">{desc}</p>
-                    </div>
-                    <button
-                      className="w-11 h-6 rounded-full bg-primary relative flex-shrink-0 ml-4"
-                      role="switch"
-                      aria-checked={true}
-                      aria-label={label}
-                    >
-                      <span className="absolute top-1 w-4 h-4 bg-white rounded-full shadow translate-x-6" />
-                    </button>
-                  </div>
-                ))}
+            <div className="card space-y-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-[#F3F4F6] flex items-center justify-center">
+                  <IconShield size={20} className="text-text-secondary" />
+                </div>
+                <h2 className="font-semibold text-text-primary">Confidentialité</h2>
               </div>
-
-              <div className="card text-sm text-text-secondary space-y-2">
-                <p className="font-semibold text-text-primary text-[13px]">Vos données vous appartiennent</p>
-                <p>Vous pouvez exporter ou supprimer vos données à tout moment. bcarte ne vend jamais vos informations à des tiers.</p>
-                <button className="text-primary font-medium hover:underline text-xs mt-1">
-                  Télécharger mes données →
+              <div className="flex items-center justify-between py-2">
+                <div>
+                  <p className="text-sm font-medium text-text-primary">Profil public</p>
+                  <p className="text-xs text-text-secondary">Votre profil est visible dans les résultats de recherche</p>
+                </div>
+                <div className="w-10 h-5 rounded-full bg-primary relative" style={{ width: 40, height: 22 }}>
+                  <span className="absolute right-0.5 top-0.5 w-4.5 h-4.5 rounded-full bg-white shadow" style={{ width: 18, height: 18 }} />
+                </div>
+              </div>
+              <div className="pt-4 border-t border-[#F3F4F6]">
+                <p className="text-sm font-medium text-danger mb-2">Zone de danger</p>
+                <button className="text-sm text-danger border border-danger/30 rounded-lg px-4 py-2 hover:bg-red-50 transition-colors">
+                  Supprimer mon compte
                 </button>
               </div>
             </div>
           )}
-
         </div>
       </main>
       <BottomNav />
