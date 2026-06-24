@@ -10,6 +10,7 @@ const COOKIE = 'bcarte_session'
 export interface SessionPayload {
   userId: string
   role: 'PROFESSIONNEL' | 'ORGANISATION'
+  [key: string]: unknown
 }
 
 export async function createSession(payload: SessionPayload) {

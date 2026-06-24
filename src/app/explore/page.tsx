@@ -137,7 +137,7 @@ const MOCK_ORGS: OrgCardData[] = [
   },
 ]
 
-const ORG_SECTORS = [...new Set(MOCK_ORGS.map(o => o.sector))].sort()
+const ORG_SECTORS = Array.from(new Set(MOCK_ORGS.map(o => o.sector))).sort()
 const ORG_TYPES = ['Entreprise', 'Université', 'École', 'ONG', 'Institution']
 
 export default function ExplorePage() {
