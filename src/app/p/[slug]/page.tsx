@@ -4,36 +4,33 @@ import { useState } from 'react'
 import Link from 'next/link'
 import {
   IconMapPin, IconCircleCheck, IconBrandWhatsapp, IconMail,
-  IconLink, IconExternalLink, IconShare, IconCheck,
-  IconBriefcase, IconSchool, IconFileText,
+  IconExternalLink, IconCheck, IconArrowUpRight,
 } from '@tabler/icons-react'
 import { MOCK_PROFILES, CURRENT_USER } from '@/lib/mock-data'
 import { AvailabilityStatus } from '@/lib/types'
 
-const AVAILABILITY_CONFIG: Record<AvailabilityStatus, { dot: string; label: string; pill: string }> = {
-  disponible:   { dot: 'bg-success animate-pulse', label: 'Disponible',   pill: 'bg-success-light text-success border border-[#A7F3D0]' },
-  en_veille:    { dot: 'bg-[#F59E0B]',             label: 'En veille',    pill: 'bg-[#FFFBEB] text-[#D97706] border border-[#FDE68A]' },
-  indisponible: { dot: 'bg-[#D1D5DB]',             label: 'Indisponible', pill: 'bg-[#F3F4F6] text-text-secondary border border-[#E5E7EB]' },
+const AVAIL: Record<AvailabilityStatus, { dot: string; label: string }> = {
+  disponible:   { dot: '#059669', label: 'Disponible' },
+  en_veille:    { dot: '#F59E0B', label: 'En veille'  },
+  indisponible: { dot: '#9CA3AF', label: 'Indisponible' },
 }
 
-function getInitials(name: string) {
+function initials(name: string) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
-function formatDate(dateStr: string) {
-  const [year, month] = dateStr.split('-')
-  const months = ['jan.', 'fév.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sep.', 'oct.', 'nov.', 'déc.']
-  return `${months[parseInt(month) - 1]} ${year}`
+function fmtDate(d: string) {
+  const [y, m] = d.split('-')
+  return ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc'][+m - 1] + ' ' + y
 }
 
-function getDuration(start: string, end: string | null, current: boolean) {
-  const startDate = new Date(start)
-  const endDate = current ? new Date() : end ? new Date(end) : new Date()
-  const months = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth())
-  if (months < 12) return `${months} mois`
-  const years = Math.floor(months / 12)
-  const rem = months % 12
-  return rem > 0 ? `${years} an${years > 1 ? 's' : ''} ${rem} mois` : `${years} an${years > 1 ? 's' : ''}`
+function duration(start: string, end: string | null, current: boolean) {
+  const s = new Date(start)
+  const e = current ? new Date() : new Date(end ?? start)
+  const m = (e.getFullYear() - s.getFullYear()) * 12 + e.getMonth() - s.getMonth()
+  if (m < 12) return `${m} mois`
+  const y = Math.floor(m / 12), r = m % 12
+  return r ? `${y} an${y > 1 ? 's' : ''} ${r} mois` : `${y} an${y > 1 ? 's' : ''}`
 }
 
 export default function PublicProfilePage({ params }: { params: { slug: string } }) {
@@ -45,176 +42,114 @@ export default function PublicProfilePage({ params }: { params: { slug: string }
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-[#F8F7FF] flex items-center justify-center px-5">
-        <div className="text-center">
-          <p className="text-5xl font-extrabold text-primary mb-3">404</p>
-          <p className="text-text-secondary mb-6">Ce profil n&apos;existe pas ou a été supprimé.</p>
-          <Link href="/explore" className="btn-primary">Explorer les profils</Link>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <p className="text-text-tertiary text-sm">Ce profil n&apos;existe pas.</p>
+          <Link href="/explore" className="text-primary text-sm font-medium hover:underline">Explorer les profils →</Link>
         </div>
       </div>
     )
   }
 
-  const avail = AVAILABILITY_CONFIG[profile.availabilityStatus]
-  const verifiedCount = [
-    ...profile.experiences.filter(e => e.verificationStatus === 'confirmée'),
-    ...profile.education.filter(e => e.verificationStatus === 'confirmée'),
-  ].length
+  const av = AVAIL[profile.availabilityStatus]
 
-  const handleCopy = () => {
+  const copy = () => {
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F7FF]">
-      {/* Navbar */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-[#E5E7EB] sticky top-0 z-20 px-5 py-3.5 flex items-center justify-between">
-        <Link href="/" className="text-xl font-extrabold text-primary tracking-tight">bcarte</Link>
-        <Link
-          href="/register"
-          className="bg-primary hover:bg-primary-hover text-white text-xs font-semibold px-4 py-2 rounded-btn transition-colors"
-        >
-          Créer mon profil gratuit
+    <div className="min-h-screen bg-white">
+
+      {/* Nav — ultra-minimal */}
+      <header className="px-6 py-4 flex items-center justify-between border-b border-[#F3F4F6]">
+        <Link href="/" className="text-lg font-extrabold text-primary">bcarte</Link>
+        <Link href="/register" className="text-xs font-semibold text-text-secondary hover:text-text-primary transition-colors">
+          Créer mon profil →
         </Link>
       </header>
 
-      <main className="max-w-[680px] mx-auto px-4 sm:px-6 py-8 space-y-4">
+      <main className="max-w-[600px] mx-auto px-6 py-12 space-y-12">
 
-        {/* ── HERO ── */}
-        <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-[#E5E7EB]/60">
-          {/* Banner with mesh gradient */}
-          <div className="h-36 relative overflow-hidden"
-            style={{ background: 'linear-gradient(135deg, #7C5CBF 0%, #9B7FD4 40%, #C9A84C 100%)' }}>
-            {/* Subtle dot pattern */}
-            <div className="absolute inset-0 opacity-10"
-              style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+        {/* ── IDENTITY ── */}
+        <div className="flex items-start gap-5">
+          {/* Avatar */}
+          <div className="w-[72px] h-[72px] rounded-2xl bg-primary flex-shrink-0 flex items-center justify-center text-white font-extrabold text-xl">
+            {initials(profile.fullName)}
           </div>
 
-          <div className="px-6 pb-7">
-            {/* Avatar row */}
-            <div className="flex items-end justify-between -mt-12 mb-5">
-              {/* Avatar */}
-              <div className="relative">
-                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary to-[#6B4DAE] border-[3px] border-white shadow-lg flex items-center justify-center text-white text-2xl font-extrabold">
-                  {getInitials(profile.fullName)}
-                </div>
-                {profile.verified && (
-                  <div className="absolute -bottom-1.5 -right-1.5 w-7 h-7 bg-white rounded-full flex items-center justify-center shadow-sm border border-[#E5E7EB]">
-                    <IconCircleCheck size={18} className="text-success fill-success-light" />
-                  </div>
-                )}
-              </div>
-
-              {/* CTA buttons */}
-              <div className="flex gap-2 mt-12">
-                {profile.whatsapp && (
-                  <a
-                    href={`https://wa.me/${profile.whatsapp.replace(/[\s+]/g, '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 bg-whatsapp hover:bg-[#1FAD55] text-white font-semibold text-sm px-4 py-2.5 rounded-btn transition-colors shadow-sm"
-                  >
-                    <IconBrandWhatsapp size={16} />
-                    <span className="hidden sm:inline">WhatsApp</span>
-                  </a>
-                )}
-                {profile.contactEmail && (
-                  <a
-                    href={`mailto:${profile.contactEmail}`}
-                    className="flex items-center gap-1.5 bg-primary hover:bg-primary-hover text-white font-semibold text-sm px-4 py-2.5 rounded-btn transition-colors shadow-sm"
-                  >
-                    <IconMail size={16} />
-                    <span className="hidden sm:inline">Email</span>
-                  </a>
-                )}
-              </div>
+          {/* Info */}
+          <div className="flex-1 pt-0.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h1 className="text-xl font-bold text-text-primary">{profile.fullName}</h1>
+              {profile.verified && (
+                <IconCircleCheck size={18} className="text-success flex-shrink-0" />
+              )}
             </div>
-
-            {/* Name & title */}
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h1 className="text-2xl font-extrabold text-text-primary leading-tight">{profile.fullName}</h1>
-                {profile.verified && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-success bg-success-light border border-[#A7F3D0] px-2.5 py-1 rounded-badge">
-                    <IconCircleCheck size={12} />
-                    Profil vérifié
-                  </span>
-                )}
-              </div>
-
-              <p className="text-base font-medium text-text-secondary">{profile.title}</p>
-
-              <div className="flex items-center gap-3 flex-wrap pt-0.5">
-                <span className="flex items-center gap-1.5 text-sm text-text-secondary">
-                  <IconMapPin size={14} className="text-text-tertiary" />
-                  {profile.city}, {profile.country}
-                </span>
-                {profile.externalLink && (
-                  <a
-                    href={profile.externalLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-hover font-medium transition-colors"
-                  >
-                    <IconLink size={14} />
-                    Portfolio
-                    <IconExternalLink size={11} className="opacity-60" />
-                  </a>
-                )}
-              </div>
+            <p className="text-text-secondary mt-1 text-[15px]">{profile.title}</p>
+            <div className="flex items-center gap-3 mt-2 flex-wrap">
+              <span className="text-text-tertiary text-sm flex items-center gap-1">
+                <IconMapPin size={13} />
+                {profile.city}, {profile.country}
+              </span>
+              {profile.externalLink && (
+                <a
+                  href={profile.externalLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-text-tertiary hover:text-primary text-sm flex items-center gap-1 transition-colors"
+                >
+                  <IconExternalLink size={13} />
+                  Portfolio
+                </a>
+              )}
             </div>
-
-            {/* Bottom pills row */}
-            <div className="flex items-center gap-2 flex-wrap mt-4 pt-4 border-t border-[#F3F4F6]">
-              {/* Availability */}
-              <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-badge ${avail.pill}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${avail.dot}`} />
-                {avail.label}
-              </span>
-
-              {/* Languages */}
-              {profile.languages.map(lang => (
-                <span key={lang} className="text-xs font-medium text-text-secondary bg-[#F3F4F6] px-2.5 py-1.5 rounded-badge">
-                  {lang}
-                </span>
-              ))}
-
-              {/* Sector */}
-              <span className="text-xs font-medium text-secondary bg-secondary-light border border-secondary-border px-2.5 py-1.5 rounded-badge ml-auto">
-                {profile.sector}
-              </span>
+            {/* Availability */}
+            <div className="flex items-center gap-1.5 mt-3">
+              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: av.dot }} />
+              <span className="text-xs text-text-secondary font-medium">{av.label}</span>
+              {profile.languages.length > 0 && (
+                <>
+                  <span className="text-[#E5E7EB] mx-1">·</span>
+                  <span className="text-xs text-text-tertiary">{profile.languages.join(' · ')}</span>
+                </>
+              )}
             </div>
           </div>
         </div>
 
-        {/* ── STATS STRIP ── */}
-        {verifiedCount > 0 && (
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { label: 'Expériences', value: profile.experiences.length, icon: IconBriefcase },
-              { label: 'Formations', value: profile.education.length, icon: IconSchool },
-              { label: 'Vérifications', value: verifiedCount, icon: IconCircleCheck, accent: true },
-            ].map(({ label, value, icon: Icon, accent }) => (
-              <div key={label} className={`bg-white rounded-xl border p-4 text-center shadow-sm ${accent ? 'border-[#A7F3D0]' : 'border-[#E5E7EB]/60'}`}>
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center mx-auto mb-2 ${accent ? 'bg-success-light' : 'bg-primary-light'}`}>
-                  <Icon size={16} className={accent ? 'text-success' : 'text-primary'} />
-                </div>
-                <p className={`text-xl font-extrabold ${accent ? 'text-success' : 'text-text-primary'}`}>{value}</p>
-                <p className="text-[11px] text-text-tertiary mt-0.5 font-medium">{label}</p>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* ── CONTACT ── */}
+        <div className="flex gap-3">
+          {profile.whatsapp && (
+            <a
+              href={`https://wa.me/${profile.whatsapp.replace(/[\s+]/g, '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 flex items-center justify-center gap-2 bg-whatsapp text-white font-semibold text-sm py-3 rounded-xl hover:opacity-90 transition-opacity"
+            >
+              <IconBrandWhatsapp size={17} />
+              WhatsApp
+            </a>
+          )}
+          {profile.contactEmail && (
+            <a
+              href={`mailto:${profile.contactEmail}`}
+              className="flex-1 flex items-center justify-center gap-2 bg-[#F3F4F6] hover:bg-primary-light text-text-primary hover:text-primary font-semibold text-sm py-3 rounded-xl transition-colors"
+            >
+              <IconMail size={17} />
+              Email
+            </a>
+          )}
+        </div>
 
         {/* ── SKILLS ── */}
         {profile.skills.length > 0 && (
-          <section className="bg-white rounded-2xl border border-[#E5E7EB]/60 shadow-sm p-6">
-            <h2 className="text-sm font-bold text-text-tertiary uppercase tracking-widest mb-4">Compétences</h2>
+          <section>
+            <p className="text-[11px] font-bold text-text-tertiary uppercase tracking-[0.1em] mb-3">Compétences</p>
             <div className="flex flex-wrap gap-2">
-              {profile.skills.map(skill => (
-                <span key={skill.id} className="bg-primary-light text-primary text-sm font-semibold px-4 py-2 rounded-badge border border-primary-border hover:bg-[#EDE9FE] transition-colors cursor-default">
-                  {skill.label}
+              {profile.skills.map(s => (
+                <span key={s.id} className="text-sm text-text-primary bg-[#F3F4F6] px-3 py-1.5 rounded-lg font-medium">
+                  {s.label}
                 </span>
               ))}
             </div>
@@ -223,45 +158,31 @@ export default function PublicProfilePage({ params }: { params: { slug: string }
 
         {/* ── EXPERIENCES ── */}
         {profile.experiences.length > 0 && (
-          <section className="bg-white rounded-2xl border border-[#E5E7EB]/60 shadow-sm p-6">
-            <h2 className="text-sm font-bold text-text-tertiary uppercase tracking-widest mb-5">Expériences professionnelles</h2>
-            <div className="space-y-0">
-              {profile.experiences.map((exp, i) => (
-                <div key={exp.id} className="flex gap-4 relative">
-                  {/* Timeline line */}
-                  {i < profile.experiences.length - 1 && (
-                    <div className="absolute left-[17px] top-10 bottom-0 w-px bg-[#F3F4F6]" />
-                  )}
-                  {/* Dot */}
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 z-10 mt-0.5 font-bold text-sm ${exp.verificationStatus === 'confirmée' ? 'bg-success-light text-success' : 'bg-primary-light text-primary'}`}>
-                    {exp.organization[0].toUpperCase()}
+          <section>
+            <p className="text-[11px] font-bold text-text-tertiary uppercase tracking-[0.1em] mb-5">Expérience</p>
+            <div className="space-y-6">
+              {profile.experiences.map(exp => (
+                <div key={exp.id} className="flex gap-4">
+                  {/* Org logo placeholder */}
+                  <div className="w-9 h-9 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-text-secondary font-bold text-sm flex-shrink-0 mt-0.5">
+                    {exp.organization[0]}
                   </div>
-                  {/* Content */}
-                  <div className={`flex-1 pb-6 ${i === profile.experiences.length - 1 ? 'pb-0' : ''}`}>
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="font-bold text-text-primary text-[15px] leading-snug">{exp.title}</p>
-                        <p className="text-text-secondary text-sm font-medium mt-0.5">{exp.organization}</p>
-                      </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-semibold text-text-primary text-[15px]">{exp.title}</p>
                       {exp.verificationStatus === 'confirmée' && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-success bg-success-light border border-[#A7F3D0] px-2 py-1 rounded-badge flex-shrink-0">
-                          <IconCircleCheck size={11} />
+                        <span className="flex items-center gap-1 text-[11px] font-semibold text-success flex-shrink-0">
+                          <IconCircleCheck size={13} />
                           Vérifié
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <p className="text-xs text-text-tertiary">
-                        {formatDate(exp.startDate)} — {exp.current ? "Aujourd'hui" : exp.endDate ? formatDate(exp.endDate) : ''}
-                      </p>
-                      <span className="text-text-tertiary opacity-40">·</span>
-                      <p className="text-xs text-text-tertiary">
-                        {getDuration(exp.startDate, exp.endDate, exp.current)}
-                      </p>
-                      {exp.current && (
-                        <span className="text-[10px] font-semibold text-primary bg-primary-light px-1.5 py-0.5 rounded">En poste</span>
-                      )}
-                    </div>
+                    <p className="text-text-secondary text-sm mt-0.5">{exp.organization}</p>
+                    <p className="text-text-tertiary text-xs mt-1">
+                      {fmtDate(exp.startDate)} — {exp.current ? "Aujourd'hui" : exp.endDate ? fmtDate(exp.endDate) : ''}
+                      <span className="mx-1.5 opacity-40">·</span>
+                      {duration(exp.startDate, exp.endDate, exp.current)}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -271,32 +192,27 @@ export default function PublicProfilePage({ params }: { params: { slug: string }
 
         {/* ── EDUCATION ── */}
         {profile.education.length > 0 && (
-          <section className="bg-white rounded-2xl border border-[#E5E7EB]/60 shadow-sm p-6">
-            <h2 className="text-sm font-bold text-text-tertiary uppercase tracking-widest mb-5">Formation</h2>
-            <div className="space-y-0">
-              {profile.education.map((edu, i) => (
-                <div key={edu.id} className="flex gap-4 relative">
-                  {i < profile.education.length - 1 && (
-                    <div className="absolute left-[17px] top-10 bottom-0 w-px bg-[#F3F4F6]" />
-                  )}
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 z-10 mt-0.5 font-bold text-sm ${edu.verificationStatus === 'confirmée' ? 'bg-success-light text-success' : 'bg-secondary-light text-secondary'}`}>
-                    {edu.institution[0].toUpperCase()}
+          <section>
+            <p className="text-[11px] font-bold text-text-tertiary uppercase tracking-[0.1em] mb-5">Formation</p>
+            <div className="space-y-6">
+              {profile.education.map(edu => (
+                <div key={edu.id} className="flex gap-4">
+                  <div className="w-9 h-9 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-text-secondary font-bold text-sm flex-shrink-0 mt-0.5">
+                    {edu.institution[0]}
                   </div>
-                  <div className={`flex-1 pb-6 ${i === profile.education.length - 1 ? 'pb-0' : ''}`}>
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="font-bold text-text-primary text-[15px] leading-snug">{edu.degree}</p>
-                        <p className="text-text-secondary text-sm font-medium mt-0.5">{edu.institution}</p>
-                      </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-semibold text-text-primary text-[15px]">{edu.degree}</p>
                       {edu.verificationStatus === 'confirmée' && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-success bg-success-light border border-[#A7F3D0] px-2 py-1 rounded-badge flex-shrink-0">
-                          <IconCircleCheck size={11} />
+                        <span className="flex items-center gap-1 text-[11px] font-semibold text-success flex-shrink-0">
+                          <IconCircleCheck size={13} />
                           Vérifié
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-text-tertiary mt-1.5">
-                      {formatDate(edu.startDate)} — {edu.current ? "Aujourd'hui" : edu.endDate ? formatDate(edu.endDate) : ''}
+                    <p className="text-text-secondary text-sm mt-0.5">{edu.institution}</p>
+                    <p className="text-text-tertiary text-xs mt-1">
+                      {fmtDate(edu.startDate)} — {edu.current ? "Aujourd'hui" : edu.endDate ? fmtDate(edu.endDate) : ''}
                     </p>
                   </div>
                 </div>
@@ -307,25 +223,22 @@ export default function PublicProfilePage({ params }: { params: { slug: string }
 
         {/* ── PUBLICATIONS ── */}
         {profile.publications && profile.publications.length > 0 && (
-          <section className="bg-white rounded-2xl border border-[#E5E7EB]/60 shadow-sm p-6">
-            <h2 className="text-sm font-bold text-text-tertiary uppercase tracking-widest mb-4">Publications</h2>
-            <div className="space-y-3">
+          <section>
+            <p className="text-[11px] font-bold text-text-tertiary uppercase tracking-[0.1em] mb-4">Publications</p>
+            <div className="space-y-2">
               {profile.publications.map(pub => (
                 <a
                   key={pub.id}
                   href={pub.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-start gap-4 p-4 rounded-xl border border-[#F3F4F6] hover:border-primary-border hover:bg-primary-light/30 transition-all group"
+                  className="flex items-center justify-between gap-3 p-3.5 rounded-xl hover:bg-[#F3F4F6] transition-colors group"
                 >
-                  <div className="w-9 h-9 rounded-xl bg-secondary-light flex items-center justify-center flex-shrink-0">
-                    <IconFileText size={16} className="text-secondary" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-text-primary group-hover:text-primary transition-colors truncate">{pub.title}</p>
+                    <p className="text-xs text-text-tertiary capitalize mt-0.5">{pub.type}</p>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-text-primary text-sm leading-snug group-hover:text-primary transition-colors">{pub.title}</p>
-                    <span className="text-[11px] font-semibold text-secondary bg-secondary-light px-2 py-0.5 rounded-badge mt-1.5 inline-block capitalize">{pub.type}</span>
-                  </div>
-                  <IconExternalLink size={14} className="text-text-tertiary group-hover:text-primary mt-0.5 flex-shrink-0 transition-colors" />
+                  <IconArrowUpRight size={15} className="text-text-tertiary group-hover:text-primary flex-shrink-0 transition-colors" />
                 </a>
               ))}
             </div>
@@ -333,45 +246,28 @@ export default function PublicProfilePage({ params }: { params: { slug: string }
         )}
 
         {/* ── SHARE ── */}
-        <div className="bg-white rounded-2xl border border-[#E5E7EB]/60 shadow-sm p-5 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary-light rounded-xl flex items-center justify-center flex-shrink-0">
-              <IconShare size={18} className="text-primary" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-text-primary">Partager ce profil</p>
-              <p className="text-xs text-text-tertiary mt-0.5 font-mono">bcarte.io/p/{profile.publicUrlSlug}</p>
-            </div>
-          </div>
+        <div className="flex items-center justify-between py-5 border-t border-[#F3F4F6]">
+          <p className="text-xs text-text-tertiary font-mono">bcarte.io/p/{profile.publicUrlSlug}</p>
           <button
-            onClick={handleCopy}
-            className={`flex items-center gap-2 text-sm font-semibold px-4 py-2.5 rounded-btn transition-all flex-shrink-0 ${
-              copied
-                ? 'bg-success-light text-success border border-[#A7F3D0]'
-                : 'bg-[#F3F4F6] hover:bg-primary-light text-text-primary hover:text-primary border border-transparent'
+            onClick={copy}
+            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg transition-all ${
+              copied ? 'bg-success-light text-success' : 'bg-[#F3F4F6] text-text-secondary hover:text-text-primary'
             }`}
           >
-            {copied ? <IconCheck size={15} /> : <IconShare size={15} />}
-            {copied ? 'Copié !' : 'Copier'}
+            {copied ? <IconCheck size={13} /> : null}
+            {copied ? 'Copié' : 'Copier le lien'}
           </button>
         </div>
 
-        {/* ── FOOTER CTA ── */}
-        <div className="bg-gradient-to-br from-primary to-[#6B4DAE] rounded-2xl p-6 text-center text-white">
-          <p className="text-base font-bold mb-1">Vous aussi, créez votre profil vérifié</p>
-          <p className="text-white/70 text-sm mb-4">Rejoignez des milliers de professionnels africains sur bcarte</p>
-          <Link
-            href="/register"
-            className="inline-flex items-center gap-2 bg-white text-primary font-bold text-sm px-5 py-2.5 rounded-btn hover:bg-primary-light transition-colors"
-          >
-            Créer mon profil gratuit →
-          </Link>
+        {/* ── FOOTER ── */}
+        <div className="text-center pb-6">
+          <p className="text-xs text-text-tertiary">
+            Propulsé par{' '}
+            <Link href="/" className="font-bold text-primary">bcarte</Link>
+            {' '}· Profils professionnels vérifiés
+          </p>
         </div>
 
-        {/* Tiny footer */}
-        <p className="text-center text-xs text-text-tertiary pb-4">
-          Propulsé par <Link href="/" className="font-bold text-primary">bcarte</Link> · Identité professionnelle vérifiée
-        </p>
       </main>
     </div>
   )
