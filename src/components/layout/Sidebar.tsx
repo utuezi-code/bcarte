@@ -11,13 +11,16 @@ import { CURRENT_USER } from '@/lib/mock-data'
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Tableau de bord', icon: IconLayoutDashboard, exact: true },
   { href: '/dashboard/profile', label: 'Mon profil', icon: IconUser },
+  { href: '/dashboard/org', label: 'Mon organisation', icon: IconBuilding },
   { href: '/dashboard/cv', label: 'Générer CV', icon: IconFileText },
   { href: '/explore', label: 'Explorer', icon: IconCompass },
-  { href: '/recruiter', label: 'Espace recruteur', icon: IconBriefcase },
-  { href: '/org/dashboard', label: 'Mon organisation', icon: IconBuilding },
   { href: '/dashboard/nfc', label: 'Carte NFC', icon: IconCreditCard },
   { href: '/settings', label: 'Paramètres', icon: IconSettings },
 ]
+
+// Accessible séparément pour les recruteurs/institutions
+// /recruiter → recherche de talents
+// /org/dashboard → gestion de l'organisation (admin)
 
 function getInitials(name: string) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
