@@ -1,244 +1,178 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
-  IconCircleCheck, IconX, IconClock, IconUsers, IconBuilding,
-  IconBriefcase, IconExternalLink, IconPlus, IconTrash, IconPencil,
-  IconMapPin, IconCheck, IconArrowUpRight, IconFileText,
-  IconEye, IconChartBar, IconSend, IconStack2,
+  IconCircleCheck, IconX, IconClock, IconUsers, IconBriefcase,
+  IconExternalLink, IconPlus, IconTrash, IconEye, IconLoader2,
 } from '@tabler/icons-react'
-import { MOCK_VERIFICATION_REQUESTS, MOCK_PROFILES } from '@/lib/mock-data'
 import Sidebar from '@/components/layout/Sidebar'
 import BottomNav from '@/components/layout/BottomNav'
 
-const ORG = {
-  slug: 'talent-africa-group',
-  name: 'Talent Africa Group',
-  initials: 'TA',
-  tagline: 'Cabinet de recrutement spécialisé en Afrique de l\'Ouest',
-  description: 'Talent Africa Group connecte les meilleurs talents tech, finance et management aux entreprises qui façonnent l\'avenir de l\'Afrique.',
-  city: 'Dakar',
-  country: 'Sénégal',
-  website: 'talentagricagroup.com',
-  websiteUrl: 'https://talentagricagroup.com',
-  email: 'contact@talentagricagroup.com',
-  whatsapp: '+221 33 123 4567',
-  verified: true,
-  sector: 'Recrutement & RH',
-  size: '10–50 employés',
-  founded: '2019',
-}
-
-const INIT_MEMBERS = [
-  { id: 'm1', name: 'Ibrahima Sow', title: 'DG & Fondateur', email: 'i.sow@talentagricagroup.com', initials: 'IS', role: 'admin' as const, verified: true },
-  { id: 'm2', name: 'Khadija Fall', title: 'Responsable recrutement tech', email: 'k.fall@talentagricagroup.com', initials: 'KF', role: 'member' as const, verified: true },
-  { id: 'm3', name: 'Moussa Dieng', title: 'Consultant senior', email: 'm.dieng@talentagricagroup.com', initials: 'MD', role: 'member' as const, verified: false },
-]
-
-const INIT_OFFERS = [
-  {
-    id: 'o1',
-    title: 'Développeur Full Stack React / Node.js',
-    location: 'Dakar, Sénégal',
-    type: 'CDI',
-    posted: '2025-06-20',
-    description: 'Rejoignez une startup en forte croissance pour développer des solutions SaaS à destination des PME africaines.',
-    applications: 12,
-  },
-  {
-    id: 'o2',
-    title: 'Responsable Marketing Digital',
-    location: 'Abidjan, Côte d\'Ivoire',
-    type: 'CDI',
-    posted: '2025-06-15',
-    description: 'Pilotez la stratégie digitale d\'un groupe bancaire panafricain.',
-    applications: 7,
-  },
-  {
-    id: 'o3',
-    title: 'Analyste Financier Senior',
-    location: 'Paris, France · Remote possible',
-    type: 'CDI',
-    posted: '2025-06-12',
-    description: 'Pour un fonds d\'investissement focalisé sur l\'Afrique sub-saharienne.',
-    applications: 4,
-  },
-]
-
-const STATUS_MAP = {
-  confirmée:    { label: 'Confirmée',    cls: 'text-success bg-success-light' },
-  rejetée:      { label: 'Rejetée',      cls: 'text-danger bg-red-50' },
-  en_attente:   { label: 'En attente',   cls: 'text-[#D97706] bg-[#FFFBEB]' },
-  non_demandée: { label: 'Non demandée', cls: 'text-text-tertiary bg-[#F3F4F6]' },
-}
-
 const TABS = ['Aperçu', 'Vérifications', 'Offres', 'Équipe', 'Profil']
 
-function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
-}
-
 export default function OrgDashboardPage() {
-  const [tab, setTab] = useState(0)
-  const [saved, setSaved] = useState(false)
-  const [members, setMembers] = useState(INIT_MEMBERS)
-  const [offers, setOffers] = useState(INIT_OFFERS)
-  const [requests, setRequests] = useState(MOCK_VERIFICATION_REQUESTS)
-  const [inviteEmail, setInviteEmail] = useState('')
+  const [tab, setTab]                   = useState(0)
+  const [org, setOrg]                   = useState<any>(null)
+  const [verifications, setVerifications] = useState<any[]>([])
+  const [offers, setOffers]             = useState<any[]>([])
+  const [team, setTeam]                 = useState<any[]>([])
+  const [loading, setLoading]           = useState(true)
+  const [newOffer, setNewOffer]         = useState({ title: '', location: '', type: 'CDI', description: '' })
   const [showOfferForm, setShowOfferForm] = useState(false)
-  const [newOffer, setNewOffer] = useState({ title: '', location: '', type: 'CDI', description: '' })
+  const [orgForm, setOrgForm]           = useState<any>({})
+  const [savingOrg, setSavingOrg]       = useState(false)
+  const [savedOrg, setSavedOrg]         = useState(false)
 
-  const pending = requests.filter(r => r.status === 'en_attente')
-  const history = requests.filter(r => r.status !== 'en_attente')
-  const totalApplications = offers.reduce((acc, o) => acc + o.applications, 0)
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/org').then(r => r.ok ? r.json() : null),
+      fetch('/api/org/verifications').then(r => r.ok ? r.json() : []),
+      fetch('/api/org/offers').then(r => r.ok ? r.json() : []),
+      fetch('/api/org/team').then(r => r.ok ? r.json() : []),
+    ]).then(([o, v, of, t]) => {
+      setOrg(o)
+      setOrgForm({ name: o?.name ?? '', description: o?.description ?? '', sector: o?.sector ?? '', city: o?.city ?? '', country: o?.country ?? 'Sénégal', website: o?.website ?? '' })
+      setVerifications(v ?? [])
+      setOffers(of ?? [])
+      setTeam(t ?? [])
+      setLoading(false)
+    })
+  }, [])
 
-  const handleSave = () => { setSaved(true); setTimeout(() => setSaved(false), 2500) }
-
-  const handleVerif = (id: string, action: 'confirmée' | 'rejetée') => {
-    setRequests(prev => prev.map(r => r.id === id ? { ...r, status: action, resolvedAt: '2026-06-24' } : r))
+  const handleVerif = async (id: string, status: string) => {
+    await fetch('/api/org/verifications', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, status }),
+    })
+    setVerifications(verifications.map(v => v.id === id ? { ...v, status } : v))
   }
 
-  const handleInvite = () => {
-    if (!inviteEmail.trim()) return
-    const parts = inviteEmail.split('@')[0].split('.')
-    const name = parts.map(p => p[0]?.toUpperCase() + p.slice(1)).join(' ')
-    setMembers(prev => [...prev, {
-      id: `m${Date.now()}`, name, title: 'Nouveau membre', email: inviteEmail,
-      initials: parts.map(p => p[0]?.toUpperCase()).join('').slice(0, 2),
-      role: 'member' as const, verified: false,
-    }])
-    setInviteEmail('')
-  }
-
-  const addOffer = () => {
-    if (!newOffer.title.trim()) return
-    setOffers(prev => [{ id: `o${Date.now()}`, ...newOffer, posted: new Date().toISOString().split('T')[0], applications: 0 }, ...prev])
+  const handleAddOffer = async () => {
+    const data = await fetch('/api/org/offers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newOffer),
+    }).then(r => r.json())
+    setOffers([data, ...offers])
     setNewOffer({ title: '', location: '', type: 'CDI', description: '' })
     setShowOfferForm(false)
+  }
+
+  const handleDeleteOffer = async (id: string) => {
+    await fetch('/api/org/offers', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
+    setOffers(offers.filter(o => o.id !== id))
+  }
+
+  const handleSaveOrg = async () => {
+    setSavingOrg(true)
+    await fetch('/api/org', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orgForm),
+    })
+    setSavingOrg(false)
+    setSavedOrg(true)
+    setTimeout(() => setSavedOrg(false), 3000)
+  }
+
+  const pending = verifications.filter(v => v.status === 'EN_ATTENTE')
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-bg-light flex items-center justify-center">
+        <IconLoader2 size={28} className="animate-spin text-primary" />
+      </div>
+    )
   }
 
   return (
     <div className="min-h-screen bg-bg-light">
       <Sidebar />
       <main className="lg:pl-60 pb-16 lg:pb-0 min-h-screen">
-        <div className="max-w-4xl mx-auto px-5 py-6 lg:px-8 lg:py-8 space-y-6">
+        <div className="max-w-5xl mx-auto px-5 py-6 lg:px-8 lg:py-8 space-y-6">
 
-          {/* Header */}
-          <div className="flex items-start justify-between gap-4 flex-wrap">
+          {/* Header org */}
+          <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-[#0C0A18] flex items-center justify-center flex-shrink-0">
-                <span className="text-base font-extrabold text-white">{ORG.initials}</span>
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-xl"
+                style={{ backgroundColor: org?.logoColor ?? '#6C47FF' }}>
+                {(org?.name ?? 'O').slice(0, 2).toUpperCase()}
               </div>
               <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-xl font-bold text-text-primary">{ORG.name}</h1>
-                  {ORG.verified && (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-success bg-success-light border border-[#A7F3D0] px-2 py-0.5 rounded-badge">
-                      <IconCircleCheck size={11} /> Vérifiée
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl font-bold text-text-primary">{org?.name ?? 'Mon organisation'}</h1>
+                  {org?.verified && (
+                    <span className="flex items-center gap-1 text-xs text-success bg-success-light px-2 py-0.5 rounded-full">
+                      <IconCircleCheck size={12} /> Vérifiée
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-text-secondary mt-0.5">{ORG.tagline}</p>
+                <p className="text-sm text-text-secondary">{org?.description ?? 'Complétez votre profil organisation'}</p>
               </div>
             </div>
-            <Link
-              href={`/org/${ORG.slug}`}
-              target="_blank"
-              className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary bg-white border border-[#E5E7EB] px-3 py-2 rounded-lg hover:text-primary hover:border-primary transition-colors"
-            >
-              <IconExternalLink size={13} />
-              Voir la page publique
-            </Link>
+            {org?.slug && (
+              <Link href={`/org/${org.slug}`} className="btn-secondary text-sm flex items-center gap-2 px-4 py-2">
+                <IconExternalLink size={15} /> Voir la page publique
+              </Link>
+            )}
           </div>
 
           {/* Tabs */}
-          <div className="flex border-b border-[#E5E7EB] overflow-x-auto">
+          <div className="flex gap-1 overflow-x-auto no-scrollbar border-b border-[#E5E7EB]">
             {TABS.map((t, i) => (
-              <button
-                key={i}
-                onClick={() => setTab(i)}
-                className={`relative px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${
-                  tab === i ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'
-                }`}
-              >
+              <button key={t} onClick={() => setTab(i)}
+                className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${tab === i ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>
                 {t}
-                {i === 1 && pending.length > 0 && (
-                  <span className="ml-1.5 text-[10px] bg-[#D97706] text-white px-1.5 py-0.5 rounded-badge">{pending.length}</span>
+                {t === 'Vérifications' && pending.length > 0 && (
+                  <span className="ml-1.5 bg-primary text-white text-xs rounded-full px-1.5 py-0.5">{pending.length}</span>
                 )}
               </button>
             ))}
           </div>
 
-          {/* ── APERÇU ── */}
+          {/* Aperçu */}
           {tab === 0 && (
-            <div className="space-y-5">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                  { icon: IconEye, label: 'Vues cette semaine', value: '143', color: 'text-primary', bg: 'bg-primary-light' },
-                  { icon: IconFileText, label: 'Candidatures', value: String(totalApplications), color: 'text-secondary', bg: 'bg-[#FEF9EE]' },
-                  { icon: IconBriefcase, label: 'Offres actives', value: String(offers.length), color: 'text-success', bg: 'bg-success-light' },
-                  { icon: IconClock, label: 'Vérifications en attente', value: String(pending.length), color: 'text-[#D97706]', bg: 'bg-[#FFFBEB]' },
-                ].map(({ icon: Icon, label, value, color, bg }) => (
-                  <div key={label} className="card p-4">
-                    <div className={`w-9 h-9 rounded-xl ${bg} flex items-center justify-center mb-3`}>
-                      <Icon size={18} className={color} />
+                  { label: 'Membres',              value: team.length,                icon: IconUsers,   color: 'text-primary'   },
+                  { label: 'Offres actives',        value: offers.filter(o=>o.isActive).length, icon: IconBriefcase, color: 'text-success' },
+                  { label: 'Vérifications en attente', value: pending.length,         icon: IconClock,   color: 'text-[#D97706]' },
+                  { label: 'Vues profil',           value: '—',                        icon: IconEye,     color: 'text-text-tertiary' },
+                ].map(s => (
+                  <div key={s.label} className="card">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-xs text-text-secondary">{s.label}</p>
+                        <p className="text-2xl font-bold text-text-primary mt-1">{s.value}</p>
+                      </div>
+                      <s.icon size={20} className={s.color} />
                     </div>
-                    <p className={`text-2xl font-extrabold ${color}`}>{value}</p>
-                    <p className="text-xs text-text-secondary mt-0.5 font-medium">{label}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="grid sm:grid-cols-3 gap-3">
-                <button onClick={() => setTab(1)} className="card p-4 flex items-center gap-3 hover:border-primary transition-colors text-left group">
-                  <div className="w-9 h-9 bg-[#FFFBEB] rounded-xl flex items-center justify-center flex-shrink-0">
-                    <IconCircleCheck size={18} className="text-[#D97706]" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-text-primary group-hover:text-primary transition-colors">Vérifications</p>
-                    <p className="text-xs text-text-tertiary">{pending.length} en attente</p>
-                  </div>
-                </button>
-                <button onClick={() => setTab(2)} className="card p-4 flex items-center gap-3 hover:border-primary transition-colors text-left group">
-                  <div className="w-9 h-9 bg-primary-light rounded-xl flex items-center justify-center flex-shrink-0">
-                    <IconPlus size={18} className="text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-text-primary group-hover:text-primary transition-colors">Publier une offre</p>
-                    <p className="text-xs text-text-tertiary">{offers.length} actives</p>
-                  </div>
-                </button>
-                <button onClick={() => setTab(3)} className="card p-4 flex items-center gap-3 hover:border-primary transition-colors text-left group">
-                  <div className="w-9 h-9 bg-[#FEF9EE] rounded-xl flex items-center justify-center flex-shrink-0">
-                    <IconUsers size={18} className="text-secondary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-text-primary group-hover:text-primary transition-colors">Équipe</p>
-                    <p className="text-xs text-text-tertiary">{members.length} membres</p>
-                  </div>
-                </button>
-              </div>
-
-              {/* Recent verif requests */}
               {pending.length > 0 && (
-                <div className="card space-y-1">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="font-semibold text-text-primary text-sm">Demandes de vérification récentes</p>
-                    <button onClick={() => setTab(1)} className="text-xs text-primary font-medium hover:underline">Tout traiter →</button>
+                <div className="card">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-semibold text-text-primary">Vérifications récentes</h2>
+                    <button onClick={() => setTab(1)} className="text-sm text-primary">Tout traiter →</button>
                   </div>
-                  {pending.slice(0, 2).map(req => (
-                    <div key={req.id} className="flex items-center gap-3 py-3 border-b border-[#F3F4F6] last:border-0">
-                      <div className={`text-xs font-semibold px-2 py-0.5 rounded-badge flex-shrink-0 ${req.type === 'experience' ? 'bg-primary-light text-primary' : 'bg-secondary-light text-secondary'}`}>
-                        {req.type === 'experience' ? 'Expérience' : 'Formation'}
+                  {pending.slice(0, 3).map((v: any) => (
+                    <div key={v.id} className="flex items-center justify-between py-3 border-b border-[#F3F4F6] last:border-0">
+                      <div>
+                        <span className="text-xs bg-[#F3F4F6] text-text-secondary px-2 py-0.5 rounded-full mr-2">{v.type}</span>
+                        <span className="text-sm font-medium text-text-primary">{v.label}</span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-text-primary truncate">{req.itemTitle}</p>
-                        <p className="text-xs text-text-tertiary">{req.profileName}</p>
-                      </div>
-                      <div className="flex gap-2 flex-shrink-0">
-                        <button onClick={() => handleVerif(req.id, 'confirmée')} className="text-xs font-semibold text-success bg-success-light hover:bg-[#D1FAE5] px-2.5 py-1.5 rounded-lg transition-colors">Confirmer</button>
-                        <button onClick={() => handleVerif(req.id, 'rejetée')} className="text-xs font-semibold text-danger bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg transition-colors">Rejeter</button>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleVerif(v.id, 'CONFIRMEE')} className="text-xs bg-success-light text-success px-3 py-1 rounded-lg font-medium">Confirmer</button>
+                        <button onClick={() => handleVerif(v.id, 'REJETEE')} className="text-xs bg-red-50 text-danger px-3 py-1 rounded-lg font-medium">Rejeter</button>
                       </div>
                     </div>
                   ))}
@@ -247,285 +181,152 @@ export default function OrgDashboardPage() {
             </div>
           )}
 
-          {/* ── VÉRIFICATIONS ── */}
+          {/* Vérifications */}
           {tab === 1 && (
-            <div className="space-y-4">
-              <div className="flex gap-3 border-b border-[#F3F4F6] pb-1">
-                <p className="text-sm text-text-secondary">
-                  <span className="font-semibold text-[#D97706]">{pending.length}</span> en attente ·{' '}
-                  <span className="font-semibold text-text-primary">{history.length}</span> traitées
-                </p>
-              </div>
-
-              {/* Pending */}
-              {pending.length === 0 ? (
-                <div className="text-center py-12">
-                  <IconCircleCheck size={40} className="mx-auto mb-3 text-success" />
-                  <p className="font-medium text-text-primary">Aucune demande en attente</p>
-                  <p className="text-sm text-text-tertiary mt-1">Toutes les demandes ont été traitées</p>
+            <div className="space-y-3">
+              {verifications.length === 0 ? (
+                <div className="card text-center py-12">
+                  <IconCircleCheck size={32} className="text-text-tertiary mx-auto mb-3" />
+                  <p className="font-medium text-text-primary">Aucune demande de vérification</p>
+                  <p className="text-sm text-text-secondary mt-1">Les demandes des membres apparaîtront ici</p>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  <p className="text-xs font-bold text-text-tertiary uppercase tracking-[0.1em]">En attente</p>
-                  {pending.map(req => (
-                    <div key={req.id} className="card border-l-4 border-l-[#D97706]">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-badge ${req.type === 'experience' ? 'bg-primary-light text-primary' : 'bg-secondary-light text-secondary'}`}>
-                              {req.type === 'experience' ? 'Expérience' : 'Formation'}
-                            </span>
-                            <span className="text-xs text-text-tertiary flex items-center gap-1">
-                              <IconClock size={11} /> Envoyé le {req.sentAt}
-                            </span>
-                          </div>
-                          <p className="font-semibold text-text-primary mt-2">{req.itemTitle}</p>
-                          <p className="text-sm text-text-secondary mt-1">
-                            Demandé par <span className="font-medium">{req.profileName}</span>
-                            <span className="text-text-tertiary"> · {req.profileTitle}</span>
-                          </p>
-                          <p className="text-xs text-text-tertiary mt-1">{req.institutionEmail}</p>
-                        </div>
-                        <div className="flex flex-col gap-2 flex-shrink-0">
-                          <button onClick={() => handleVerif(req.id, 'confirmée')} className="flex items-center gap-1.5 text-sm font-semibold text-success bg-success-light hover:bg-[#D1FAE5] px-3 py-2 rounded-btn transition-colors">
-                            <IconCircleCheck size={15} /> Confirmer
-                          </button>
-                          <button onClick={() => handleVerif(req.id, 'rejetée')} className="flex items-center gap-1.5 text-sm font-semibold text-danger bg-red-50 hover:bg-red-100 px-3 py-2 rounded-btn transition-colors">
-                            <IconX size={15} /> Rejeter
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* History */}
-              {history.length > 0 && (
-                <div className="space-y-3">
-                  <p className="text-xs font-bold text-text-tertiary uppercase tracking-[0.1em] mt-2">Historique</p>
-                  <div className="card overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-[#E5E7EB]">
-                          <th className="text-left py-3 pr-4 text-xs font-medium text-text-secondary">Demandeur</th>
-                          <th className="text-left py-3 pr-4 text-xs font-medium text-text-secondary">Intitulé</th>
-                          <th className="text-left py-3 pr-4 text-xs font-medium text-text-secondary">Date</th>
-                          <th className="text-left py-3 text-xs font-medium text-text-secondary">Statut</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#F3F4F6]">
-                        {history.map(req => {
-                          const s = STATUS_MAP[req.status]
-                          return (
-                            <tr key={req.id}>
-                              <td className="py-3 pr-4 font-medium text-text-primary">{req.profileName}</td>
-                              <td className="py-3 pr-4 text-text-secondary max-w-[180px] truncate">{req.itemTitle}</td>
-                              <td className="py-3 pr-4 text-text-tertiary">{req.resolvedAt ?? '—'}</td>
-                              <td className="py-3"><span className={`text-xs font-medium px-2 py-0.5 rounded-badge ${s.cls}`}>{s.label}</span></td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
+              ) : verifications.map((v: any) => (
+                <div key={v.id} className="card flex items-center justify-between">
+                  <div>
+                    <span className="text-xs bg-[#F3F4F6] text-text-secondary px-2 py-0.5 rounded-full mr-2">{v.type}</span>
+                    <span className="text-sm font-semibold text-text-primary">{v.label}</span>
+                    <p className="text-xs text-text-secondary mt-0.5">
+                      {v.status === 'EN_ATTENTE' ? <span className="text-[#D97706]">En attente</span>
+                       : v.status === 'CONFIRMEE' ? <span className="text-success">Confirmée</span>
+                       : <span className="text-danger">Rejetée</span>}
+                    </p>
                   </div>
+                  {v.status === 'EN_ATTENTE' && (
+                    <div className="flex gap-2">
+                      <button onClick={() => handleVerif(v.id, 'CONFIRMEE')} className="text-xs bg-success-light text-success px-3 py-1.5 rounded-lg font-medium flex items-center gap-1"><IconCircleCheck size={12} /> Confirmer</button>
+                      <button onClick={() => handleVerif(v.id, 'REJETEE')} className="text-xs bg-red-50 text-danger px-3 py-1.5 rounded-lg font-medium flex items-center gap-1"><IconX size={12} /> Rejeter</button>
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
           )}
 
-          {/* ── OFFRES ── */}
+          {/* Offres */}
           {tab === 2 && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-text-secondary"><span className="font-semibold text-text-primary">{offers.length}</span> offres actives</p>
-                <button onClick={() => setShowOfferForm(v => !v)} className="btn-primary">
-                  <IconPlus size={15} /> Nouvelle offre
+              <div className="flex justify-between items-center">
+                <h2 className="font-semibold text-text-primary">{offers.length} offre{offers.length !== 1 ? 's' : ''}</h2>
+                <button onClick={() => setShowOfferForm(true)} className="btn-primary flex items-center gap-2 px-4 py-2 text-sm">
+                  <IconPlus size={15} /> Publier une offre
                 </button>
               </div>
 
               {showOfferForm && (
-                <div className="card space-y-4 border-primary/30">
-                  <p className="font-semibold text-text-primary text-sm">Créer une offre</p>
+                <div className="card space-y-4 border-primary/20">
+                  <h3 className="font-semibold text-text-primary">Nouvelle offre</h3>
+                  {[
+                    { label: 'Titre *', key: 'title', placeholder: 'Développeur Full Stack' },
+                    { label: 'Localisation', key: 'location', placeholder: 'Dakar, Sénégal' },
+                  ].map(f => (
+                    <div key={f.key}>
+                      <label className="label">{f.label}</label>
+                      <input className="input" value={(newOffer as any)[f.key]} onChange={e => setNewOffer({...newOffer, [f.key]: e.target.value})} placeholder={f.placeholder} />
+                    </div>
+                  ))}
                   <div>
-                    <label className="label">Intitulé du poste</label>
-                    <input className="input" placeholder="ex. Développeur Full Stack" value={newOffer.title} onChange={e => setNewOffer(p => ({ ...p, title: e.target.value }))} />
-                  </div>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="label">Localisation</label>
-                      <input className="input" placeholder="ex. Dakar, Sénégal" value={newOffer.location} onChange={e => setNewOffer(p => ({ ...p, location: e.target.value }))} />
-                    </div>
-                    <div>
-                      <label className="label">Type de contrat</label>
-                      <select className="input" value={newOffer.type} onChange={e => setNewOffer(p => ({ ...p, type: e.target.value }))}>
-                        <option>CDI</option><option>CDD</option><option>Freelance</option><option>Stage</option><option>Alternance</option>
-                      </select>
-                    </div>
+                    <label className="label">Type</label>
+                    <select className="input" value={newOffer.type} onChange={e => setNewOffer({...newOffer, type: e.target.value})}>
+                      {['CDI', 'CDD', 'Stage', 'Freelance', 'Alternance'].map(t => <option key={t}>{t}</option>)}
+                    </select>
                   </div>
                   <div>
                     <label className="label">Description</label>
-                    <textarea className="input resize-none" rows={3} placeholder="Missions et prérequis..." value={newOffer.description} onChange={e => setNewOffer(p => ({ ...p, description: e.target.value }))} />
+                    <textarea className="input min-h-[80px] resize-none" value={newOffer.description} onChange={e => setNewOffer({...newOffer, description: e.target.value})} placeholder="Décrivez le poste…" />
                   </div>
-                  <div className="flex gap-2 justify-end">
-                    <button onClick={() => setShowOfferForm(false)} className="btn-secondary">Annuler</button>
-                    <button onClick={addOffer} className="btn-primary">Publier</button>
+                  <div className="flex gap-3">
+                    <button onClick={() => setShowOfferForm(false)} className="btn-secondary flex-1 py-2.5">Annuler</button>
+                    <button onClick={handleAddOffer} className="btn-primary flex-1 py-2.5" disabled={!newOffer.title}>Publier</button>
                   </div>
                 </div>
               )}
 
-              <div className="space-y-3">
-                {offers.map(offer => (
-                  <div key={offer.id} className="card space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-text-primary">{offer.title}</p>
-                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                          <span className="text-xs text-text-tertiary flex items-center gap-1"><IconMapPin size={12} />{offer.location}</span>
-                          <span className="text-[#E5E7EB]">·</span>
-                          <span className="text-xs font-semibold text-primary bg-primary-light px-2 py-0.5 rounded-badge">{offer.type}</span>
-                          <span className="text-[#E5E7EB]">·</span>
-                          <span className="text-xs text-text-tertiary">{fmtDate(offer.posted)}</span>
-                        </div>
-                        <p className="text-sm text-text-secondary mt-2 leading-relaxed">{offer.description}</p>
-                      </div>
-                      <span className="flex items-center gap-1 text-xs font-semibold text-success bg-success-light px-2 py-1 rounded-lg flex-shrink-0">
-                        <IconFileText size={12} />{offer.applications} candidature{offer.applications > 1 ? 's' : ''}
-                      </span>
-                    </div>
-                    <div className="flex gap-2 pt-3 border-t border-[#F3F4F6]">
-                      <button className="flex items-center gap-1.5 text-xs font-semibold text-text-primary bg-[#F3F4F6] hover:bg-primary-light hover:text-primary px-3 py-2 rounded-lg transition-colors">
-                        <IconPencil size={13} />Modifier
-                      </button>
-                      <button onClick={() => setOffers(prev => prev.filter(o => o.id !== offer.id))} className="flex items-center gap-1.5 text-xs font-semibold text-text-secondary hover:text-danger hover:bg-red-50 px-3 py-2 rounded-lg transition-colors">
-                        <IconTrash size={13} />Supprimer
-                      </button>
-                      <Link href={`/org/${ORG.slug}`} target="_blank" className="ml-auto flex items-center gap-1.5 text-xs text-text-secondary hover:text-primary px-3 py-2 rounded-lg transition-colors">
-                        <IconArrowUpRight size={13} />Voir en public
-                      </Link>
-                    </div>
+              {offers.length === 0 && !showOfferForm ? (
+                <div className="card text-center py-12">
+                  <IconBriefcase size={32} className="text-text-tertiary mx-auto mb-3" />
+                  <p className="font-medium text-text-primary">Aucune offre publiée</p>
+                  <p className="text-sm text-text-secondary mt-1">Publiez votre première offre d&apos;emploi</p>
+                </div>
+              ) : offers.map((o: any) => (
+                <div key={o.id} className="card flex items-start justify-between">
+                  <div>
+                    <p className="font-semibold text-text-primary">{o.title}</p>
+                    <p className="text-sm text-text-secondary">{o.location} · {o.type}</p>
+                    <span className={`mt-1.5 inline-block text-xs px-2 py-0.5 rounded-full ${o.isActive ? 'bg-success-light text-success' : 'bg-[#F3F4F6] text-text-tertiary'}`}>
+                      {o.isActive ? 'Active' : 'Inactive'}
+                    </span>
                   </div>
-                ))}
-              </div>
+                  <button onClick={() => handleDeleteOffer(o.id)} className="text-text-tertiary hover:text-danger transition-colors">
+                    <IconTrash size={16} />
+                  </button>
+                </div>
+              ))}
             </div>
           )}
 
-          {/* ── ÉQUIPE ── */}
+          {/* Équipe */}
           {tab === 3 && (
             <div className="space-y-4">
-              <div className="card space-y-1">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-semibold text-text-primary flex items-center gap-2">
-                    <IconUsers size={17} className="text-primary" />
-                    Membres de l&apos;équipe
-                  </h2>
-                  <span className="text-xs text-text-tertiary">{members.length} membres</span>
+              <div className="flex justify-between items-center">
+                <h2 className="font-semibold text-text-primary">{team.length} membre{team.length !== 1 ? 's' : ''}</h2>
+              </div>
+              {team.length === 0 ? (
+                <div className="card text-center py-12">
+                  <IconUsers size={32} className="text-text-tertiary mx-auto mb-3" />
+                  <p className="font-medium text-text-primary">Aucun membre</p>
+                  <p className="text-sm text-text-secondary mt-1">Les membres liés à votre organisation apparaîtront ici</p>
                 </div>
-                {members.map(member => (
-                  <div key={member.id} className="flex items-center gap-3 py-3 border-b border-[#F3F4F6] last:border-0">
-                    <div className="w-9 h-9 rounded-xl bg-primary-light flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
-                      {member.initials}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-text-primary">{member.name}</p>
-                        {member.verified && <IconCircleCheck size={13} className="text-success flex-shrink-0" />}
-                        {member.role === 'admin' && <span className="text-[10px] font-semibold text-primary bg-primary-light px-1.5 py-0.5 rounded-badge">Admin</span>}
-                      </div>
-                      <p className="text-xs text-text-tertiary truncate">{member.title} · {member.email}</p>
-                    </div>
-                    {member.role !== 'admin' && (
-                      <button onClick={() => setMembers(prev => prev.filter(m => m.id !== member.id))} className="w-7 h-7 rounded-lg bg-[#F3F4F6] hover:bg-red-50 flex items-center justify-center text-text-tertiary hover:text-danger transition-colors flex-shrink-0" aria-label="Retirer">
-                        <IconX size={13} />
-                      </button>
-                    )}
+              ) : team.map((m: any) => (
+                <div key={m.id} className="card flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm">
+                    {m.profile?.fullName?.slice(0, 2).toUpperCase() ?? '??'}
                   </div>
-                ))}
-              </div>
-
-              <div className="card space-y-3">
-                <p className="font-semibold text-text-primary text-sm flex items-center gap-2">
-                  <IconSend size={15} className="text-primary" />
-                  Inviter un membre
-                </p>
-                <p className="text-xs text-text-tertiary">
-                  Le membre recevra un email d&apos;invitation. Utilisez une adresse <span className="font-mono font-semibold">@talentagricagroup.com</span> pour une vérification automatique.
-                </p>
-                <div className="flex gap-2">
-                  <input className="input flex-1" type="email" placeholder="prenom.nom@organisation.com" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleInvite()} />
-                  <button onClick={handleInvite} className="btn-primary px-4">Inviter</button>
+                  <div>
+                    <p className="font-semibold text-text-primary">{m.profile?.fullName}</p>
+                    <p className="text-sm text-text-secondary">{m.title ?? m.profile?.title}</p>
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
           )}
 
-          {/* ── PROFIL ── */}
+          {/* Profil org */}
           {tab === 4 && (
-            <div className="space-y-4">
-              <div className="card space-y-5">
-                <h2 className="font-semibold text-text-primary flex items-center gap-2">
-                  <IconBuilding size={17} className="text-primary" />
-                  Identité de l&apos;organisation
-                </h2>
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-[#0C0A18] flex items-center justify-center flex-shrink-0">
-                    <span className="text-lg font-extrabold text-white">{ORG.initials}</span>
-                  </div>
-                  <button className="text-xs font-semibold text-primary border border-primary/30 bg-primary-light px-3 py-1.5 rounded-lg hover:bg-primary hover:text-white transition-colors">
-                    Changer le logo
-                  </button>
-                </div>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div><label className="label">Nom</label><input className="input" defaultValue={ORG.name} /></div>
-                  <div><label className="label">Secteur</label><input className="input" defaultValue={ORG.sector} /></div>
-                </div>
-                <div><label className="label">Accroche</label><input className="input" defaultValue={ORG.tagline} /></div>
-                <div><label className="label">Description</label><textarea className="input resize-none" rows={4} defaultValue={ORG.description} /></div>
-                <div className="grid sm:grid-cols-3 gap-4">
-                  <div><label className="label">Ville</label><input className="input" defaultValue={ORG.city} /></div>
-                  <div><label className="label">Pays</label><input className="input" defaultValue={ORG.country} /></div>
-                  <div><label className="label">Fondée en</label><input className="input" defaultValue={ORG.founded} /></div>
-                </div>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="label">Taille</label>
-                    <select className="input">
-                      <option>1–10 employés</option>
-                      <option defaultValue="10–50 employés">10–50 employés</option>
-                      <option>50–200 employés</option>
-                      <option>200–1000 employés</option>
-                      <option>+1000 employés</option>
-                    </select>
-                  </div>
-                  <div><label className="label">Site web</label><input className="input" type="url" defaultValue={ORG.websiteUrl} /></div>
-                </div>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div><label className="label">Email</label><input className="input" type="email" defaultValue={ORG.email} /></div>
-                  <div><label className="label">WhatsApp</label><input className="input" type="tel" defaultValue={ORG.whatsapp} /></div>
-                </div>
-                <div className="flex justify-end">
-                  <button onClick={handleSave} className="btn-primary">
-                    {saved ? <><IconCheck size={15} /> Enregistré</> : 'Enregistrer'}
-                  </button>
-                </div>
+            <div className="card space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-text-primary">Profil de l&apos;organisation</h2>
+                <button onClick={handleSaveOrg} disabled={savingOrg} className="btn-primary px-5 py-2.5 text-sm">
+                  {savedOrg ? 'Enregistré !' : 'Enregistrer'}
+                </button>
               </div>
-
-              <div className="card space-y-3">
-                <p className="font-semibold text-text-primary text-sm flex items-center gap-2">
-                  <IconCircleCheck size={17} className="text-success" />
-                  Statut de vérification
-                </p>
-                <div className="flex items-center gap-3 py-3 px-4 bg-success-light border border-[#A7F3D0] rounded-xl">
-                  <IconCircleCheck size={20} className="text-success flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-success">Organisation vérifiée</p>
-                    <p className="text-xs text-success/80 mt-0.5">Votre domaine email a été confirmé par bcarte.</p>
-                  </div>
+              {[
+                { label: 'Nom *', key: 'name', placeholder: 'Nom de l\'organisation' },
+                { label: 'Secteur', key: 'sector', placeholder: 'Recrutement, Technologie…' },
+                { label: 'Ville', key: 'city', placeholder: 'Dakar' },
+                { label: 'Pays', key: 'country', placeholder: 'Sénégal' },
+                { label: 'Site web', key: 'website', placeholder: 'https://…' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label className="label">{f.label}</label>
+                  <input className="input" value={orgForm[f.key] ?? ''} onChange={e => setOrgForm({...orgForm, [f.key]: e.target.value})} placeholder={f.placeholder} />
                 </div>
+              ))}
+              <div>
+                <label className="label">Description</label>
+                <textarea className="input min-h-[90px] resize-none" value={orgForm.description ?? ''} onChange={e => setOrgForm({...orgForm, description: e.target.value})} placeholder="Décrivez votre organisation…" />
               </div>
             </div>
           )}
-
         </div>
       </main>
       <BottomNav />
