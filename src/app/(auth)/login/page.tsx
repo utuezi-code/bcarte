@@ -47,75 +47,56 @@ export default function LoginPage() {
     <div className="min-h-screen flex bg-white">
 
       {/* ══ LEFT — branding ══ */}
-      <div className="hidden lg:flex w-[54%] relative bg-[#080612] overflow-hidden flex-col p-12 justify-between">
-
-        {/* Mesh gradient blobs */}
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute top-[-10%] left-[30%] w-[500px] h-[500px] rounded-full blur-[120px]"
-            style={{ background: 'rgba(108,71,255,0.22)' }} />
-          <div className="absolute bottom-[-5%] left-[-5%] w-[350px] h-[350px] rounded-full blur-[100px]"
-            style={{ background: 'rgba(108,71,255,0.12)' }} />
-          <div className="absolute top-[40%] right-[-10%] w-[300px] h-[300px] rounded-full blur-[90px]"
-            style={{ background: 'rgba(155,123,255,0.1)' }} />
-        </div>
+      <div className="hidden lg:flex w-[54%] relative overflow-hidden flex-col p-12 justify-between" style={{ background: '#6C47FF' }}>
 
         {/* Logo */}
-        <div className="relative z-10 flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[#6C47FF] flex items-center justify-center">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
             <IconShieldCheck size={15} className="text-white" />
           </div>
           <span className="text-white font-black text-lg tracking-tight">bcarte</span>
         </div>
 
         {/* Main copy */}
-        <div className="relative z-10 space-y-8">
+        <div className="space-y-8">
           <div className="space-y-4">
             <h2 className="text-[52px] font-black text-white leading-[1.0] tracking-[-2px]">
-              Votre carrière,<br />
-              <span style={{ color: '#9B7BFF' }}>certifiée.</span>
+              Votre carrière,<br />certifiée.
             </h2>
-            <p className="text-[15px] text-white/40 leading-relaxed max-w-[300px]">
+            <p className="text-[15px] text-white/60 leading-relaxed max-w-[300px]">
               La plateforme africaine qui vérifie et valorise vos expériences professionnelles.
             </p>
           </div>
 
-          {/* Feature pills */}
           <div className="flex flex-wrap gap-2">
             {[
               { icon: IconShieldCheck, label: 'Vérification instantanée' },
               { icon: IconBriefcase,   label: 'CV intelligent' },
               { icon: IconUsers,       label: '12 000+ professionnels' },
             ].map(({ icon: Icon, label }) => (
-              <div key={label} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium text-white/60"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <Icon size={12} className="text-[#9B7BFF]" />
+              <div key={label} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium text-white/80 bg-white/10">
+                <Icon size={12} className="text-white" />
                 {label}
               </div>
             ))}
           </div>
         </div>
 
-        {/* Floating profile cards */}
-        <div className="relative z-10 space-y-2.5">
+        {/* Profile cards */}
+        <div className="space-y-2.5">
           {PROFILES.map((p, i) => (
             <div key={p.initials}
-              className="flex items-center gap-3 rounded-2xl px-4 py-3"
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.07)',
-                transform: `translateX(${i * 10}px)`,
-                opacity: 1 - i * 0.2,
-              }}>
-              <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[11px] font-bold text-white"
-                style={{ background: `hsl(${250 + i * 20}, 80%, ${55 + i * 5}%)` }}>
+              className="flex items-center gap-3 rounded-2xl px-4 py-3 bg-white/10"
+              style={{ transform: `translateX(${i * 12}px)`, opacity: 1 - i * 0.25 }}>
+              <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-[11px] font-bold bg-white/20 text-white">
                 {p.initials}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[13px] font-semibold text-white leading-none">{p.name}</p>
-                <p className="text-[11px] text-white/35 mt-0.5">{p.country} {p.role}</p>
+                <p className="text-[11px] text-white/50 mt-0.5">{p.country} {p.role}</p>
               </div>
               {p.verified && (
-                <div className="flex items-center gap-1 text-[10px] font-semibold text-[#9B7BFF] bg-[#6C47FF]/15 px-2 py-0.5 rounded-full">
+                <div className="flex items-center gap-1 text-[10px] font-semibold text-white bg-white/20 px-2 py-0.5 rounded-full">
                   <IconShieldCheck size={9} />
                   Vérifié
                 </div>
