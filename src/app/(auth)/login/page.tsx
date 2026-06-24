@@ -15,7 +15,7 @@ const FEATURES = [
   {
     icon: IconShieldCheck,
     title: 'Identité vérifiée',
-    desc: 'Chaque expérience est confirmée par l'entreprise concernée',
+    desc: "Chaque expérience est confirmée par l'entreprise concernée",
   },
   {
     icon: IconBriefcase,
