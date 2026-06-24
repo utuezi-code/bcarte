@@ -13,8 +13,8 @@ const fadeUp = {
   initial:  { opacity: 0, y: 16 },
   animate:  { opacity: 1, y: 0  },
   exit:     { opacity: 0, y: -8 },
-  transition: { duration: 0.3, ease: 'easeInOut' },
 }
+const fadeTrans = { duration: 0.3, ease: 'easeInOut' as const }
 
 const stagger = {
   initial: {},
@@ -128,7 +128,7 @@ export default function LoginPage() {
 
             {/* Pick */}
             {step === 'pick' && (
-              <motion.div key="pick" {...fadeUp} className="space-y-8">
+              <motion.div key="pick" {...fadeUp} transition={fadeTrans} className="space-y-8">
                 <motion.div variants={stagger} initial="initial" animate="animate" className="space-y-1">
                   <motion.h1 variants={item} className="text-[28px] font-black text-[#0C0A18] tracking-tight">
                     Se connecter
@@ -164,7 +164,7 @@ export default function LoginPage() {
 
             {/* Form */}
             {step !== 'pick' && (
-              <motion.div key="form" {...fadeUp} className="space-y-8">
+              <motion.div key="form" {...fadeUp} transition={fadeTrans} className="space-y-8">
                 <motion.div variants={stagger} initial="initial" animate="animate">
                   <motion.button variants={item} onClick={() => setStep('pick')}
                     whileHover={{ x: -3 }}
