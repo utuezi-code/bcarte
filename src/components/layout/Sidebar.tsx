@@ -61,7 +61,8 @@ export default function Sidebar() {
     return pathname.startsWith(href)
   }
 
-  function handleLogout() {
+  async function handleLogout() {
+    await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/login')
   }
 

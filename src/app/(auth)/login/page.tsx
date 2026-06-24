@@ -15,12 +15,33 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!accountType) return
-    setRole(accountType)
-    router.push(accountType === 'organisation' ? '/org/dashboard' : '/dashboard')
+    setError('')
+    setLoading(true)
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error ?? 'Erreur de connexion')
+        return
+      }
+      const role = data.role === 'ORGANISATION' ? 'organisation' : 'professionnel'
+      setRole(role)
+      router.push(role === 'organisation' ? '/org/dashboard' : '/dashboard')
+    } catch {
+      setError('Erreur réseau, réessaie.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -166,8 +187,12 @@ export default function LoginPage() {
                 <a href="#" className="text-primary font-medium hover:underline">Mot de passe oublié ?</a>
               </div>
 
-              <button type="submit" className="btn-primary w-full justify-center py-3">
-                Se connecter
+              {error && (
+                <p className="text-sm text-danger bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
+              )}
+
+              <button type="submit" disabled={loading} className="btn-primary w-full justify-center py-3 disabled:opacity-60">
+                {loading ? 'Connexion…' : 'Se connecter'}
               </button>
             </form>
 
