@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -25,8 +26,15 @@ const ORG_TABS = [
 
 export default function BottomNav() {
   const pathname = usePathname()
-  const { role } = useUser()
-  const tabs = role === 'organisation' ? ORG_TABS : PRO_TABS
+  const { role, setRole } = useUser()
+
+  const effectiveRole = pathname.startsWith('/org/') ? 'organisation' : role
+
+  useEffect(() => {
+    if (effectiveRole !== role) setRole(effectiveRole)
+  }, [effectiveRole, role, setRole])
+
+  const tabs = effectiveRole === 'organisation' ? ORG_TABS : PRO_TABS
 
   return (
     <nav

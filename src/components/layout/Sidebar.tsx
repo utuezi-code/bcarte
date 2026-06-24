@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -44,10 +45,16 @@ const ORG_USER = {
 export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { role } = useUser()
+  const { role, setRole } = useUser()
 
-  const nav = role === 'organisation' ? ORG_NAV : PRO_NAV
-  const user = role === 'organisation' ? ORG_USER : PRO_USER
+  const effectiveRole = pathname.startsWith('/org/') ? 'organisation' : role
+
+  useEffect(() => {
+    if (effectiveRole !== role) setRole(effectiveRole)
+  }, [effectiveRole, role, setRole])
+
+  const nav = effectiveRole === 'organisation' ? ORG_NAV : PRO_NAV
+  const user = effectiveRole === 'organisation' ? ORG_USER : PRO_USER
 
   function isActive(href: string, exact = false) {
     if (exact) return pathname === href
