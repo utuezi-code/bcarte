@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { IconSearch, IconHeart, IconBuilding, IconBriefcase, IconPlus, IconBrandWhatsapp, IconMail, IconCircleCheck, IconMapPin } from '@tabler/icons-react'
 import { MOCK_PROFILES, MOCK_JOB_OFFERS, SECTORS } from '@/lib/mock-data'
 import ProfileCard from '@/components/profile/ProfileCard'
@@ -88,31 +89,26 @@ export default function RecruiterPage() {
           {/* Organisation tab */}
           {tab === 2 && (
             <div className="max-w-lg space-y-4">
-              <div className="card space-y-5">
+              <div className="card space-y-4">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-primary-light rounded-card-lg flex items-center justify-center">
-                    <IconBuilding size={28} className="text-primary" />
+                  <div className="w-14 h-14 rounded-2xl bg-[#0C0A18] flex items-center justify-center flex-shrink-0">
+                    <span className="text-base font-extrabold text-white">TA</span>
                   </div>
                   <div>
                     <p className="font-semibold text-text-primary">Talent Africa Group</p>
-                    <p className="text-sm text-text-secondary">Organisation vérifiée</p>
+                    <p className="text-sm text-text-secondary flex items-center gap-1 mt-0.5">
+                      <IconCircleCheck size={13} className="text-success" />
+                      Organisation vérifiée
+                    </p>
                   </div>
                 </div>
-                <div className="space-y-3">
-                  <div>
-                    <label className="label">Nom de l&apos;organisation</label>
-                    <input className="input" defaultValue="Talent Africa Group" />
-                  </div>
-                  <div>
-                    <label className="label">Description</label>
-                    <textarea className="input resize-none" rows={3} defaultValue="Cabinet de recrutement spécialisé dans les talents tech et finance en Afrique de l'Ouest." />
-                  </div>
-                  <div>
-                    <label className="label">Site web</label>
-                    <input className="input" type="url" defaultValue="https://talentagrica.com" />
-                  </div>
-                </div>
-                <button className="btn-primary">Enregistrer</button>
+                <p className="text-sm text-text-secondary">
+                  Gérez le profil public de votre organisation, votre équipe et vos offres d&apos;emploi depuis le tableau de bord dédié.
+                </p>
+                <Link href="/org/dashboard" className="btn-primary inline-flex">
+                  <IconBuilding size={15} />
+                  Gérer mon organisation
+                </Link>
               </div>
             </div>
           )}

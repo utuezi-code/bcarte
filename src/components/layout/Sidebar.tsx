@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   IconLayoutDashboard, IconUser, IconFileText,
-  IconCompass, IconCreditCard, IconSettings, IconLogout, IconBriefcase,
+  IconCompass, IconCreditCard, IconSettings, IconLogout, IconBriefcase, IconBuilding,
 } from '@tabler/icons-react'
 import { CURRENT_USER } from '@/lib/mock-data'
 
@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { href: '/dashboard/cv', label: 'Générer CV', icon: IconFileText },
   { href: '/explore', label: 'Explorer', icon: IconCompass },
   { href: '/recruiter', label: 'Espace recruteur', icon: IconBriefcase },
+  { href: '/org/dashboard', label: 'Mon organisation', icon: IconBuilding },
   { href: '/dashboard/nfc', label: 'Carte NFC', icon: IconCreditCard },
   { href: '/settings', label: 'Paramètres', icon: IconSettings },
 ]
