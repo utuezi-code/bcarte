@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  PROFESSIONNEL
+  ORGANISATION
+}
+
+enum VerificationStatus {
+  EN_ATTENTE
+  CONFIRMEE
+  REJETEE
+}
+
+enum OrgType {
+  ENTREPRISE
+  UNIVERSITE
+  ECOLE
+  ONG
+  INSTITUTION
+}
+
+// ─── Core ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  role      Role     @default(PROFESSIONNEL)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profile      Profile?
+  organisation Organisation? @relation("OrgOwner")
+
+  @@map("users")
+}
+
+model Profile {
+  id        String  @id @default(cuid())
+  userId    String  @unique
+  fullName  String
+  title     String?
+  city      String?
+  country   String  @default("Sénégal")
+  bio       String?
+  phone     String?
+  linkedin  String?
+  avatarUrl String?
+  isPublic  Boolean @default(true)
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  experiences Experience[]
+  educations  Education[]
+  teamMembers TeamMember[]
+
+  @@map("profiles")
+}
+
+// ─── Organisation ─────────────────────────────────────────────────────────────
+
+model Organisation {
+  id          String  @id @default(cuid())
+  ownerId     String  @unique
+  slug        String  @unique
+  name        String
+  type        OrgType @default(ENTREPRISE)
+  sector      String?
+  city        String?
+  country     String  @default("Sénégal")
+  description String?
+  website     String?
+  logoColor   String  @default("#6C47FF")
+  verified    Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner         User           @relation("OrgOwner", fields: [ownerId], references: [id])
+  teamMembers   TeamMember[]
+  jobOffers     JobOffer[]
+  verifications Verification[]
+  educations    Education[]    @relation("SchoolEducations")
+
+  @@map("organisations")
+}
+
+model TeamMember {
+  id             String    @id @default(cuid())
+  organisationId String
+  profileId      String
+  title          String?
+  startDate      DateTime?
+  endDate        DateTime?
+  isCurrent      Boolean   @default(true)
+
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+  profile      Profile      @relation(fields: [profileId], references: [id])
+
+  @@unique([organisationId, profileId])
+  @@map("team_members")
+}
+
+model Education {
+  id             String             @id @default(cuid())
+  profileId      String
+  organisationId String
+  degree         String
+  field          String?
+  startYear      Int?
+  endYear        Int?
+  isCurrent      Boolean            @default(false)
+  status         VerificationStatus @default(EN_ATTENTE)
+
+  profile      Profile      @relation(fields: [profileId], references: [id])
+  organisation Organisation @relation("SchoolEducations", fields: [organisationId], references: [id])
+
+  @@map("educations")
+}
+
+model Experience {
+  id        String             @id @default(cuid())
+  profileId String
+  title     String
+  company   String
+  city      String?
+  startDate DateTime?
+  endDate   DateTime?
+  isCurrent Boolean            @default(false)
+  status    VerificationStatus @default(EN_ATTENTE)
+
+  profile Profile @relation(fields: [profileId], references: [id])
+
+  @@map("experiences")
+}
+
+// ─── Jobs ─────────────────────────────────────────────────────────────────────
+
+model JobOffer {
+  id             String   @id @default(cuid())
+  organisationId String
+  title          String
+  location       String?
+  type           String   @default("CDI")
+  description    String?
+  salary         String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+
+  @@map("job_offers")
+}
+
+// ─── Verifications ────────────────────────────────────────────────────────────
+
+model Verification {
+  id             String             @id @default(cuid())
+  organisationId String
+  profileId      String
+  type           String
+  label          String
+  status         VerificationStatus @default(EN_ATTENTE)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  organisation Organisation @relation(fields: [organisationId], references: [id])
+
+  @@map("verifications")
+}

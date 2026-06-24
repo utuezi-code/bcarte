@@ -1,152 +1,134 @@
 'use client'
 
-import { useState } from 'react'
-import { IconSearch, IconFilter, IconX } from '@tabler/icons-react'
+import { useEffect, useState } from 'react'
+import { IconSearch, IconX, IconLoader2 } from '@tabler/icons-react'
 import ProfileCard from '@/components/profile/ProfileCard'
-import { MOCK_PROFILES, SECTORS } from '@/lib/mock-data'
+import OrgCard from '@/components/profile/OrgCard'
 import Sidebar from '@/components/layout/Sidebar'
 import BottomNav from '@/components/layout/BottomNav'
+import { COUNTRIES } from '@/lib/constants'
 
-const AVAILABILITY_OPTIONS = [
-  { value: '', label: 'Toutes disponibilités' },
-  { value: 'disponible', label: 'Disponible' },
-  { value: 'en_veille', label: 'En veille' },
-]
+type View = 'profils' | 'organisations'
 
 export default function ExplorePage() {
-  const [search, setSearch] = useState('')
-  const [sector, setSector] = useState('')
-  const [availability, setAvailability] = useState('')
-  const [showFilters, setShowFilters] = useState(false)
-  const [verified, setVerified] = useState(false)
+  const [view, setView]           = useState<View>('profils')
+  const [profiles, setProfiles]   = useState<any[]>([])
+  const [orgs, setOrgs]           = useState<any[]>([])
+  const [loading, setLoading]     = useState(false)
+  const [search, setSearch]       = useState('')
+  const [country, setCountry]     = useState('')
 
-  const filtered = MOCK_PROFILES.filter((p) => {
-    const matchSearch = !search ||
-      p.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      p.title.toLowerCase().includes(search.toLowerCase()) ||
-      p.city.toLowerCase().includes(search.toLowerCase()) ||
-      p.skills.some(s => s.label.toLowerCase().includes(search.toLowerCase()))
-    const matchSector = !sector || p.sector === sector
-    const matchAvail = !availability || p.availabilityStatus === availability
-    const matchVerified = !verified || p.verified
-    return matchSearch && matchSector && matchAvail && matchVerified
-  })
+  useEffect(() => {
+    setLoading(true)
+    const params = new URLSearchParams()
+    if (search) params.set('search', search)
+    if (country) params.set('country', country)
+
+    if (view === 'profils') {
+      fetch(`/api/profiles?${params}`).then(r => r.json()).then(d => { setProfiles(d); setLoading(false) })
+    } else {
+      fetch(`/api/orgs?${params}`).then(r => r.json()).then(d => { setOrgs(d); setLoading(false) })
+    }
+  }, [view, search, country])
 
   return (
     <div className="min-h-screen bg-bg-light">
       <Sidebar />
       <main className="lg:pl-60 pb-16 lg:pb-0 min-h-screen">
         <div className="max-w-5xl mx-auto px-5 py-6 lg:px-8 lg:py-8 space-y-6">
+
           {/* Header */}
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Explorer les profils</h1>
-            <p className="text-text-secondary text-sm mt-1">
-              Découvrez des professionnels vérifiés d&apos;Afrique et du monde
-            </p>
+            <h1 className="text-2xl lg:text-[28px] font-bold text-text-primary">Explorer</h1>
+            <p className="text-sm text-text-secondary mt-1">Découvrez des professionnels et organisations vérifiés</p>
           </div>
 
-          {/* Search + Filters */}
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" size={16} />
-                <input
-                  className="input pl-9 bg-white"
-                  placeholder="Rechercher par nom, titre, compétence, ville..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className={`btn-secondary gap-2 ${showFilters ? 'border-primary text-primary bg-primary-light' : ''}`}
-              >
-                <IconFilter size={16} />
-                <span className="hidden sm:block">Filtres</span>
+          {/* Toggle vue */}
+          <div className="flex gap-1 bg-[#F3F4F6] p-1 rounded-xl w-fit">
+            {(['profils', 'organisations'] as View[]).map(v => (
+              <button key={v} onClick={() => setView(v)}
+                className={`px-5 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${view === v ? 'bg-white text-text-primary shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>
+                {v}
               </button>
-            </div>
+            ))}
+          </div>
 
-            {showFilters && (
-              <div className="card grid sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="label">Secteur</label>
-                  <select className="input" value={sector} onChange={(e) => setSector(e.target.value)}>
-                    <option value="">Tous les secteurs</option>
-                    {SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="label">Disponibilité</label>
-                  <select className="input" value={availability} onChange={(e) => setAvailability(e.target.value)}>
-                    {AVAILABILITY_OPTIONS.map(o => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="label">Profils vérifiés</label>
-                  <label className="flex items-center gap-2 cursor-pointer mt-2">
-                    <div
-                      className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${verified ? 'bg-primary' : 'bg-[#E5E7EB]'}`}
-                      onClick={() => setVerified(!verified)}
-                    >
-                      <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${verified ? 'translate-x-6' : 'translate-x-1'}`} />
+          {/* Filtres */}
+          <div className="flex flex-wrap gap-3">
+            <div className="relative flex-1 min-w-[200px]">
+              <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
+              <input
+                className="input pl-9"
+                placeholder={view === 'profils' ? 'Nom, titre…' : 'Nom, secteur…'}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+              {search && (
+                <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary">
+                  <IconX size={14} />
+                </button>
+              )}
+            </div>
+            <select className="input w-auto" value={country} onChange={e => setCountry(e.target.value)}>
+              <option value="">Tous les pays</option>
+              {COUNTRIES.map(c => <option key={c}>{c}</option>)}
+            </select>
+          </div>
+
+          {/* Résultats */}
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <IconLoader2 size={28} className="animate-spin text-primary" />
+            </div>
+          ) : view === 'profils' ? (
+            profiles.length === 0 ? (
+              <div className="text-center py-16">
+                <p className="font-medium text-text-primary">Aucun profil trouvé</p>
+                <p className="text-sm text-text-secondary mt-1">Essayez d&apos;autres critères de recherche</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {profiles.map((p: any) => (
+                  <div key={p.id} className="card hover:shadow-sm transition-shadow cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold text-sm">
+                        {p.fullName?.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-text-primary truncate">{p.fullName}</p>
+                        <p className="text-xs text-text-secondary truncate">{p.title}</p>
+                        <p className="text-xs text-text-tertiary">{p.city}, {p.country}</p>
+                      </div>
                     </div>
-                    <span className="text-sm text-text-secondary">Uniquement vérifiés</span>
-                  </label>
-                </div>
+                  </div>
+                ))}
               </div>
-            )}
-
-            {/* Active filters */}
-            {(search || sector || availability || verified) && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-text-secondary">Filtres actifs :</span>
-                {search && (
-                  <span className="inline-flex items-center gap-1 text-xs bg-primary-light text-primary px-2 py-1 rounded-badge">
-                    &quot;{search}&quot;
-                    <button onClick={() => setSearch('')}><IconX size={10} /></button>
-                  </span>
-                )}
-                {sector && (
-                  <span className="inline-flex items-center gap-1 text-xs bg-primary-light text-primary px-2 py-1 rounded-badge">
-                    {sector}
-                    <button onClick={() => setSector('')}><IconX size={10} /></button>
-                  </span>
-                )}
-                {availability && (
-                  <span className="inline-flex items-center gap-1 text-xs bg-primary-light text-primary px-2 py-1 rounded-badge">
-                    {availability}
-                    <button onClick={() => setAvailability('')}><IconX size={10} /></button>
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Results count */}
-          <p className="text-sm text-text-secondary">
-            <span className="font-semibold text-text-primary">{filtered.length}</span> profil{filtered.length !== 1 ? 's' : ''} trouvé{filtered.length !== 1 ? 's' : ''}
-          </p>
-
-          {/* Grid */}
-          {filtered.length > 0 ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filtered.map((profile) => (
-                <ProfileCard key={profile.id} profile={profile} />
-              ))}
-            </div>
+            )
           ) : (
-            <div className="text-center py-16">
-              <p className="text-text-secondary text-lg">Aucun profil trouvé</p>
-              <p className="text-text-tertiary text-sm mt-1">Essayez de modifier vos filtres de recherche</p>
-              <button
-                className="btn-secondary mt-4"
-                onClick={() => { setSearch(''); setSector(''); setAvailability(''); setVerified(false) }}
-              >
-                Réinitialiser les filtres
-              </button>
-            </div>
+            orgs.length === 0 ? (
+              <div className="text-center py-16">
+                <p className="font-medium text-text-primary">Aucune organisation trouvée</p>
+                <p className="text-sm text-text-secondary mt-1">Essayez d&apos;autres critères de recherche</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {orgs.map((o: any) => (
+                  <div key={o.id} className="card hover:shadow-sm transition-shadow cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm"
+                        style={{ backgroundColor: o.logoColor ?? '#6C47FF' }}>
+                        {o.name?.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-text-primary truncate">{o.name}</p>
+                        <p className="text-xs text-text-secondary">{o.type} · {o.sector}</p>
+                        <p className="text-xs text-text-tertiary">{o.city}, {o.country}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
           )}
         </div>
       </main>

@@ -1,329 +1,192 @@
 'use client'
 
-import { useState } from 'react'
-import {
-  IconPlus, IconTrash, IconEdit, IconCircleCheck, IconClock,
-  IconX, IconBrandWhatsapp, IconMail, IconLink, IconCheck
-} from '@tabler/icons-react'
-import { CURRENT_USER, SECTORS, COUNTRIES, LANGUAGES } from '@/lib/mock-data'
-import { AvailabilityStatus, VerificationStatus } from '@/lib/types'
+import { useEffect, useState } from 'react'
+import { IconPlus, IconTrash, IconCircleCheck, IconClock, IconCheck, IconLoader2 } from '@tabler/icons-react'
+import { SECTORS, COUNTRIES, LANGUAGES } from '@/lib/constants'
 
-const STATUS_LABELS: Record<VerificationStatus, { label: string; color: string }> = {
-  non_demandée: { label: 'Non demandée', color: 'text-text-tertiary bg-[#F3F4F6]' },
-  en_attente: { label: 'En attente', color: 'text-[#D97706] bg-[#FFFBEB]' },
-  confirmée: { label: 'Confirmée', color: 'text-success bg-success-light' },
-  rejetée: { label: 'Rejetée', color: 'text-danger bg-red-50' },
+const STATUS_COLORS: Record<string, string> = {
+  EN_ATTENTE: 'text-[#D97706] bg-[#FFFBEB]',
+  CONFIRMEE:  'text-success bg-success-light',
+  REJETEE:    'text-danger bg-red-50',
+}
+const STATUS_LABELS: Record<string, string> = {
+  EN_ATTENTE: 'En attente',
+  CONFIRMEE:  'Confirmée',
+  REJETEE:    'Rejetée',
 }
 
 export default function ProfilePage() {
-  const [saved, setSaved] = useState(false)
-  const [availability, setAvailability] = useState<AvailabilityStatus>(CURRENT_USER.availabilityStatus)
-  const [skills, setSkills] = useState(CURRENT_USER.skills.map(s => s.label))
+  const [profile, setProfile]   = useState<any>(null)
+  const [loading, setLoading]   = useState(true)
+  const [saving, setSaving]     = useState(false)
+  const [saved, setSaved]       = useState(false)
+  const [skills, setSkills]     = useState<string[]>([])
   const [newSkill, setNewSkill] = useState('')
+  const [form, setForm]         = useState({
+    fullName: '', title: '', city: '', country: 'Sénégal', bio: '', phone: '', linkedin: '',
+  })
 
-  const handleSave = () => {
+  useEffect(() => {
+    fetch('/api/profile')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d) {
+          setProfile(d)
+          setForm({
+            fullName: d.fullName ?? '',
+            title:    d.title    ?? '',
+            city:     d.city     ?? '',
+            country:  d.country  ?? 'Sénégal',
+            bio:      d.bio      ?? '',
+            phone:    d.phone    ?? '',
+            linkedin: d.linkedin ?? '',
+          })
+        }
+        setLoading(false)
+      })
+  }, [])
+
+  const handleSave = async () => {
+    setSaving(true)
+    await fetch('/api/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    })
+    setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
   }
 
   const addSkill = () => {
-    if (newSkill.trim() && skills.length < 5) {
-      setSkills([...skills, newSkill.trim()])
+    const s = newSkill.trim()
+    if (s && !skills.includes(s) && skills.length < 10) {
+      setSkills([...skills, s])
       setNewSkill('')
     }
   }
 
-  const removeSkill = (index: number) => {
-    setSkills(skills.filter((_, i) => i !== index))
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <IconLoader2 size={24} className="animate-spin text-primary" />
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-6 pb-20">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-text-primary">Mon profil</h1>
-        <p className="text-text-secondary text-sm mt-1">Gérez vos informations professionnelles</p>
+    <div className="max-w-3xl space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-text-primary">Mon profil</h1>
+          <p className="text-sm text-text-secondary mt-1">Gérez vos informations professionnelles</p>
+        </div>
+        <button onClick={handleSave} disabled={saving} className="btn-primary px-5 py-2.5 flex items-center gap-2">
+          {saving && <IconLoader2 size={16} className="animate-spin" />}
+          {saved  && <IconCheck size={16} />}
+          {saved ? 'Enregistré !' : 'Enregistrer'}
+        </button>
       </div>
 
-      {/* 1. Identité */}
-      <section className="card space-y-4">
-        <h2 className="section-title">Identité</h2>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="fullName" className="label">Nom complet</label>
-            <input id="fullName" className="input" defaultValue={CURRENT_USER.fullName} />
-          </div>
-          <div>
-            <label htmlFor="title" className="label">Titre professionnel</label>
-            <input id="title" className="input" defaultValue={CURRENT_USER.title} />
-          </div>
-          <div>
-            <label htmlFor="city" className="label">Ville</label>
-            <input id="city" className="input" defaultValue={CURRENT_USER.city} />
-          </div>
-          <div>
-            <label htmlFor="country" className="label">Pays</label>
-            <select id="country" className="input" defaultValue={CURRENT_USER.country}>
-              {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="sector" className="label">Secteur</label>
-            <select id="sector" className="input" defaultValue={CURRENT_USER.sector}>
-              {SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="label">Langues</label>
-            <div className="flex flex-wrap gap-2">
-              {LANGUAGES.map((lang) => {
-                const selected = CURRENT_USER.languages.includes(lang)
-                return (
-                  <button
-                    key={lang}
-                    type="button"
-                    className={`text-xs px-3 py-1.5 rounded-badge border font-medium transition-colors ${
-                      selected
-                        ? 'bg-primary-light border-primary-border text-primary'
-                        : 'bg-white border-border text-text-secondary hover:border-primary-border'
-                    }`}
-                  >
-                    {lang}
-                  </button>
-                )
-              })}
+      {/* Infos générales */}
+      <div className="card space-y-4">
+        <h2 className="font-semibold text-text-primary">Informations générales</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {[
+            { label: 'Nom complet *', key: 'fullName', placeholder: 'Prénom Nom' },
+            { label: 'Titre / Poste', key: 'title',    placeholder: 'ex: Ingénieur Logiciel' },
+            { label: 'Ville',         key: 'city',     placeholder: 'Dakar' },
+            { label: 'Téléphone',     key: 'phone',    placeholder: '+221 77 000 0000' },
+            { label: 'LinkedIn',      key: 'linkedin', placeholder: 'linkedin.com/in/…' },
+          ].map(f => (
+            <div key={f.key}>
+              <label className="label">{f.label}</label>
+              <input
+                className="input"
+                value={(form as any)[f.key]}
+                onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                placeholder={f.placeholder}
+              />
             </div>
+          ))}
+          <div>
+            <label className="label">Pays</label>
+            <select className="input" value={form.country} onChange={e => setForm({...form, country: e.target.value})}>
+              {COUNTRIES.map(c => <option key={c}>{c}</option>)}
+            </select>
           </div>
         </div>
-      </section>
-
-      {/* 2. Compétences */}
-      <section className="card space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="section-title">Compétences</h2>
-          <span className="text-xs text-text-tertiary">{skills.length}/5 maximum</span>
+        <div>
+          <label className="label">Bio</label>
+          <textarea className="input min-h-[90px] resize-none" value={form.bio} onChange={e => setForm({...form, bio: e.target.value})} placeholder="Présentez-vous en quelques lignes…" />
         </div>
-        <div className="flex flex-wrap gap-2">
-          {skills.map((skill, i) => (
-            <span key={i} className="inline-flex items-center gap-1.5 bg-primary-light text-primary text-sm font-medium px-3 py-1.5 rounded-badge border border-primary-border">
-              {skill}
-              <button onClick={() => removeSkill(i)} aria-label={`Supprimer ${skill}`}>
-                <IconX size={12} />
-              </button>
+      </div>
+
+      {/* Compétences */}
+      <div className="card space-y-4">
+        <h2 className="font-semibold text-text-primary">Compétences</h2>
+        <div className="flex flex-wrap gap-2 min-h-[32px]">
+          {skills.length === 0 && <p className="text-sm text-text-tertiary">Aucune compétence ajoutée</p>}
+          {skills.map(s => (
+            <span key={s} className="flex items-center gap-1.5 bg-primary-light text-primary text-sm px-3 py-1 rounded-full">
+              {s}
+              <button onClick={() => setSkills(skills.filter(x => x !== s))}><IconTrash size={12} /></button>
             </span>
           ))}
         </div>
-        {skills.length < 5 && (
-          <div className="flex gap-2">
-            <input
-              className="input flex-1"
-              placeholder="Ajouter une compétence..."
-              value={newSkill}
-              onChange={(e) => setNewSkill(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addSkill()}
-            />
-            <button onClick={addSkill} className="btn-primary px-3">
-              <IconPlus size={16} />
-            </button>
-          </div>
-        )}
-      </section>
+        <div className="flex gap-2">
+          <input className="input flex-1" value={newSkill} onChange={e => setNewSkill(e.target.value)} onKeyDown={e => e.key === 'Enter' && addSkill()} placeholder="React, Finance, Leadership…" />
+          <button onClick={addSkill} className="btn-primary px-4"><IconPlus size={16} /></button>
+        </div>
+      </div>
 
-      {/* 3. Expériences */}
-      <section className="card space-y-4">
+      {/* Expériences */}
+      <div className="card space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="section-title">Expériences</h2>
-          <button className="btn-secondary text-xs py-1.5 px-3">
-            <IconPlus size={14} />
-            Ajouter
-          </button>
+          <h2 className="font-semibold text-text-primary">Expériences</h2>
+          <button className="text-sm text-primary font-medium flex items-center gap-1"><IconPlus size={15} /> Ajouter</button>
         </div>
-        <div className="space-y-3">
-          {CURRENT_USER.experiences.map((exp) => {
-            const status = STATUS_LABELS[exp.verificationStatus]
-            return (
-              <div key={exp.id} className="border border-[#E5E7EB] rounded-card p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
-                    <p className="font-semibold text-text-primary text-sm">{exp.title}</p>
-                    <p className="text-text-secondary text-sm">{exp.organization}</p>
-                    <p className="text-xs text-text-tertiary mt-0.5">
-                      {exp.startDate} — {exp.current ? "Aujourd'hui" : exp.endDate}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button className="btn-ghost py-1 px-2" aria-label="Modifier">
-                      <IconEdit size={14} />
-                    </button>
-                    <button className="btn-ghost py-1 px-2 hover:text-danger hover:bg-red-50" aria-label="Supprimer">
-                      <IconTrash size={14} />
-                    </button>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 mt-3 flex-wrap">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-badge ${status.color}`}>
-                    {exp.verificationStatus === 'confirmée' && <IconCircleCheck size={12} className="inline mr-1" />}
-                    {exp.verificationStatus === 'en_attente' && <IconClock size={12} className="inline mr-1" />}
-                    {status.label}
-                  </span>
-                  {exp.verificationStatus === 'non_demandée' && (
-                    <button className="text-xs text-primary hover:text-primary-hover font-medium flex items-center gap-1 underline underline-offset-2">
-                      Demander la vérification
-                    </button>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </section>
-
-      {/* 4. Formation */}
-      <section className="card space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="section-title">Formation</h2>
-          <button className="btn-secondary text-xs py-1.5 px-3">
-            <IconPlus size={14} />
-            Ajouter
-          </button>
-        </div>
-        <div className="space-y-3">
-          {CURRENT_USER.education.map((edu) => {
-            const status = STATUS_LABELS[edu.verificationStatus]
-            return (
-              <div key={edu.id} className="border border-[#E5E7EB] rounded-card p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
-                    <p className="font-semibold text-text-primary text-sm">{edu.degree}</p>
-                    <p className="text-text-secondary text-sm">{edu.institution}</p>
-                    <p className="text-xs text-text-tertiary mt-0.5">
-                      {edu.startDate} — {edu.current ? "Aujourd'hui" : edu.endDate}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button className="btn-ghost py-1 px-2" aria-label="Modifier">
-                      <IconEdit size={14} />
-                    </button>
-                    <button className="btn-ghost py-1 px-2 hover:text-danger hover:bg-red-50" aria-label="Supprimer">
-                      <IconTrash size={14} />
-                    </button>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 mt-3 flex-wrap">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-badge ${status.color}`}>
-                    {edu.verificationStatus === 'confirmée' && <IconCircleCheck size={12} className="inline mr-1" />}
-                    {edu.verificationStatus === 'en_attente' && <IconClock size={12} className="inline mr-1" />}
-                    {status.label}
-                  </span>
-                  {edu.verificationStatus === 'non_demandée' && (
-                    <button className="text-xs text-primary hover:text-primary-hover font-medium underline underline-offset-2">
-                      Demander la vérification
-                    </button>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </section>
-
-      {/* 5. Publications */}
-      <section className="card space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="section-title">Thèse & Publications</h2>
-          <button className="btn-secondary text-xs py-1.5 px-3">
-            <IconPlus size={14} />
-            Ajouter
-          </button>
-        </div>
-        {CURRENT_USER.publications.map((pub) => (
-          <div key={pub.id} className="border border-[#E5E7EB] rounded-card p-4 flex items-start justify-between gap-2">
-            <div>
-              <span className="text-xs font-medium text-secondary bg-secondary-light px-2 py-0.5 rounded-badge capitalize">
-                {pub.type}
-              </span>
-              <p className="text-sm font-medium text-text-primary mt-1.5">{pub.title}</p>
-              <a href={pub.link} className="text-xs text-primary hover:underline mt-0.5 block">{pub.link}</a>
+        {(profile?.experiences ?? []).length === 0 ? (
+          <p className="text-sm text-text-tertiary text-center py-6">Aucune expérience — cliquez sur Ajouter</p>
+        ) : profile.experiences.map((exp: any) => (
+          <div key={exp.id} className="flex items-start gap-3 pb-4 border-b border-[#F3F4F6] last:border-0 last:pb-0">
+            <div className="w-9 h-9 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-xs font-bold text-text-secondary">
+              {exp.company?.slice(0, 2).toUpperCase()}
             </div>
-            <button className="btn-ghost py-1 px-2 hover:text-danger hover:bg-red-50 flex-shrink-0" aria-label="Supprimer">
-              <IconTrash size={14} />
-            </button>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-text-primary">{exp.title}</p>
+              <p className="text-xs text-text-secondary">{exp.company}</p>
+              <span className={`mt-1 inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[exp.status] ?? 'text-text-tertiary bg-[#F3F4F6]'}`}>
+                {exp.status === 'EN_ATTENTE' ? <IconClock size={10} /> : <IconCircleCheck size={10} />}
+                {STATUS_LABELS[exp.status] ?? exp.status}
+              </span>
+            </div>
           </div>
         ))}
-      </section>
+      </div>
 
-      {/* 6. Disponibilité */}
-      <section className="card space-y-4">
-        <h2 className="section-title">Disponibilité</h2>
-        <div className="grid sm:grid-cols-3 gap-3">
-          {([
-            { value: 'disponible', label: 'Disponible', desc: 'En recherche active', dot: 'bg-success' },
-            { value: 'en_veille', label: 'En veille', desc: 'Ouvert aux opportunités', dot: 'bg-[#F59E0B]' },
-            { value: 'indisponible', label: 'Indisponible', desc: 'Non disponible', dot: 'bg-text-tertiary' },
-          ] as const).map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => setAvailability(opt.value)}
-              className={`flex items-start gap-3 p-4 rounded-card border-2 text-left transition-all ${
-                availability === opt.value
-                  ? 'border-primary bg-primary-light'
-                  : 'border-[#E5E7EB] hover:border-primary-border'
-              }`}
-            >
-              <span className={`w-3 h-3 rounded-full mt-0.5 flex-shrink-0 ${opt.dot}`} />
-              <div>
-                <p className={`text-sm font-semibold ${availability === opt.value ? 'text-primary' : 'text-text-primary'}`}>
-                  {opt.label}
-                </p>
-                <p className="text-xs text-text-secondary mt-0.5">{opt.desc}</p>
-              </div>
-            </button>
-          ))}
+      {/* Formations */}
+      <div className="card space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-text-primary">Formations</h2>
+          <button className="text-sm text-primary font-medium flex items-center gap-1"><IconPlus size={15} /> Ajouter</button>
         </div>
-      </section>
-
-      {/* 7. Contact */}
-      <section className="card space-y-4">
-        <h2 className="section-title">Contact</h2>
-        <div className="space-y-3">
-          <div>
-            <label htmlFor="whatsapp" className="label">WhatsApp</label>
-            <div className="relative">
-              <IconBrandWhatsapp className="absolute left-3 top-1/2 -translate-y-1/2 text-whatsapp" size={16} />
-              <input id="whatsapp" className="input pl-9" defaultValue={CURRENT_USER.whatsapp} placeholder="+221 77 000 0000" />
+        {(profile?.educations ?? []).length === 0 ? (
+          <p className="text-sm text-text-tertiary text-center py-6">Aucune formation — cliquez sur Ajouter</p>
+        ) : profile.educations.map((edu: any) => (
+          <div key={edu.id} className="flex items-start gap-3 pb-4 border-b border-[#F3F4F6] last:border-0 last:pb-0">
+            <div className="w-9 h-9 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-xs font-bold text-text-secondary">
+              {(edu.organisation?.name ?? '??').slice(0, 2).toUpperCase()}
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-text-primary">{edu.degree}</p>
+              <p className="text-xs text-text-secondary">{edu.organisation?.name ?? '—'} · {edu.field}</p>
+              <span className={`mt-1 inline-block text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[edu.status] ?? 'text-text-tertiary bg-[#F3F4F6]'}`}>
+                {STATUS_LABELS[edu.status] ?? edu.status}
+              </span>
             </div>
           </div>
-          <div>
-            <label htmlFor="contactEmail" className="label">Email de contact</label>
-            <div className="relative">
-              <IconMail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" size={16} />
-              <input id="contactEmail" type="email" className="input pl-9" defaultValue={CURRENT_USER.contactEmail} />
-            </div>
-          </div>
-          <div>
-            <label htmlFor="externalLink" className="label">Lien externe (portfolio, GitHub, etc.)</label>
-            <div className="relative">
-              <IconLink className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" size={16} />
-              <input id="externalLink" type="url" className="input pl-9" defaultValue={CURRENT_USER.externalLink} placeholder="https://" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Sticky save bar */}
-      <div className="fixed bottom-0 left-0 right-0 lg:left-60 bg-white border-t border-[#E5E7EB] px-5 py-3 flex items-center justify-between z-20">
-        <p className="text-xs text-text-secondary">Dernière modification : 24 juin 2026</p>
-        <button onClick={handleSave} className="btn-primary py-2">
-          {saved ? (
-            <>
-              <IconCheck size={16} />
-              Enregistré
-            </>
-          ) : (
-            'Enregistrer les modifications'
-          )}
-        </button>
+        ))}
       </div>
     </div>
   )
