@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -8,7 +8,6 @@ import {
   IconCompass, IconCreditCard, IconSettings, IconLogout,
   IconBriefcase, IconBuilding,
 } from '@tabler/icons-react'
-import { CURRENT_USER } from '@/lib/mock-data'
 import { useUser } from '@/lib/user-context'
 
 const PRO_NAV = [
@@ -28,24 +27,17 @@ const ORG_NAV = [
   { href: '/settings',          label: 'Paramètres',       icon: IconSettings },
 ]
 
-const PRO_USER = {
-  name: CURRENT_USER.fullName,
-  email: CURRENT_USER.email,
-  initials: CURRENT_USER.fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2),
-  avatarBg: 'bg-primary',
-}
+interface MeData { name: string; email: string }
 
-const ORG_USER = {
-  name: 'Talent Africa Group',
-  email: 'contact@talentagricagroup.com',
-  initials: 'TA',
-  avatarBg: 'bg-[#0C0A18]',
+function initials(name: string) {
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
 export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { role, setRole } = useUser()
+  const [me, setMe] = useState<MeData | null>(null)
 
   const effectiveRole = pathname.startsWith('/org/') ? 'organisation' : role
 
@@ -53,8 +45,17 @@ export default function Sidebar() {
     if (effectiveRole !== role) setRole(effectiveRole)
   }, [effectiveRole, role, setRole])
 
+  useEffect(() => {
+    fetch('/api/me')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setMe(data) })
+  }, [])
+
   const nav = effectiveRole === 'organisation' ? ORG_NAV : PRO_NAV
-  const user = effectiveRole === 'organisation' ? ORG_USER : PRO_USER
+  const avatarBg = effectiveRole === 'organisation' ? 'bg-[#0C0A18]' : 'bg-primary'
+  const displayName = me?.name ?? '…'
+  const displayEmail = me?.email ?? ''
+  const displayInitials = me ? initials(me.name) : '?'
 
   function isActive(href: string, exact = false) {
     if (exact) return pathname === href
@@ -70,7 +71,7 @@ export default function Sidebar() {
     <aside className="hidden lg:flex flex-col w-60 min-h-screen bg-white border-r border-[#E5E7EB] fixed left-0 top-0 bottom-0 z-30">
       {/* Logo */}
       <div className="px-6 py-5 border-b border-[#E5E7EB]">
-        <Link href={role === 'organisation' ? '/org/dashboard' : '/dashboard'} className="text-2xl font-extrabold text-primary">
+        <Link href={effectiveRole === 'organisation' ? '/org/dashboard' : '/dashboard'} className="text-2xl font-extrabold text-primary">
           bcarte
         </Link>
       </div>
@@ -100,12 +101,12 @@ export default function Sidebar() {
       {/* Current user */}
       <div className="px-3 py-4 border-t border-[#E5E7EB] space-y-1">
         <div className="flex items-center gap-3 px-3 py-2">
-          <div className={`w-8 h-8 rounded-full ${user.avatarBg} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
-            {user.initials}
+          <div className={`w-8 h-8 rounded-full ${avatarBg} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
+            {displayInitials}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-text-primary truncate">{user.name}</p>
-            <p className="text-xs text-text-tertiary truncate">{user.email}</p>
+            <p className="text-sm font-medium text-text-primary truncate">{displayName}</p>
+            <p className="text-xs text-text-tertiary truncate">{displayEmail}</p>
           </div>
         </div>
         <button
