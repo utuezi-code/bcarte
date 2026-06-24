@@ -17,12 +17,13 @@ const fadeUp = {
 }
 
 const stagger = {
+  initial: {},
   animate: { transition: { staggerChildren: 0.07 } },
 }
 
 const item = {
   initial:  { opacity: 0, y: 12 },
-  animate:  { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.4, 0, 0.2, 1] } },
+  animate:  { opacity: 1, y: 0 },
 }
 
 export default function LoginPage() {
