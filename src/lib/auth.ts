@@ -1,6 +1,10 @@
 import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET must be set in production')
+}
+
 const SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET ?? 'bcarte-dev-secret-change-in-prod'
 )
