@@ -1,31 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase-server'
+import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   const session = await getSession()
   if (!session) return NextResponse.json(null, { status: 401 })
 
-  const { data } = await supabaseAdmin
-    .from('organisations')
-    .select('*')
-    .eq('ownerId', session.userId)
-    .single()
+  const org = await prisma.organisation.findUnique({ where: { ownerId: session.userId } })
 
-  return NextResponse.json(data ?? null)
+  return NextResponse.json(org)
 }
 
 export async function PUT(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json(null, { status: 401 })
 
-  const body = await req.json()
-  const { name, description, sector, city, country, website } = body
+  const { name, description, sector, city, country, website } = await req.json()
 
-  await supabaseAdmin
-    .from('organisations')
-    .update({ name, description, sector, city, country, website, updatedAt: new Date().toISOString() })
-    .eq('ownerId', session.userId)
+  await prisma.organisation.update({
+    where: { ownerId: session.userId },
+    data: { name, description, sector, city, country, website },
+  })
 
   return NextResponse.json({ ok: true })
 }

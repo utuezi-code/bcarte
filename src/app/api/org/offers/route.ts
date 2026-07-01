@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase-server'
+import { prisma } from '@/lib/prisma'
 
 async function getOrgId(userId: string) {
-  const { data } = await supabaseAdmin
-    .from('organisations')
-    .select('id')
-    .eq('ownerId', userId)
-    .single()
-  return data?.id ?? null
+  const org = await prisma.organisation.findUnique({ where: { ownerId: userId }, select: { id: true } })
+  return org?.id ?? null
 }
 
 export async function GET() {
@@ -18,13 +14,12 @@ export async function GET() {
   const orgId = await getOrgId(session.userId)
   if (!orgId) return NextResponse.json([])
 
-  const { data } = await supabaseAdmin
-    .from('job_offers')
-    .select('*')
-    .eq('organisationId', orgId)
-    .order('createdAt', { ascending: false })
+  const offers = await prisma.jobOffer.findMany({
+    where: { organisationId: orgId },
+    orderBy: { createdAt: 'desc' },
+  })
 
-  return NextResponse.json(data ?? [])
+  return NextResponse.json(offers)
 }
 
 export async function POST(req: NextRequest) {
@@ -36,18 +31,19 @@ export async function POST(req: NextRequest) {
 
   const { title, location, type, description, salary } = await req.json()
 
-  const { data } = await supabaseAdmin.from('job_offers').insert({
-    id: crypto.randomUUID(),
-    organisationId: orgId,
-    title,
-    location,
-    type: type ?? 'CDI',
-    description,
-    salary,
-    isActive: true,
-  }).select().single()
+  const offer = await prisma.jobOffer.create({
+    data: {
+      organisationId: orgId,
+      title,
+      location,
+      type: type ?? 'CDI',
+      description,
+      salary,
+      isActive: true,
+    },
+  })
 
-  return NextResponse.json(data)
+  return NextResponse.json(offer)
 }
 
 export async function DELETE(req: NextRequest) {
@@ -55,7 +51,7 @@ export async function DELETE(req: NextRequest) {
   if (!session) return NextResponse.json(null, { status: 401 })
 
   const { id } = await req.json()
-  await supabaseAdmin.from('job_offers').delete().eq('id', id)
+  await prisma.jobOffer.delete({ where: { id } })
 
   return NextResponse.json({ ok: true })
 }

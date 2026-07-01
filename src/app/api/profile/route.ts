@@ -1,32 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase-server'
+import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   const session = await getSession()
   if (!session) return NextResponse.json(null, { status: 401 })
 
-  const { data: profile } = await supabaseAdmin
-    .from('profiles')
-    .select('*')
-    .eq('userId', session.userId)
-    .single()
+  const profile = await prisma.profile.findUnique({ where: { userId: session.userId } })
 
-  const { data: experiences } = await supabaseAdmin
-    .from('experiences')
-    .select('*')
-    .eq('profileId', profile?.id ?? '')
-    .order('startDate', { ascending: false })
-
-  const { data: educations } = await supabaseAdmin
-    .from('educations')
-    .select('*, organisation:organisations(name, slug)')
-    .eq('profileId', profile?.id ?? '')
+  const [experiences, educations] = profile
+    ? await Promise.all([
+        prisma.experience.findMany({
+          where: { profileId: profile.id },
+          orderBy: { startDate: 'desc' },
+        }),
+        prisma.education.findMany({
+          where: { profileId: profile.id },
+          include: { organisation: { select: { name: true, slug: true } } },
+        }),
+      ])
+    : [[], []]
 
   return NextResponse.json({
     ...profile,
-    experiences: experiences ?? [],
-    educations: educations ?? [],
+    experiences,
+    educations,
   })
 }
 
@@ -34,33 +32,13 @@ export async function PUT(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json(null, { status: 401 })
 
-  const body = await req.json()
-  const { fullName, title, city, country, bio, phone, linkedin } = body
+  const { fullName, title, city, country, bio, phone, linkedin } = await req.json()
 
-  const { data: existing } = await supabaseAdmin
-    .from('profiles')
-    .select('id')
-    .eq('userId', session.userId)
-    .single()
-
-  if (!existing) {
-    await supabaseAdmin.from('profiles').insert({
-      id: crypto.randomUUID(),
-      userId: session.userId,
-      fullName,
-      title,
-      city,
-      country,
-      bio,
-      phone,
-      linkedin,
-    })
-  } else {
-    await supabaseAdmin
-      .from('profiles')
-      .update({ fullName, title, city, country, bio, phone, linkedin })
-      .eq('userId', session.userId)
-  }
+  await prisma.profile.upsert({
+    where: { userId: session.userId },
+    update: { fullName, title, city, country, bio, phone, linkedin },
+    create: { userId: session.userId, fullName, title, city, country, bio, phone, linkedin },
+  })
 
   return NextResponse.json({ ok: true })
 }

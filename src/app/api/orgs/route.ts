@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase-server'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const search  = searchParams.get('search')  ?? ''
+  const search = searchParams.get('search') ?? ''
   const country = searchParams.get('country') ?? ''
 
-  let query = supabaseAdmin
-    .from('organisations')
-    .select('id, name, slug, type, sector, city, country, logoColor, verified')
+  const organisations = await prisma.organisation.findMany({
+    where: {
+      ...(search ? { name: { contains: search, mode: 'insensitive' } } : {}),
+      ...(country ? { country } : {}),
+    },
+    select: { id: true, name: true, slug: true, type: true, sector: true, city: true, country: true, logoColor: true, verified: true },
+    take: 50,
+  })
 
-  if (search)  query = query.ilike('name', `%${search}%`)
-  if (country) query = query.eq('country', country)
-
-  const { data } = await query.limit(50)
-  return NextResponse.json(data ?? [])
+  return NextResponse.json(organisations)
 }

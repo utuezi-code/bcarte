@@ -1,45 +1,37 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase-server'
+import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   const session = await getSession()
   if (!session) return NextResponse.json(null, { status: 401 })
 
   if (session.role === 'PROFESSIONNEL') {
-    const { data } = await supabaseAdmin
-      .from('profiles')
-      .select('fullName, title, city')
-      .eq('userId', session.userId)
-      .single()
-
-    const { data: user } = await supabaseAdmin
-      .from('users')
-      .select('email')
-      .eq('id', session.userId)
-      .single()
+    const [profile, user] = await Promise.all([
+      prisma.profile.findUnique({
+        where: { userId: session.userId },
+        select: { fullName: true, title: true, city: true },
+      }),
+      prisma.user.findUnique({ where: { id: session.userId }, select: { email: true } }),
+    ])
 
     return NextResponse.json({
       role: 'professionnel',
-      name: data?.fullName ?? 'Utilisateur',
+      name: profile?.fullName ?? 'Utilisateur',
       email: user?.email ?? '',
     })
   } else {
-    const { data } = await supabaseAdmin
-      .from('organisations')
-      .select('name, slug')
-      .eq('ownerId', session.userId)
-      .single()
-
-    const { data: user } = await supabaseAdmin
-      .from('users')
-      .select('email')
-      .eq('id', session.userId)
-      .single()
+    const [org, user] = await Promise.all([
+      prisma.organisation.findUnique({
+        where: { ownerId: session.userId },
+        select: { name: true, slug: true },
+      }),
+      prisma.user.findUnique({ where: { id: session.userId }, select: { email: true } }),
+    ])
 
     return NextResponse.json({
       role: 'organisation',
-      name: data?.name ?? 'Organisation',
+      name: org?.name ?? 'Organisation',
       email: user?.email ?? '',
     })
   }

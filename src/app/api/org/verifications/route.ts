@@ -1,26 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase-server'
+import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   const session = await getSession()
   if (!session) return NextResponse.json([], { status: 401 })
 
-  const { data: org } = await supabaseAdmin
-    .from('organisations')
-    .select('id')
-    .eq('ownerId', session.userId)
-    .single()
+  const org = await prisma.organisation.findUnique({
+    where: { ownerId: session.userId },
+    select: { id: true },
+  })
 
   if (!org) return NextResponse.json([])
 
-  const { data } = await supabaseAdmin
-    .from('verifications')
-    .select('*')
-    .eq('organisationId', org.id)
-    .order('createdAt', { ascending: false })
+  const verifications = await prisma.verification.findMany({
+    where: { organisationId: org.id },
+    orderBy: { createdAt: 'desc' },
+  })
 
-  return NextResponse.json(data ?? [])
+  return NextResponse.json(verifications)
 }
 
 export async function PATCH(req: NextRequest) {
@@ -29,10 +27,7 @@ export async function PATCH(req: NextRequest) {
 
   const { id, status } = await req.json()
 
-  await supabaseAdmin
-    .from('verifications')
-    .update({ status, updatedAt: new Date().toISOString() })
-    .eq('id', id)
+  await prisma.verification.update({ where: { id }, data: { status } })
 
   return NextResponse.json({ ok: true })
 }
