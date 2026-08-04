@@ -58,9 +58,9 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-light">
+    <div className="min-h-screen bg-[#F7F6FF]">
       <Sidebar />
-      <main className="lg:pl-60 pb-16 lg:pb-0 min-h-screen">
+      <main className="lg:pl-[220px] pb-16 lg:pb-0 min-h-screen">
         <div className="max-w-2xl mx-auto px-5 py-6 lg:px-8 lg:py-8 space-y-6">
           <div>
             <h1 className="text-2xl font-bold text-text-primary">Paramètres</h1>
@@ -232,9 +232,9 @@ export default function SettingsPage() {
 
 
   return (
-    <div className="min-h-screen bg-bg-light">
+    <div className="min-h-screen bg-[#F7F6FF]">
       <Sidebar />
-      <main className="lg:pl-60 pb-16 lg:pb-0 min-h-screen">
+      <main className="lg:pl-[220px] pb-16 lg:pb-0 min-h-screen">
         <div className="max-w-2xl mx-auto px-5 py-6 lg:px-8 lg:py-8 space-y-6">
           <div>
             <h1 className="text-2xl font-bold text-text-primary">Paramètres</h1>

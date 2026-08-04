@@ -85,16 +85,16 @@ export default function OrgDashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-bg-light flex items-center justify-center">
+      <div className="min-h-screen bg-[#F7F6FF] flex items-center justify-center">
         <IconLoader2 size={28} className="animate-spin text-primary" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-bg-light">
+    <div className="min-h-screen bg-[#F7F6FF]">
       <Sidebar />
-      <main className="lg:pl-60 pb-16 lg:pb-0 min-h-screen">
+      <main className="lg:pl-[220px] pb-16 lg:pb-0 min-h-screen">
         <div className="max-w-5xl mx-auto px-5 py-6 lg:px-8 lg:py-8 space-y-6">
 
           {/* Header org */}
