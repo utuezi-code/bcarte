@@ -2,19 +2,41 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-server'
 
 export async function GET(_req: NextRequest, { params }: { params: { slug: string } }) {
-  const { data: profile } = await supabaseAdmin
+  /* core profile */
+  const { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles')
-    .select(`
-      id, fullName, title, bio, city, country, phone, linkedin, avatarUrl,
-      skills,
-      experiences(*),
-      educations(*, organisation:organisations(name, slug)),
-      verifications:verifications(status, organisationId, organisation:organisations(name, slug))
-    `)
+    .select('id, fullName, title, bio, city, country, phone, linkedin, avatarUrl, skills, slug')
     .eq('slug', params.slug)
     .single()
 
-  if (!profile) return NextResponse.json(null, { status: 404 })
+  if (profileError || !profile) {
+    console.error('profile fetch error:', profileError?.message, 'slug:', params.slug)
+    return NextResponse.json({ _error: profileError?.message ?? 'not found' }, { status: 404 })
+  }
 
-  return NextResponse.json(profile)
+  /* experiences */
+  const { data: experiences } = await supabaseAdmin
+    .from('experiences')
+    .select('*')
+    .eq('profileId', profile.id)
+    .order('startDate', { ascending: false })
+
+  /* educations */
+  const { data: educations } = await supabaseAdmin
+    .from('educations')
+    .select('*, organisation:organisations(name, slug)')
+    .eq('profileId', profile.id)
+
+  /* verifications */
+  const { data: verifications } = await supabaseAdmin
+    .from('verifications')
+    .select('status, organisationId, organisation:organisations(name, slug)')
+    .eq('profileId', profile.id)
+
+  return NextResponse.json({
+    ...profile,
+    experiences:   experiences   ?? [],
+    educations:    educations    ?? [],
+    verifications: verifications ?? [],
+  })
 }
