@@ -44,8 +44,9 @@ export default function ProfilePage() {
   const [skills,    setSkills]    = useState<string[]>([])
   const [newSkill,  setNewSkill]  = useState('')
   const [form,      setForm]      = useState({
-    fullName: '', title: '', city: '', country: 'Sénégal', bio: '', phone: '', linkedin: '',
+    fullName: '', title: '', city: '', country: 'Sénégal', bio: '', phone: '', linkedin: '', slug: '',
   })
+  const [slugError, setSlugError] = useState('')
   const [showExp,   setShowExp]   = useState(false)
   const [expForm,   setExpForm]   = useState(BLANK_EXP)
   const [addingExp, setAddingExp] = useState(false)
@@ -71,6 +72,7 @@ export default function ProfilePage() {
           bio:      d.bio      ?? '',
           phone:    d.phone    ?? '',
           linkedin: d.linkedin ?? '',
+          slug:     d.slug     ?? '',
         })
       }
       setLoading(false)
@@ -96,13 +98,23 @@ export default function ProfilePage() {
 
   /* save */
   const handleSave = async () => {
+    setSlugError('')
     setSaving(true)
-    await fetch('/api/profile', {
+    const res = await fetch('/api/profile', {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...form, skills }),
     })
-    setSaving(false); setSaved(true)
+    setSaving(false)
+    if (res.status === 409) { setSlugError('Ce lien est déjà pris, choisis-en un autre.'); return }
+    setSaved(true)
     setTimeout(() => setSaved(false), 3000)
+  }
+
+  const suggestSlug = () => {
+    if (form.slug || !form.fullName) return
+    const s = form.fullName.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    setForm(f => ({ ...f, slug: s }))
   }
 
   /* experience CRUD */
@@ -329,7 +341,7 @@ export default function ProfilePage() {
             <div className="card space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {([
-                  { label: 'Nom complet',   key: 'fullName', placeholder: 'Prénom Nom',             type: 'text' },
+                  { label: 'Nom complet',   key: 'fullName', placeholder: 'Prénom Nom',             type: 'text', onBlur: suggestSlug },
                   { label: 'Titre / Poste', key: 'title',    placeholder: 'ex: Ingénieur Logiciel', type: 'text' },
                   { label: 'Ville',         key: 'city',     placeholder: 'Dakar',                  type: 'text' },
                   { label: 'Téléphone',     key: 'phone',    placeholder: '+221 77 000 0000',        type: 'tel'  },
@@ -340,6 +352,7 @@ export default function ProfilePage() {
                     <input type={f.type} className="input"
                       value={(form as any)[f.key]}
                       onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                      onBlur={(f as any).onBlur}
                       placeholder={f.placeholder} />
                   </div>
                 ))}
@@ -356,6 +369,39 @@ export default function ProfilePage() {
                 <textarea rows={4} className="input resize-none leading-relaxed" value={form.bio}
                   onChange={e => setForm({ ...form, bio: e.target.value })}
                   placeholder="Présentez-vous en quelques lignes…" />
+              </div>
+
+              {/* Slug / lien public */}
+              <div>
+                <label className="label">Lien de votre profil public</label>
+                <div className="flex gap-2">
+                  <div className="flex flex-1 items-center border-[1.5px] rounded-[10px] overflow-hidden transition-all focus-within:border-primary focus-within:shadow-[0_0_0_3px_rgba(108,71,255,0.10)]"
+                    style={{ borderColor: slugError ? '#EF4444' : '#E2E0F0' }}>
+                    <span className="pl-3 pr-1 text-sm text-text-tertiary whitespace-nowrap select-none">bcarte.io/p/</span>
+                    <input
+                      className="flex-1 h-[42px] bg-transparent text-sm text-text-primary outline-none pr-3"
+                      placeholder="mon-slug"
+                      value={form.slug}
+                      onBlur={suggestSlug}
+                      onChange={e => {
+                        setSlugError('')
+                        setForm({ ...form, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/--+/g, '-') })
+                      }}
+                    />
+                  </div>
+                  {!form.slug && form.fullName && (
+                    <button type="button" onClick={suggestSlug}
+                      className="btn-secondary text-xs px-3 h-11 whitespace-nowrap">
+                      Suggérer
+                    </button>
+                  )}
+                </div>
+                {slugError
+                  ? <p className="text-xs text-red-500 mt-1.5">{slugError}</p>
+                  : form.slug
+                    ? <p className="text-xs text-text-tertiary mt-1.5">Votre profil sera accessible sur <span className="text-primary font-medium">bcarte.io/p/{form.slug}</span></p>
+                    : <p className="text-xs text-text-tertiary mt-1.5">Choisissez un identifiant unique pour votre profil public (ex&nbsp;: mamadou-traore)</p>
+                }
               </div>
             </div>
           )}

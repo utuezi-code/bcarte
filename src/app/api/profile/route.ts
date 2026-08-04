@@ -35,7 +35,7 @@ export async function PUT(req: NextRequest) {
   if (!session) return NextResponse.json(null, { status: 401 })
 
   const body = await req.json()
-  const { fullName, title, city, country, bio, phone, linkedin } = body
+  const { fullName, title, city, country, bio, phone, linkedin, slug, skills } = body
 
   const { data: existing } = await supabaseAdmin
     .from('profiles')
@@ -43,23 +43,23 @@ export async function PUT(req: NextRequest) {
     .eq('userId', session.userId)
     .single()
 
-  if (!existing) {
-    await supabaseAdmin.from('profiles').insert({
-      id: crypto.randomUUID(),
-      userId: session.userId,
-      fullName,
-      title,
-      city,
-      country,
-      bio,
-      phone,
-      linkedin,
-    })
-  } else {
-    await supabaseAdmin
+  /* check slug uniqueness (ignore own profile) */
+  if (slug) {
+    const { data: taken } = await supabaseAdmin
       .from('profiles')
-      .update({ fullName, title, city, country, bio, phone, linkedin })
-      .eq('userId', session.userId)
+      .select('id')
+      .eq('slug', slug)
+      .neq('userId', session.userId)
+      .maybeSingle()
+    if (taken) return NextResponse.json({ error: 'Ce slug est déjà utilisé' }, { status: 409 })
+  }
+
+  const fields = { fullName, title, city, country, bio, phone, linkedin, slug: slug || null, skills: skills ?? [] }
+
+  if (!existing) {
+    await supabaseAdmin.from('profiles').insert({ id: crypto.randomUUID(), userId: session.userId, ...fields })
+  } else {
+    await supabaseAdmin.from('profiles').update(fields).eq('userId', session.userId)
   }
 
   return NextResponse.json({ ok: true })
