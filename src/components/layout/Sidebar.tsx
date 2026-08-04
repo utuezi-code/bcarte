@@ -96,17 +96,17 @@ export default function Sidebar() {
             <p className="text-[10.5px] text-text-tertiary truncate mt-0.5">{displayEmail}</p>
           </div>
         </div>
-        <div className="mt-2.5 flex items-center gap-2">
+        <div className="mt-2.5 flex flex-col gap-1">
           <Link href="/dashboard/profile"
-            className="flex-1 flex items-center justify-between text-[11px] font-semibold text-primary hover:underline">
-            Mon profil
+            className="flex items-center justify-between text-[11px] font-semibold text-primary hover:underline">
+            Éditer mon profil
             <IconChevronRight size={11} />
           </Link>
           {me?.slug && (
             <Link href={`/p/${me.slug}`} target="_blank"
-              title="Profil public"
-              className="flex items-center gap-1 text-[11px] font-semibold text-text-tertiary hover:text-primary transition-colors">
-              <IconExternalLink size={12} />
+              className="flex items-center justify-between text-[11px] font-semibold text-text-secondary hover:text-primary hover:underline transition-colors">
+              Voir mon profil public
+              <IconExternalLink size={11} />
             </Link>
           )}
         </div>
