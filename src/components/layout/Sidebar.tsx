@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   IconLayoutDashboard, IconUser, IconFileText,
   IconCompass, IconCreditCard, IconSettings, IconLogout,
-  IconBriefcase, IconBuilding, IconChevronRight, IconExternalLink,
+  IconBriefcase, IconBuilding, IconChevronRight, IconExternalLink, IconCopy, IconCheck,
 } from '@tabler/icons-react'
 import { useUser } from '@/lib/user-context'
 
@@ -42,7 +42,8 @@ export default function Sidebar() {
   const pathname = usePathname()
   const router   = useRouter()
   const { role, setRole } = useUser()
-  const [me, setMe] = useState<MeData | null>(null)
+  const [me, setMe]         = useState<MeData | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const effectiveRole = pathname.startsWith('/org/') ? 'organisation' : role
 
@@ -103,11 +104,23 @@ export default function Sidebar() {
             <IconChevronRight size={11} />
           </Link>
           {me?.slug && (
-            <Link href={`/p/${me.slug}`} target="_blank"
-              className="flex items-center justify-between text-[11px] font-semibold text-text-secondary hover:text-primary hover:underline transition-colors">
-              Voir mon profil public
-              <IconExternalLink size={11} />
-            </Link>
+            <div className="flex items-center gap-1">
+              <Link href={`/p/${me.slug}`} target="_blank"
+                className="flex-1 flex items-center justify-between text-[11px] font-semibold text-text-secondary hover:text-primary hover:underline transition-colors">
+                Profil public
+                <IconExternalLink size={11} />
+              </Link>
+              <button
+                title="Copier le lien"
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/p/${me!.slug}`)
+                  setCopied(true)
+                  setTimeout(() => setCopied(false), 2000)
+                }}
+                className="flex-shrink-0 p-0.5 text-text-tertiary hover:text-primary transition-colors">
+                {copied ? <IconCheck size={11} className="text-success" /> : <IconCopy size={11} />}
+              </button>
+            </div>
           )}
         </div>
       </div>

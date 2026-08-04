@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   IconPlus, IconX, IconCircleCheck, IconClock, IconCheck,
   IconLoader2, IconBriefcase, IconSchool, IconTrash,
-  IconMapPin, IconArrowUpRight,
+  IconMapPin, IconArrowUpRight, IconCopy, IconShare,
 } from '@tabler/icons-react'
 import { COUNTRIES } from '@/lib/constants'
 
@@ -54,6 +54,7 @@ export default function ProfilePage() {
   const [addingEdu, setAddingEdu] = useState(false)
   const [orgResults,setOrgResults]= useState<any[]>([])
   const [searchOrg, setSearchOrg] = useState(false)
+  const [copied,    setCopied]    = useState(false)
   const orgRef = useRef<HTMLDivElement>(null)
 
   /* load */
@@ -252,13 +253,48 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* Public profile link */}
-          {profile?.slug && (
-            <Link href={`/p/${profile.slug}`}
-              className="btn-secondary w-full justify-center gap-2 text-sm">
-              Voir le profil public <IconArrowUpRight size={14} />
-            </Link>
-          )}
+          {/* Share public profile */}
+          {profile?.slug && (() => {
+            const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/p/${profile.slug}`
+            const handleCopy = () => {
+              navigator.clipboard.writeText(url)
+              setCopied(true)
+              setTimeout(() => setCopied(false), 2500)
+            }
+            const handleShare = () => {
+              if (navigator.share) {
+                navigator.share({ title: form.fullName, url })
+              } else {
+                handleCopy()
+              }
+            }
+            return (
+              <div className="card py-3 px-4 space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <IconShare size={13} className="text-primary flex-shrink-0" />
+                  <p className="text-xs font-semibold text-text-primary">Partager mon profil</p>
+                </div>
+                <div className="flex items-center gap-2 bg-[#F4F3FB] rounded-[8px] px-3 py-2 border border-border">
+                  <span className="flex-1 text-[11px] text-text-secondary truncate font-mono">/p/{profile.slug}</span>
+                  <button onClick={handleCopy}
+                    className="flex-shrink-0 text-text-tertiary hover:text-primary transition-colors"
+                    title="Copier le lien">
+                    {copied ? <IconCheck size={13} className="text-success" /> : <IconCopy size={13} />}
+                  </button>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={handleCopy}
+                    className="btn-secondary flex-1 justify-center text-xs h-8 px-3">
+                    {copied ? <><IconCheck size={12} className="text-success" /> Copié !</> : <><IconCopy size={12} /> Copier le lien</>}
+                  </button>
+                  <Link href={`/p/${profile.slug}`} target="_blank"
+                    className="btn-ghost h-8 px-3 text-xs">
+                    <IconArrowUpRight size={12} /> Ouvrir
+                  </Link>
+                </div>
+              </div>
+            )
+          })()}
         </div>
 
         {/* ── RIGHT — tabs + content ──────────────────────────────────────── */}
