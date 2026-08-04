@@ -1,38 +1,57 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { IconFileText, IconDownload, IconCopy, IconCheck, IconChevronRight, IconChevronLeft, IconLoader2 } from '@tabler/icons-react'
+import {
+  IconFileText, IconDownload, IconCopy, IconCheck,
+  IconChevronRight, IconChevronLeft, IconLoader2,
+  IconBriefcase, IconSchool, IconCode, IconMapPin,
+} from '@tabler/icons-react'
 
 const STEPS = ["Offre d'emploi", 'Options', 'Résultat']
 
+function initials(name: string) {
+  return name?.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?'
+}
+
+function buildCV(profile: any, lang: string) {
+  const isEn = lang === 'en'
+  return `${profile.fullName ?? ''}
+${[profile.title, profile.city, profile.country].filter(Boolean).join(' · ')}
+${[profile.phone, profile.linkedin].filter(Boolean).join(' · ')}
+
+${isEn ? 'PROFILE' : 'PROFIL'}
+${profile.bio ?? (isEn ? 'Professional with solid experience in their field.' : 'Professionnel avec une solide expérience dans son domaine.')}
+
+${isEn ? 'EXPERIENCE' : 'EXPÉRIENCES'}
+${(profile.experiences ?? []).length === 0
+  ? (isEn ? '— No experience recorded' : '— Aucune expérience enregistrée')
+  : profile.experiences.map((e: any) =>
+      `${e.title} — ${e.company}${e.city ? ', ' + e.city : ''}${e.isCurrent ? (isEn ? ' (Current)' : ' (En cours)') : ''}`
+    ).join('\n')}
+
+${isEn ? 'EDUCATION' : 'FORMATIONS'}
+${(profile.educations ?? []).length === 0
+  ? (isEn ? '— No education recorded' : '— Aucune formation enregistrée')
+  : profile.educations.map((e: any) =>
+      `${e.degree}${e.field ? ' · ' + e.field : ''} — ${e.organisation?.name ?? ''} ${e.startYear ?? ''} – ${e.isCurrent ? (isEn ? 'Present' : 'Présent') : e.endYear ?? ''}`
+    ).join('\n')}
+
+${(profile.skills ?? []).length > 0 ? `${isEn ? 'SKILLS' : 'COMPÉTENCES'}\n${profile.skills.join(' · ')}` : ''}`
+}
+
 export default function CVPage() {
-  const [step, setStep]         = useState(0)
-  const [jobOffer, setJobOffer] = useState('')
-  const [lang, setLang]         = useState('fr')
-  const [copied, setCopied]     = useState(false)
-  const [profile, setProfile]   = useState<any>(null)
+  const [step,       setStep]       = useState(0)
+  const [jobOffer,   setJobOffer]   = useState('')
+  const [lang,       setLang]       = useState('fr')
+  const [copied,     setCopied]     = useState(false)
+  const [profile,    setProfile]    = useState<any>(null)
+  const [generating, setGenerating] = useState(false)
 
   useEffect(() => {
     fetch('/api/profile').then(r => r.ok ? r.json() : null).then(d => { if (d) setProfile(d) })
   }, [])
 
-  const cvText = profile ? `${profile.fullName ?? ''}
-${[profile.title, profile.city, profile.country].filter(Boolean).join(' · ')}
-${[profile.phone, profile.linkedin].filter(Boolean).join(' · ')}
-
-PROFIL
-${profile.bio ?? 'Professionnel avec une solide expérience dans son domaine.'}
-
-EXPÉRIENCES
-${(profile.experiences ?? []).length === 0
-  ? '— Aucune expérience enregistrée'
-  : profile.experiences.map((e: any) => `${e.title} — ${e.company}${e.isCurrent ? ' (En cours)' : ''}`).join('\n')}
-
-FORMATIONS
-${(profile.educations ?? []).length === 0
-  ? '— Aucune formation enregistrée'
-  : profile.educations.map((e: any) => `${e.degree} — ${e.organisation?.name ?? ''} ${e.startYear ?? ''} – ${e.endYear ?? 'Présent'}`).join('\n')}
-` : ''
+  const cvText = profile ? buildCV(profile, lang) : ''
 
   const handleCopy = () => {
     navigator.clipboard.writeText(cvText)
@@ -40,115 +59,243 @@ ${(profile.educations ?? []).length === 0
     setTimeout(() => setCopied(false), 2500)
   }
 
-  return (
-    <div className="max-w-2xl space-y-5">
+  const handleGenerate = () => {
+    setGenerating(true)
+    setTimeout(() => { setGenerating(false); setStep(2) }, 1200)
+  }
 
-      {/* En-tête */}
+  return (
+    <div className="space-y-6">
+
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div>
         <h1 className="page-title">Générer mon CV</h1>
         <p className="page-subtitle">CV structuré à partir de votre profil bcarte</p>
       </div>
 
-      {/* Stepper */}
-      <div className="flex items-center gap-0">
-        {STEPS.map((s, i) => (
-          <div key={s} className="flex items-center">
-            <div className="flex items-center gap-2">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                i < step  ? 'bg-primary text-white' :
-                i === step ? 'bg-primary text-white ring-4 ring-primary/15' :
-                'bg-border-subtle text-text-tertiary'
-              }`}>
-                {i < step ? <IconCheck size={12} /> : i + 1}
+      {/* ── Two-column layout ──────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 items-start">
+
+        {/* ── LEFT — profile snapshot (sticky) ───────────────────────────── */}
+        <div className="lg:sticky lg:top-8 space-y-4">
+          <div className="rounded-[14px] overflow-hidden shadow-card">
+
+            {/* Gradient hero */}
+            <div style={{ background: 'linear-gradient(145deg, #1A0E4E 0%, #3B1FA0 55%, #6C47FF 100%)' }}
+              className="px-6 pt-6 pb-5 flex flex-col items-center text-center gap-3">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl font-black border border-white/20"
+                style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
+                {profile ? initials(profile.fullName) : '?'}
               </div>
-              <span className={`text-xs font-medium ${i === step ? 'text-text-primary' : 'text-text-tertiary'}`}>{s}</span>
+              <div>
+                <p className="text-white font-bold text-base leading-tight">
+                  {profile?.fullName || 'Votre nom'}
+                </p>
+                <p className="text-white/70 text-sm mt-0.5">
+                  {profile?.title || 'Titre non renseigné'}
+                </p>
+                <p className="text-white/45 text-xs mt-1 flex items-center justify-center gap-1">
+                  <IconMapPin size={10} />
+                  {[profile?.city, profile?.country].filter(Boolean).join(', ') || '—'}
+                </p>
+              </div>
             </div>
-            {i < STEPS.length - 1 && (
-              <div className={`mx-3 h-px w-8 ${i < step ? 'bg-primary' : 'bg-border'}`} />
-            )}
-          </div>
-        ))}
-      </div>
 
-      {/* Étape 1 — Offre */}
-      {step === 0 && (
-        <div className="card space-y-4">
-          <div>
-            <h2 className="font-semibold text-text-primary">Collez l&apos;offre d&apos;emploi</h2>
-            <p className="text-xs text-text-tertiary mt-0.5">Le CV sera optimisé en fonction de cette offre</p>
+            {/* Data included */}
+            <div className="bg-white divide-y divide-border">
+              <div className="px-4 py-2.5">
+                <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest">
+                  Données incluses
+                </p>
+              </div>
+              {[
+                {
+                  Icon: IconBriefcase, color: '#6C47FF', bg: '#F0EDFF',
+                  label: 'Expériences',
+                  value: profile?.experiences?.length ?? 0,
+                },
+                {
+                  Icon: IconSchool, color: '#059669', bg: '#ECFDF5',
+                  label: 'Formations',
+                  value: profile?.educations?.length ?? 0,
+                },
+                {
+                  Icon: IconCode, color: '#D97706', bg: '#FFFBEB',
+                  label: 'Compétences',
+                  value: profile?.skills?.length ?? 0,
+                },
+              ].map(({ Icon, color, bg, label, value }) => (
+                <div key={label} className="flex items-center gap-3 px-4 py-3">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ background: bg }}>
+                    <Icon size={13} style={{ color }} />
+                  </div>
+                  <p className="text-sm text-text-secondary flex-1">{label}</p>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                    value > 0
+                      ? 'bg-primary-light text-primary'
+                      : 'bg-border-subtle text-text-tertiary'
+                  }`}>{value}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <textarea
-            className="input min-h-[200px] resize-none text-sm leading-relaxed"
-            placeholder="Collez le texte de l'offre d'emploi ici…"
-            value={jobOffer}
-            onChange={e => setJobOffer(e.target.value)}
-          />
-          <button onClick={() => setStep(1)} className="btn-primary w-full justify-center py-2.5">
-            Continuer <IconChevronRight size={15} />
-          </button>
         </div>
-      )}
 
-      {/* Étape 2 — Options */}
-      {step === 1 && (
-        <div className="card space-y-5">
-          <div>
-            <h2 className="font-semibold text-text-primary">Options du CV</h2>
-            <p className="text-xs text-text-tertiary mt-0.5">Personnalisez la langue et le format</p>
-          </div>
-          <div>
-            <label className="label">Langue du CV</label>
-            <select className="input" value={lang} onChange={e => setLang(e.target.value)}>
-              <option value="fr">Français</option>
-              <option value="en">Anglais</option>
-            </select>
-          </div>
-          <div className="flex gap-3">
-            <button onClick={() => setStep(0)} className="btn-secondary flex-1 justify-center gap-2">
-              <IconChevronLeft size={15} /> Retour
-            </button>
-            <button onClick={() => setStep(2)} className="btn-primary flex-1 justify-center gap-2">
-              <IconFileText size={15} /> Générer
-            </button>
-          </div>
-        </div>
-      )}
+        {/* ── RIGHT — stepper + content ──────────────────────────────────── */}
+        <div className="min-w-0 space-y-4">
 
-      {/* Étape 3 — Résultat */}
-      {step === 2 && (
-        <div className="card space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-semibold text-text-primary">Votre CV</h2>
-              <p className="text-xs text-text-tertiary mt-0.5">Langue : {lang === 'fr' ? 'Français' : 'Anglais'}</p>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={handleCopy} className="btn-secondary gap-1.5 px-3 py-2">
-                {copied ? <IconCheck size={14} className="text-success" /> : <IconCopy size={14} />}
-                {copied ? 'Copié !' : 'Copier'}
-              </button>
-              <button className="btn-primary gap-1.5 px-3 py-2">
-                <IconDownload size={14} /> PDF
-              </button>
+          {/* Stepper */}
+          <div className="card p-4">
+            <div className="flex items-center">
+              {STEPS.map((s, i) => (
+                <div key={s} className="flex items-center flex-1">
+                  <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 ${
+                      i < step  ? 'bg-primary text-white shadow-sm'
+                      : i === step ? 'bg-primary text-white ring-4 ring-primary/15'
+                      : 'bg-border-subtle text-text-tertiary'
+                    }`}>
+                      {i < step ? <IconCheck size={13} /> : i + 1}
+                    </div>
+                    <span className={`text-[10px] font-semibold whitespace-nowrap ${
+                      i === step ? 'text-primary' : i < step ? 'text-text-secondary' : 'text-text-tertiary'
+                    }`}>{s}</span>
+                  </div>
+                  {i < STEPS.length - 1 && (
+                    <div className={`flex-1 h-px mx-3 mb-4 transition-colors ${i < step ? 'bg-primary' : 'bg-border'}`} />
+                  )}
+                </div>
+              ))}
             </div>
           </div>
 
-          {!profile ? (
-            <div className="flex justify-center py-10">
-              <IconLoader2 size={22} className="animate-spin text-primary" />
+          {/* ── Étape 0 — Offre d'emploi ─────────────────────────────────── */}
+          {step === 0 && (
+            <div className="card space-y-4">
+              <div>
+                <p className="font-semibold text-text-primary">Offre d&apos;emploi</p>
+                <p className="text-xs text-text-tertiary mt-0.5">
+                  Collez l&apos;offre pour orienter le CV — ou ignorez cette étape
+                </p>
+              </div>
+              <textarea
+                className="input resize-none text-sm leading-relaxed"
+                rows={8}
+                placeholder="Collez le texte de l'offre d'emploi ici…"
+                value={jobOffer}
+                onChange={e => setJobOffer(e.target.value)}
+              />
+              <div className="flex items-center gap-3">
+                {jobOffer && (
+                  <button onClick={() => setJobOffer('')}
+                    className="btn-secondary gap-1.5 text-sm">
+                    Vider
+                  </button>
+                )}
+                <button onClick={() => setStep(1)}
+                  className="btn-primary flex-1 justify-center">
+                  {jobOffer ? 'Continuer avec cette offre' : 'Passer cette étape'}
+                  <IconChevronRight size={15} />
+                </button>
+              </div>
             </div>
-          ) : (
-            <pre className="bg-bg-light rounded-xl p-5 text-xs text-text-secondary font-mono whitespace-pre-wrap leading-relaxed border border-border overflow-x-auto">
-              {cvText}
-            </pre>
           )}
 
-          <button onClick={() => setStep(0)} className="text-sm text-primary font-medium hover:underline">
-            ← Recommencer
-          </button>
-        </div>
-      )}
+          {/* ── Étape 1 — Options ────────────────────────────────────────── */}
+          {step === 1 && (
+            <div className="card space-y-5">
+              <div>
+                <p className="font-semibold text-text-primary">Options du CV</p>
+                <p className="text-xs text-text-tertiary mt-0.5">Personnalisez la langue et le format</p>
+              </div>
 
+              <div>
+                <label className="label">Langue du CV</label>
+                <div className="grid grid-cols-2 gap-3 mt-1">
+                  {[
+                    { value: 'fr', label: 'Français', flag: '🇫🇷' },
+                    { value: 'en', label: 'Anglais',  flag: '🇬🇧' },
+                  ].map(l => (
+                    <button key={l.value} onClick={() => setLang(l.value)}
+                      className={`flex items-center gap-3 p-4 rounded-[10px] border-2 transition-all text-sm font-semibold ${
+                        lang === l.value
+                          ? 'border-primary bg-primary-light text-primary'
+                          : 'border-border text-text-secondary hover:border-primary/40 hover:bg-bg-light'
+                      }`}>
+                      <span className="text-lg">{l.flag}</span>
+                      {l.label}
+                      {lang === l.value && <IconCheck size={14} className="ml-auto" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-1">
+                <button onClick={() => setStep(0)} className="btn-secondary gap-2">
+                  <IconChevronLeft size={15} /> Retour
+                </button>
+                <button onClick={handleGenerate} disabled={generating}
+                  className="btn-primary flex-1 justify-center gap-2">
+                  {generating
+                    ? <><IconLoader2 size={15} className="animate-spin" /> Génération…</>
+                    : <><IconFileText size={15} /> Générer le CV</>}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Étape 2 — Résultat ───────────────────────────────────────── */}
+          {step === 2 && (
+            <div className="space-y-3">
+              {/* Actions bar */}
+              <div className="card flex items-center justify-between gap-4">
+                <div>
+                  <p className="font-semibold text-text-primary text-sm">Votre CV est prêt</p>
+                  <p className="text-xs text-text-tertiary mt-0.5">
+                    {lang === 'fr' ? 'Français' : 'Anglais'} · Généré depuis votre profil
+                  </p>
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <button onClick={handleCopy} className="btn-secondary gap-1.5 px-3 py-2 text-sm">
+                    {copied
+                      ? <IconCheck size={14} className="text-success" />
+                      : <IconCopy size={14} />}
+                    {copied ? 'Copié !' : 'Copier'}
+                  </button>
+                  <button className="btn-primary gap-1.5 px-3 py-2 text-sm">
+                    <IconDownload size={14} /> PDF
+                  </button>
+                </div>
+              </div>
+
+              {/* CV preview */}
+              <div className="card p-0 overflow-hidden">
+                <div className="px-4 py-2.5 border-b border-border bg-bg-light flex items-center gap-2">
+                  <IconFileText size={13} className="text-text-tertiary" />
+                  <span className="text-xs font-medium text-text-tertiary">Aperçu texte</span>
+                </div>
+                {!profile ? (
+                  <div className="flex justify-center py-14">
+                    <IconLoader2 size={22} className="animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <pre className="p-6 text-xs text-text-secondary font-mono whitespace-pre-wrap leading-relaxed overflow-x-auto">
+                    {cvText}
+                  </pre>
+                )}
+              </div>
+
+              {/* Reset */}
+              <button onClick={() => { setStep(0); setJobOffer('') }}
+                className="text-sm text-primary font-medium hover:underline">
+                ← Recommencer
+              </button>
+            </div>
+          )}
+
+        </div>
+      </div>
     </div>
   )
 }
