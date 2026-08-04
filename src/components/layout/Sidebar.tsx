@@ -73,10 +73,7 @@ export default function Sidebar() {
       <div className="px-5 pt-6 pb-5">
         <Link href={effectiveRole === 'organisation' ? '/org/dashboard' : '/dashboard'}
           className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-[#6C47FF] flex items-center justify-center flex-shrink-0">
-            <IconShieldCheck size={15} className="text-white" />
-          </div>
-          <span className="text-[17px] font-black text-white tracking-tight">bcarte</span>
+          <span className="text-[20px] font-black text-white tracking-tight">bcarte</span>
         </Link>
       </div>
 
