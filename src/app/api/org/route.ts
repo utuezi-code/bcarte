@@ -20,11 +20,11 @@ export async function PUT(req: NextRequest) {
   if (!session) return NextResponse.json(null, { status: 401 })
 
   const body = await req.json()
-  const { name, description, sector, city, country, website } = body
+  const { name, description, type, sector, city, country, website } = body
 
   await supabaseAdmin
     .from('organisations')
-    .update({ name, description, sector, city, country, website, updatedAt: new Date().toISOString() })
+    .update({ name, description, type, sector, city, country, website, updatedAt: new Date().toISOString() })
     .eq('ownerId', session.userId)
 
   return NextResponse.json({ ok: true })

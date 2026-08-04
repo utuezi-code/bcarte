@@ -5,7 +5,7 @@ export interface OrgCardData {
   slug: string
   name: string
   initials: string
-  type: 'Entreprise' | 'Université' | 'École' | 'ONG' | 'Institution'
+  type: 'Entreprise' | 'Université' | 'École' | 'ONG' | 'Institution' | 'Club'
   sector: string
   city: string
   country: string

@@ -130,7 +130,7 @@ export default function RegisterPage() {
                 <motion.div variants={stagger} initial="initial" animate="animate" className="space-y-3">
                   {([
                     { value: 'professionnel' as const, label: 'Professionnel', sub: 'Gérez votre profil et vos vérifications' },
-                    { value: 'organisation'  as const, label: 'Organisation',  sub: 'Entreprise, université, institution' },
+                    { value: 'organisation'  as const, label: 'Organisation',  sub: 'Entreprise, université, club, institution' },
                   ]).map(({ value, label, sub }) => (
                     <motion.button key={value} variants={item} onClick={() => setStep(value)}
                       whileHover={{ x: 4 }} whileTap={{ scale: 0.98 }}

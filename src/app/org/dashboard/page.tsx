@@ -32,7 +32,7 @@ export default function OrgDashboardPage() {
       fetch('/api/org/team').then(r => r.ok ? r.json() : []),
     ]).then(([o, v, of, t]) => {
       setOrg(o)
-      setOrgForm({ name: o?.name ?? '', description: o?.description ?? '', sector: o?.sector ?? '', city: o?.city ?? '', country: o?.country ?? 'Sénégal', website: o?.website ?? '' })
+      setOrgForm({ name: o?.name ?? '', description: o?.description ?? '', type: o?.type ?? '', sector: o?.sector ?? '', city: o?.city ?? '', country: o?.country ?? 'Sénégal', website: o?.website ?? '' })
       setVerifications(v ?? [])
       setOffers(of ?? [])
       setTeam(t ?? [])
@@ -308,6 +308,13 @@ export default function OrgDashboardPage() {
                 <button onClick={handleSaveOrg} disabled={savingOrg} className="btn-primary px-5 py-2.5 text-sm">
                   {savedOrg ? 'Enregistré !' : 'Enregistrer'}
                 </button>
+              </div>
+              <div>
+                <label className="label">Type d&apos;organisation</label>
+                <select className="input" value={orgForm.type ?? ''} onChange={e => setOrgForm({...orgForm, type: e.target.value})}>
+                  <option value="">Sélectionner…</option>
+                  {['Entreprise', 'Université', 'École', 'ONG', 'Club', 'Institution'].map(t => <option key={t}>{t}</option>)}
+                </select>
               </div>
               {[
                 { label: 'Nom *', key: 'name', placeholder: 'Nom de l\'organisation' },
