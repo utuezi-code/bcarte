@@ -52,30 +52,35 @@ export default function DashboardPage() {
       </div>
 
       {/* Share public profile */}
-      {slug && (
-        <div className="card flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: '#F0EDFF' }}>
-            <IconShare size={15} style={{ color: '#6C47FF' }} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-text-primary">Mon profil public</p>
-            <p className="text-[11px] text-text-tertiary font-mono truncate mt-0.5">/p/{slug}</p>
-          </div>
+      <div className="card flex items-center gap-3">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+          style={{ background: '#F0EDFF' }}>
+          <IconShare size={15} style={{ color: '#6C47FF' }} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold text-text-primary">Mon profil public</p>
+          {slug
+            ? <p className="text-[11px] text-text-tertiary font-mono truncate mt-0.5">/p/{slug}</p>
+            : <p className="text-[11px] text-text-tertiary mt-0.5">Aucun lien configuré</p>}
+        </div>
+        {slug ? (
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            <button onClick={handleCopy}
-              className="btn-secondary h-8 px-3 text-xs gap-1.5">
+            <button onClick={handleCopy} className="btn-secondary h-8 px-3 text-xs gap-1.5">
               {copied
                 ? <><IconCheck size={12} className="text-success" /> Copié !</>
                 : <><IconCopy size={12} /> Copier</>}
             </button>
-            <button onClick={handleShare}
-              className="btn-primary h-8 px-3 text-xs gap-1.5">
+            <button onClick={handleShare} className="btn-primary h-8 px-3 text-xs gap-1.5">
               Partager
             </button>
           </div>
-        </div>
-      )}
+        ) : (
+          <Link href="/dashboard/profile"
+            className="btn-primary h-8 px-3 text-xs gap-1.5 flex-shrink-0">
+            Configurer <IconArrowUpRight size={12} />
+          </Link>
+        )}
+      </div>
 
       {/* Complétion du profil */}
       <div className="card">
