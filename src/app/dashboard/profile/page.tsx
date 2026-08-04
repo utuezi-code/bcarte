@@ -5,8 +5,9 @@ import Link from 'next/link'
 import {
   IconPlus, IconX, IconCircleCheck, IconClock, IconCheck,
   IconLoader2, IconBriefcase, IconSchool, IconTrash,
-  IconMapPin, IconArrowUpRight, IconCopy, IconShare,
+  IconMapPin, IconArrowUpRight, IconCopy, IconShare, IconCamera,
 } from '@tabler/icons-react'
+import Image from 'next/image'
 import { COUNTRIES } from '@/lib/constants'
 
 type Tab = 'infos' | 'competences' | 'experiences' | 'formations'
@@ -55,8 +56,23 @@ export default function ProfilePage() {
   const [addingEdu, setAddingEdu] = useState(false)
   const [orgResults,setOrgResults]= useState<any[]>([])
   const [searchOrg, setSearchOrg] = useState(false)
-  const [copied,    setCopied]    = useState(false)
-  const orgRef = useRef<HTMLDivElement>(null)
+  const [copied,      setCopied]      = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const orgRef    = useRef<HTMLDivElement>(null)
+  const avatarRef = useRef<HTMLInputElement>(null)
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingAvatar(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch('/api/upload-avatar', { method: 'POST', body: fd })
+    const data = await res.json()
+    if (data.url) setProfile((p: any) => ({ ...p, avatarUrl: data.url }))
+    setUploadingAvatar(false)
+    e.target.value = ''
+  }
 
   /* load */
   useEffect(() => {
@@ -217,11 +233,24 @@ export default function ProfilePage() {
             <div style={{ background: 'linear-gradient(145deg, #1A0E4E 0%, #3B1FA0 55%, #6C47FF 100%)' }}
               className="px-6 pt-7 pb-6 flex flex-col items-center text-center gap-3">
 
-              {/* Avatar */}
-              <div className="w-[88px] h-[88px] rounded-2xl flex items-center justify-center text-white text-3xl font-black border border-white/20"
-                style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)' }}>
-                {initials(form.fullName)}
-              </div>
+              {/* Avatar — cliquable pour uploader */}
+              <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+              <button onClick={() => avatarRef.current?.click()} disabled={uploadingAvatar}
+                className="relative w-[88px] h-[88px] rounded-2xl overflow-hidden border-2 border-white/30 flex-shrink-0 group">
+                {profile?.avatarUrl ? (
+                  <Image src={profile.avatarUrl} alt="avatar" fill className="object-cover" unoptimized />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white text-3xl font-black"
+                    style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)' }}>
+                    {initials(form.fullName)}
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  {uploadingAvatar
+                    ? <IconLoader2 size={20} className="text-white animate-spin" />
+                    : <IconCamera size={20} className="text-white" />}
+                </div>
+              </button>
 
               {/* Name & meta */}
               <div className="space-y-0.5">
