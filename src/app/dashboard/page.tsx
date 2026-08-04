@@ -5,16 +5,37 @@ import Link from 'next/link'
 import {
   IconUser, IconFileText, IconCreditCard, IconCompass,
   IconBuilding, IconArrowUpRight, IconCircleCheck, IconClock, IconEye,
+  IconCopy, IconCheck, IconShare,
 } from '@tabler/icons-react'
 
 export default function DashboardPage() {
-  const [name, setName] = useState('')
+  const [name,   setName]   = useState('')
+  const [slug,   setSlug]   = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     fetch('/api/me').then(r => r.ok ? r.json() : null).then(d => {
       if (d?.name) setName(d.name.split(' ')[0])
+      if (d?.slug) setSlug(d.slug)
     })
   }, [])
+
+  const profileUrl = slug ? `${typeof window !== 'undefined' ? window.location.origin : ''}/p/${slug}` : ''
+
+  const handleCopy = () => {
+    if (!profileUrl) return
+    navigator.clipboard.writeText(profileUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2500)
+  }
+
+  const handleShare = () => {
+    if (navigator.share && profileUrl) {
+      navigator.share({ title: name || 'Mon profil bcarte', url: profileUrl })
+    } else {
+      handleCopy()
+    }
+  }
 
   const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
 
@@ -29,6 +50,32 @@ export default function DashboardPage() {
         </h1>
         <p className="text-sm text-text-secondary mt-0.5">Votre espace professionnel bcarte</p>
       </div>
+
+      {/* Share public profile */}
+      {slug && (
+        <div className="card flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: '#F0EDFF' }}>
+            <IconShare size={15} style={{ color: '#6C47FF' }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-text-primary">Mon profil public</p>
+            <p className="text-[11px] text-text-tertiary font-mono truncate mt-0.5">/p/{slug}</p>
+          </div>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <button onClick={handleCopy}
+              className="btn-secondary h-8 px-3 text-xs gap-1.5">
+              {copied
+                ? <><IconCheck size={12} className="text-success" /> Copié !</>
+                : <><IconCopy size={12} /> Copier</>}
+            </button>
+            <button onClick={handleShare}
+              className="btn-primary h-8 px-3 text-xs gap-1.5">
+              Partager
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Complétion du profil */}
       <div className="card">
