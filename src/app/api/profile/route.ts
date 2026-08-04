@@ -57,9 +57,17 @@ export async function PUT(req: NextRequest) {
   const fields = { fullName, title, city, country, bio, phone, linkedin, slug: slug || null, skills: skills ?? [] }
 
   if (!existing) {
-    await supabaseAdmin.from('profiles').insert({ id: crypto.randomUUID(), userId: session.userId, ...fields })
+    const { error } = await supabaseAdmin.from('profiles').insert({ id: crypto.randomUUID(), userId: session.userId, ...fields })
+    if (error) {
+      console.error('profile insert error:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
   } else {
-    await supabaseAdmin.from('profiles').update(fields).eq('userId', session.userId)
+    const { error } = await supabaseAdmin.from('profiles').update(fields).eq('userId', session.userId)
+    if (error) {
+      console.error('profile update error:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
   }
 
   return NextResponse.json({ ok: true })

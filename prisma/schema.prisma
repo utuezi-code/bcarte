@@ -44,17 +44,19 @@ model User {
 }
 
 model Profile {
-  id        String  @id @default(cuid())
-  userId    String  @unique
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  slug      String?  @unique
   fullName  String
   title     String?
   city      String?
-  country   String  @default("Sénégal")
+  country   String   @default("Sénégal")
   bio       String?
   phone     String?
   linkedin  String?
   avatarUrl String?
-  isPublic  Boolean @default(true)
+  isPublic  Boolean  @default(true)
+  skills    String[] @default([])
 
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   experiences Experience[]

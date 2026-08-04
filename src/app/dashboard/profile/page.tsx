@@ -106,8 +106,15 @@ export default function ProfilePage() {
     })
     setSaving(false)
     if (res.status === 409) { setSlugError('Ce lien est déjà pris, choisis-en un autre.'); return }
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}))
+      setSlugError(d.error ?? 'Erreur lors de l\'enregistrement.')
+      return
+    }
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
+    // Reload profile to get updated slug
+    fetch('/api/profile').then(r => r.ok ? r.json() : null).then(d => { if (d) setProfile(d) })
   }
 
   const suggestSlug = () => {
