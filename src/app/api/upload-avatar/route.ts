@@ -31,7 +31,15 @@ export async function POST(req: NextRequest) {
   const { data: { publicUrl } } = supabase.storage.from('profiles').getPublicUrl(path)
 
   /* save avatarUrl on profile */
-  await supabase.from('profiles').update({ avatarUrl: publicUrl }).eq('userId', session.userId)
+  const { error: dbError } = await supabase
+    .from('profiles')
+    .update({ avatarUrl: publicUrl })
+    .eq('userId', session.userId)
+
+  if (dbError) {
+    console.error('db update error:', dbError)
+    return NextResponse.json({ error: `DB update failed: ${dbError.message}`, url: publicUrl }, { status: 500 })
+  }
 
   return NextResponse.json({ url: publicUrl })
 }

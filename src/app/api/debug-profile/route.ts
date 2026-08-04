@@ -8,7 +8,7 @@ export async function GET() {
 
   const { data, error } = await supabaseAdmin
     .from('profiles')
-    .select('id, fullName, slug, skills, isPublic')
+    .select('*')
     .eq('userId', session.userId)
     .single()
 
