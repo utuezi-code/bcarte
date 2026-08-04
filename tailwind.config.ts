@@ -27,6 +27,7 @@ const config: Config = {
         'bg-subtle':      '#FAFAFA',
         border:           '#EBEBF0',
         'border-subtle':  '#F3F4F6',
+        'border-strong':  '#D1D5DB',
         success: {
           DEFAULT: '#059669',
           light:   '#ECFDF5',
