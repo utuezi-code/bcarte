@@ -9,7 +9,7 @@ export async function GET() {
   if (session.role === 'PROFESSIONNEL') {
     const { data } = await supabaseAdmin
       .from('profiles')
-      .select('fullName, title, city')
+      .select('fullName, title, city, slug')
       .eq('userId', session.userId)
       .single()
 
@@ -23,6 +23,7 @@ export async function GET() {
       role: 'professionnel',
       name: data?.fullName ?? 'Utilisateur',
       email: user?.email ?? '',
+      slug: data?.slug ?? null,
     })
   } else {
     const { data } = await supabaseAdmin

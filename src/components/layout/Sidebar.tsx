@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   IconLayoutDashboard, IconUser, IconFileText,
   IconCompass, IconCreditCard, IconSettings, IconLogout,
-  IconBriefcase, IconBuilding, IconChevronRight,
+  IconBriefcase, IconBuilding, IconChevronRight, IconExternalLink,
 } from '@tabler/icons-react'
 import { useUser } from '@/lib/user-context'
 
@@ -25,7 +25,7 @@ const ORG_NAV = [
   { href: '/recruiter',      label: 'Recruteur',        icon: IconBriefcase },
 ]
 
-interface MeData { name: string; email: string }
+interface MeData { name: string; email: string; slug: string | null }
 
 function initials(name: string) {
   return name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?'
@@ -96,11 +96,20 @@ export default function Sidebar() {
             <p className="text-[10.5px] text-text-tertiary truncate mt-0.5">{displayEmail}</p>
           </div>
         </div>
-        <Link href="/dashboard/profile"
-          className="mt-2.5 flex items-center justify-between text-[11px] font-semibold text-primary hover:underline">
-          Voir mon profil
-          <IconChevronRight size={11} />
-        </Link>
+        <div className="mt-2.5 flex items-center gap-2">
+          <Link href="/dashboard/profile"
+            className="flex-1 flex items-center justify-between text-[11px] font-semibold text-primary hover:underline">
+            Mon profil
+            <IconChevronRight size={11} />
+          </Link>
+          {me?.slug && (
+            <Link href={`/p/${me.slug}`} target="_blank"
+              title="Profil public"
+              className="flex items-center gap-1 text-[11px] font-semibold text-text-tertiary hover:text-primary transition-colors">
+              <IconExternalLink size={12} />
+            </Link>
+          )}
+        </div>
       </div>
 
       {/* ── Nav ─────────────────────────────────────────────────────────────── */}
