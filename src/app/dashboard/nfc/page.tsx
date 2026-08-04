@@ -1,50 +1,95 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { IconCreditCard, IconCheck, IconMapPin, IconUser, IconLink } from '@tabler/icons-react'
+import { IconCreditCard, IconCheck, IconMapPin, IconUser, IconLink, IconPalette } from '@tabler/icons-react'
 import QRCode from 'react-qr-code'
 
-/* ── Designs ───────────────────────────────────────────────── */
-const DESIGNS = {
-  violet: {
-    label: 'Violet',
-    gradient: 'linear-gradient(135deg, #6C47FF 0%, #4528CC 55%, #2D1B8E 100%)',
-    accent: '#A78BFA',
-  },
-  or: {
-    label: 'Doré',
-    gradient: 'linear-gradient(135deg, #92620A 0%, #C4921F 50%, #F5C842 100%)',
-    accent: '#FDE68A',
-  },
-  noir: {
-    label: 'Minuit',
-    gradient: 'linear-gradient(135deg, #0F0E1A 0%, #1A1A2E 50%, #0F3460 100%)',
-    accent: '#60A5FA',
-  },
-  obsidian: {
-    label: 'Obsidian',
-    gradient: 'linear-gradient(135deg, #050505 0%, #111111 40%, #1C1C1C 70%, #0A0A0A 100%)',
-    accent: '#C9A84C',
-  },
-  rouge: {
-    label: 'Rouge',
-    gradient: 'linear-gradient(135deg, #7F0000 0%, #B91C1C 50%, #DC2626 100%)',
-    accent: '#FCA5A5',
-  },
-} as const
-type Design = keyof typeof DESIGNS
+/* ── Palette de couleurs ───────────────────────────────────── */
+const PALETTE = [
+  // Violets & indigo
+  { id: 'violet',   from: '#2D1B8E', to: '#6C47FF', accent: '#C4B5FD' },
+  { id: 'indigo',   from: '#1E3A8A', to: '#6366F1', accent: '#A5B4FC' },
+  { id: 'purple',   from: '#581C87', to: '#9333EA', accent: '#D8B4FE' },
+  // Noirs premium
+  { id: 'obsidian', from: '#050505', to: '#1C1C1C', accent: '#C9A84C' },
+  { id: 'midnight', from: '#0F0E1A', to: '#0F3460', accent: '#60A5FA' },
+  { id: 'charcoal', from: '#111827', to: '#374151', accent: '#9CA3AF' },
+  // Ors & ambre
+  { id: 'gold',     from: '#6B3800', to: '#D4A843', accent: '#FDE68A' },
+  { id: 'amber',    from: '#78350F', to: '#F59E0B', accent: '#FDE68A' },
+  { id: 'bronze',   from: '#6B3A1F', to: '#D4845A', accent: '#FDDCB5' },
+  // Rouges
+  { id: 'crimson',  from: '#7F0000', to: '#DC2626', accent: '#FCA5A5' },
+  { id: 'rose',     from: '#881337', to: '#E11D48', accent: '#FDA4AF' },
+  { id: 'pink',     from: '#831843', to: '#EC4899', accent: '#F9A8D4' },
+  // Verts
+  { id: 'emerald',  from: '#064E3B', to: '#10B981', accent: '#6EE7B7' },
+  { id: 'teal',     from: '#134E4A', to: '#14B8A6', accent: '#5EEAD4' },
+  { id: 'forest',   from: '#14532D', to: '#16A34A', accent: '#86EFAC' },
+  // Bleus
+  { id: 'navy',     from: '#1E3A5F', to: '#2563EB', accent: '#93C5FD' },
+  { id: 'sky',      from: '#075985', to: '#0EA5E9', accent: '#BAE6FD' },
+  { id: 'cyan',     from: '#164E63', to: '#06B6D4', accent: '#67E8F9' },
+  // Oranges
+  { id: 'orange',   from: '#7C2D12', to: '#EA580C', accent: '#FDBA74' },
+  { id: 'sunset',   from: '#92400E', to: '#F97316', accent: '#FED7AA' },
+] as const
+
+type PaletteId = typeof PALETTE[number]['id']
+
+/* ── Utilitaires couleur ───────────────────────────────────── */
+function hexToRgb(hex: string) {
+  const h = hex.replace('#', '')
+  return {
+    r: parseInt(h.slice(0, 2), 16),
+    g: parseInt(h.slice(2, 4), 16),
+    b: parseInt(h.slice(4, 6), 16),
+  }
+}
+function rgbToHex(r: number, g: number, b: number) {
+  const clamp = (v: number) => Math.round(Math.max(0, Math.min(255, v)))
+  return '#' + [r, g, b].map(v => clamp(v).toString(16).padStart(2, '0')).join('')
+}
+function darken(hex: string, factor = 0.45) {
+  const { r, g, b } = hexToRgb(hex)
+  return rgbToHex(r * factor, g * factor, b * factor)
+}
+function lighten(hex: string, factor = 1.35) {
+  const { r, g, b } = hexToRgb(hex)
+  return rgbToHex(r * factor, g * factor, b * factor)
+}
+function customGradient(hex: string) {
+  return `linear-gradient(135deg, ${darken(hex, 0.4)} 0%, ${hex} 55%, ${lighten(hex, 1.25)} 100%)`
+}
+
+/* ── Obtenir le gradient final ─────────────────────────────── */
+function getStyle(selectedId: PaletteId | null, customColor: string) {
+  if (!selectedId) {
+    return {
+      gradient: customGradient(customColor),
+      accent: lighten(customColor, 1.5),
+    }
+  }
+  const p = PALETTE.find(x => x.id === selectedId)!
+  return {
+    gradient: `linear-gradient(135deg, ${p.from} 0%, ${p.to} 100%)`,
+    accent: p.accent,
+  }
+}
+
 const PRICE = '29 000 FCFA'
 
-/* ── Composant carte 3D ────────────────────────────────────── */
+/* ── Carte 3D ──────────────────────────────────────────────── */
 function NFCCard3D({
-  name, title, phone, design, profileUrl,
+  name, title, phone, gradient, accent, profileUrl,
 }: {
-  name: string; title: string; phone: string; design: Design; profileUrl: string
+  name: string; title: string; phone: string
+  gradient: string; accent: string; profileUrl: string
 }) {
   const ref = useRef<HTMLDivElement>(null)
-  const [rot, setRot]     = useState({ x: 0, y: 0 })
+  const [rot, setRot]   = useState({ x: 0, y: 0 })
   const [shine, setShine] = useState({ x: 50, y: 50 })
-  const [on, setOn]       = useState(false)
+  const [on, setOn]     = useState(false)
 
   const move = (e: React.MouseEvent<HTMLDivElement>) => {
     const r = ref.current?.getBoundingClientRect()
@@ -54,10 +99,7 @@ function NFCCard3D({
     setRot({ x: (py - 0.5) * -24, y: (px - 0.5) * 24 })
     setShine({ x: px * 100, y: py * 100 })
   }
-
   const leave = () => { setRot({ x: 0, y: 0 }); setShine({ x: 50, y: 50 }); setOn(false) }
-
-  const d = DESIGNS[design]
 
   return (
     <div style={{ perspective: '1200px' }}>
@@ -67,102 +109,60 @@ function NFCCard3D({
         onMouseEnter={() => setOn(true)}
         onMouseLeave={leave}
         style={{
-          width: '100%',
-          aspectRatio: '1.586',
-          background: d.gradient,
-          borderRadius: 20,
+          width: '100%', aspectRatio: '1.586',
+          background: gradient, borderRadius: 20,
           transform: `rotateX(${rot.x}deg) rotateY(${rot.y}deg) scale(${on ? 1.03 : 1})`,
           transition: on ? 'transform 0.07s linear' : 'transform 0.55s cubic-bezier(0.23,1,0.32,1)',
           transformStyle: 'preserve-3d',
           boxShadow: on
             ? '0 50px 100px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.1)'
             : '0 20px 60px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.07)',
-          position: 'relative',
-          overflow: 'hidden',
-          cursor: 'pointer',
-          userSelect: 'none',
+          position: 'relative', overflow: 'hidden',
+          cursor: 'pointer', userSelect: 'none',
         }}
       >
-        {/* Shine spot */}
         <div style={{
           position: 'absolute', inset: 0, pointerEvents: 'none',
           background: `radial-gradient(circle at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.2) 0%, transparent 60%)`,
-          opacity: on ? 1 : 0.45,
-          transition: on ? 'none' : 'opacity 0.55s',
+          opacity: on ? 1 : 0.45, transition: on ? 'none' : 'opacity 0.55s',
         }} />
-
-        {/* Glass sheen */}
         <div style={{
           position: 'absolute', inset: 0, pointerEvents: 'none',
-          background: design === 'obsidian'
-            ? 'linear-gradient(135deg, rgba(201,168,76,0.12) 0%, rgba(255,255,255,0.03) 50%, transparent 100%)'
-            : 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.02) 60%, transparent 100%)',
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.02) 60%, transparent 100%)',
         }} />
-
-        {/* Obsidian grain */}
-        {design === 'obsidian' && (
-          <div style={{
-            position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.04,
-            backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")',
-            backgroundSize: '200px 200px',
-          }} />
-        )}
-
-        {/* Top edge highlight */}
         <div style={{
           position: 'absolute', top: 0, left: '10%', right: '10%', height: 1, pointerEvents: 'none',
           background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)',
         }} />
-
-        {/* Content */}
         <div style={{
           position: 'relative', zIndex: 1, height: '100%',
           display: 'flex', flexDirection: 'column',
           padding: '1.25rem 1.4rem', color: 'white',
         }}>
-          {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <IconCreditCard size={14} style={{ opacity: 0.85 }} />
               <span style={{ fontWeight: 900, fontSize: 12, letterSpacing: '-0.01em', opacity: 0.9 }}>bcarte</span>
             </div>
-            {/* Puce */}
             <div style={{
               width: 30, height: 22, borderRadius: 4,
-              background: `linear-gradient(135deg, ${d.accent}88, ${d.accent}33)`,
-              border: `1px solid ${d.accent}44`,
+              background: `linear-gradient(135deg, ${accent}88, ${accent}33)`,
+              border: `1px solid ${accent}44`,
             }} />
           </div>
-
-          {/* Bas */}
           <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
-            {/* Infos */}
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontWeight: 800, fontSize: 16, lineHeight: 1.2, letterSpacing: '-0.02em' }}>
-                {name}
-              </p>
+              <p style={{ fontWeight: 800, fontSize: 16, lineHeight: 1.2, letterSpacing: '-0.02em' }}>{name}</p>
               <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, marginTop: 4 }}>{title}</p>
-              {phone && (
-                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, marginTop: 8 }}>{phone}</p>
-              )}
+              {phone && <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, marginTop: 8 }}>{phone}</p>}
             </div>
-
-            {/* QR code */}
             <div style={{
-              background: 'rgba(255,255,255,0.97)',
-              borderRadius: 8, padding: 5,
-              flexShrink: 0,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
+              background: 'rgba(255,255,255,0.97)', borderRadius: 8, padding: 5,
+              flexShrink: 0, boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
               transform: 'translateZ(10px)',
             }}>
-              <QRCode
-                value={profileUrl || 'https://bcarte.app'}
-                size={60}
-                fgColor="#0C0A18"
-                bgColor="transparent"
-                level="M"
-                style={{ display: 'block' }}
-              />
+              <QRCode value={profileUrl || 'https://bcarte.app'} size={60}
+                fgColor="#0C0A18" bgColor="transparent" level="M" style={{ display: 'block' }} />
             </div>
           </div>
         </div>
@@ -173,7 +173,8 @@ function NFCCard3D({
 
 /* ── Page ──────────────────────────────────────────────────── */
 export default function NFCPage() {
-  const [design, setDesign]     = useState<Design>('violet')
+  const [selectedId, setSelectedId] = useState<PaletteId | null>('violet')
+  const [customColor, setCustomColor] = useState('#6C47FF')
   const [address, setAddress]   = useState('')
   const [showOrder, setShowOrder] = useState(false)
   const [ordered, setOrdered]   = useState(false)
@@ -190,8 +191,13 @@ export default function NFCPage() {
   const phone      = profile?.phone    ?? ''
   const slug       = profile?.slug     ?? ''
   const profileUrl = slug ? `${origin}/p/${slug}` : `${origin}/p/profil`
+  const { gradient, accent } = getStyle(selectedId, customColor)
 
-  /* Confirmation */
+  const handleCustomColor = (color: string) => {
+    setCustomColor(color)
+    setSelectedId(null)
+  }
+
   if (ordered) {
     return (
       <div className="max-w-md mx-auto py-16 space-y-6">
@@ -200,18 +206,13 @@ export default function NFCPage() {
             <IconCheck size={26} className="text-success" />
           </div>
           <h2 className="text-xl font-bold text-text-primary">Commande confirmée !</h2>
-          <p className="text-sm text-text-secondary">
-            Votre carte NFC est en fabrication. Livraison sous <strong>7–10 jours</strong>.
-          </p>
+          <p className="text-sm text-text-secondary">Livraison sous <strong>7–10 jours</strong>.</p>
         </div>
-
-        <NFCCard3D name={name} title={title} phone={phone} design={design} profileUrl={profileUrl} />
-
+        <NFCCard3D name={name} title={title} phone={phone} gradient={gradient} accent={accent} profileUrl={profileUrl} />
         <div className="card space-y-2.5">
           {[
-            { label: 'Design',   value: DESIGNS[design].label },
-            { label: 'Prix',     value: PRICE },
-            { label: 'Adresse',  value: address || '—' },
+            { label: 'Prix',    value: PRICE },
+            { label: 'Adresse', value: address || '—' },
           ].map(r => (
             <div key={r.label} className="flex justify-between text-sm">
               <span className="text-text-secondary">{r.label}</span>
@@ -219,7 +220,6 @@ export default function NFCPage() {
             </div>
           ))}
         </div>
-
         <button onClick={() => { setOrdered(false); setShowOrder(false) }} className="btn-secondary w-full justify-center">
           Nouvelle commande
         </button>
@@ -229,19 +229,16 @@ export default function NFCPage() {
 
   return (
     <div className="space-y-5">
-
-      {/* En-tête */}
       <div>
         <h1 className="page-title">Carte NFC</h1>
-        <p className="page-subtitle">Carte de visite connectée avec QR code vers votre profil public</p>
+        <p className="page-subtitle">Carte de visite connectée avec QR code vers votre profil</p>
       </div>
 
-      {/* Layout 2 colonnes */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
 
         {/* Gauche — carte sticky */}
         <div className="lg:sticky lg:top-6 space-y-3">
-          <NFCCard3D name={name} title={title} phone={phone} design={design} profileUrl={profileUrl} />
+          <NFCCard3D name={name} title={title} phone={phone} gradient={gradient} accent={accent} profileUrl={profileUrl} />
           <p className="text-center text-xs text-text-tertiary">
             Survolez la carte pour l&apos;effet 3D · Mise à jour en temps réel
           </p>
@@ -250,14 +247,14 @@ export default function NFCPage() {
         {/* Droite — contrôles */}
         <div className="space-y-4">
 
-          {/* Infos du profil */}
+          {/* Infos */}
           <div className="card space-y-3">
             <h2 className="font-semibold text-sm text-text-primary">Vos informations</h2>
             <div className="space-y-2">
               {[
-                { icon: IconUser,  label: name  || '—' },
-                { icon: IconCreditCard, label: title || '—' },
-                { icon: IconLink,  label: slug ? `/p/${slug}` : 'Profil non configuré' },
+                { icon: IconUser,        label: name  || '—' },
+                { icon: IconCreditCard,  label: title || '—' },
+                { icon: IconLink,        label: slug ? `/p/${slug}` : 'Profil non configuré' },
               ].map((row, i) => (
                 <div key={i} className="flex items-center gap-2.5 text-sm">
                   <row.icon size={13} className="text-text-tertiary flex-shrink-0" />
@@ -267,41 +264,75 @@ export default function NFCPage() {
             </div>
           </div>
 
-          {/* Choix du design */}
-          <div className="card space-y-3">
-            <h2 className="font-semibold text-sm text-text-primary">Design</h2>
-            <div className="space-y-2">
-              {(Object.entries(DESIGNS) as [Design, typeof DESIGNS[Design]][]).map(([key, d]) => (
-                <button
-                  key={key}
-                  onClick={() => setDesign(key)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
-                    design === key
-                      ? 'border-primary bg-primary-light'
-                      : 'border-border hover:border-primary-border'
-                  }`}
-                >
-                  <div className="w-10 h-7 rounded-lg flex-shrink-0" style={{ background: d.gradient }} />
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-text-primary">{d.label}</p>
-                    <p className="text-xs text-text-tertiary">{PRICE}</p>
+          {/* Palette */}
+          <div className="card space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-sm text-text-primary">Couleur</h2>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-text-tertiary">Personnalisée</span>
+                <label className="relative cursor-pointer">
+                  <input
+                    type="color"
+                    value={customColor}
+                    onChange={e => handleCustomColor(e.target.value)}
+                    className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                  />
+                  <div
+                    className="w-7 h-7 rounded-lg border-2 transition-all flex items-center justify-center"
+                    style={{
+                      background: selectedId === null ? customColor : '#F3F4F6',
+                      borderColor: selectedId === null ? customColor : '#E5E7EB',
+                    }}
+                  >
+                    {selectedId !== null && <IconPalette size={13} className="text-text-tertiary" />}
                   </div>
-                  {design === key && (
-                    <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                      <IconCheck size={11} className="text-white" />
-                    </div>
-                  )}
-                </button>
-              ))}
+                </label>
+              </div>
+            </div>
+
+            {/* Grille de swatches */}
+            <div className="grid grid-cols-5 gap-2">
+              {PALETTE.map(p => {
+                const isSelected = selectedId === p.id
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => setSelectedId(p.id)}
+                    title={p.id}
+                    style={{
+                      background: `linear-gradient(135deg, ${p.from} 0%, ${p.to} 100%)`,
+                      borderRadius: 10,
+                      aspectRatio: '1',
+                      border: isSelected ? '2.5px solid white' : '2.5px solid transparent',
+                      outline: isSelected ? '2.5px solid #6C47FF' : 'none',
+                      outlineOffset: 1,
+                      boxShadow: isSelected ? '0 4px 12px rgba(0,0,0,0.25)' : '0 2px 6px rgba(0,0,0,0.12)',
+                      transition: 'all 0.15s ease',
+                      transform: isSelected ? 'scale(1.1)' : 'scale(1)',
+                      cursor: 'pointer',
+                    }}
+                  />
+                )
+              })}
+            </div>
+
+            {/* Indicateur couleur sélectionnée */}
+            <div className="flex items-center gap-2 pt-1">
+              <div
+                className="w-5 h-5 rounded-md flex-shrink-0"
+                style={{ background: gradient }}
+              />
+              <span className="text-xs text-text-secondary">
+                {selectedId
+                  ? PALETTE.find(p => p.id === selectedId)?.id ?? ''
+                  : `Couleur personnalisée ${customColor}`}
+              </span>
             </div>
           </div>
 
           {/* Commander */}
           {!showOrder ? (
-            <button
-              onClick={() => setShowOrder(true)}
-              className="btn-primary w-full justify-center py-3 text-sm"
-            >
+            <button onClick={() => setShowOrder(true)} className="btn-primary w-full justify-center py-3 text-sm">
               Commander — {PRICE}
             </button>
           ) : (
