@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabaseAdmin
     .from('profiles')
-    .select('id, fullName, title, city, country, avatarUrl, isPublic')
+    .select('id, fullName, title, city, country, avatarUrl, isPublic, skills, slug')
     .eq('isPublic', true)
 
   if (search) {
