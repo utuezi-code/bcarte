@@ -19,10 +19,13 @@ export async function GET() {
       .eq('id', session.userId)
       .single()
 
+    const email = user?.email ?? ''
+    const fallbackName = email ? email.split('@')[0] : 'Utilisateur'
+
     return NextResponse.json({
       role: 'professionnel',
-      name: data?.fullName ?? 'Utilisateur',
-      email: user?.email ?? '',
+      name: data?.fullName || fallbackName,
+      email,
       slug: data?.slug ?? null,
     })
   } else {
