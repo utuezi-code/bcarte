@@ -6,7 +6,7 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
     .from('profiles')
     .select(`
       id, fullName, title, bio, city, country, phone, linkedin, avatarUrl,
-      skills, languages,
+      skills,
       experiences(*),
       educations(*, organisation:organisations(name, slug)),
       verifications:verifications(status, organisationId, organisation:organisations(name, slug))
