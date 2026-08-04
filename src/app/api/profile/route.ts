@@ -54,20 +54,27 @@ export async function PUT(req: NextRequest) {
     if (taken) return NextResponse.json({ error: 'Ce slug est déjà utilisé' }, { status: 409 })
   }
 
-  const fields = { fullName, title, city, country, bio, phone, linkedin, slug: slug || null, skills: skills ?? [] }
+  const coreFields = { fullName, title, city, country, bio, phone, linkedin, slug: slug || null }
 
   if (!existing) {
-    const { error } = await supabaseAdmin.from('profiles').insert({ id: crypto.randomUUID(), userId: session.userId, ...fields })
+    const { error } = await supabaseAdmin.from('profiles').insert({
+      id: crypto.randomUUID(), userId: session.userId, ...coreFields,
+    })
     if (error) {
       console.error('profile insert error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
   } else {
-    const { error } = await supabaseAdmin.from('profiles').update(fields).eq('userId', session.userId)
+    const { error } = await supabaseAdmin.from('profiles').update(coreFields).eq('userId', session.userId)
     if (error) {
       console.error('profile update error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+  }
+
+  /* skills is a separate column — update independently so a missing column doesn't block the whole save */
+  if (skills !== undefined) {
+    await supabaseAdmin.from('profiles').update({ skills }).eq('userId', session.userId)
   }
 
   return NextResponse.json({ ok: true })
