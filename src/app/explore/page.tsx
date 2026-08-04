@@ -34,20 +34,17 @@ export default function ExplorePage() {
   const [search,   setSearch]   = useState('')
   const [country,  setCountry]  = useState('')
 
-  /* debounced fetch */
+  /* debounced fetch — scoped to user's organisations */
   useEffect(() => {
     setLoading(true)
     const t = setTimeout(() => {
       const params = new URLSearchParams()
+      params.set('type', view === 'profils' ? 'profiles' : 'orgs')
       if (search)  params.set('search', search)
       if (country) params.set('country', country)
 
-      const url = view === 'profils'
-        ? `/api/profiles?${params}`
-        : `/api/orgs?${params}`
-
-      fetch(url)
-        .then(r => r.json())
+      fetch(`/api/explore?${params}`)
+        .then(r => r.status === 401 ? [] : r.json())
         .then(d => {
           if (view === 'profils') setProfiles(d ?? [])
           else setOrgs(d ?? [])
@@ -68,7 +65,7 @@ export default function ExplorePage() {
           {/* ── Header ─────────────────────────────────────────────────────── */}
           <div>
             <h1 className="page-title">Explorer</h1>
-            <p className="page-subtitle">Découvrez des professionnels et organisations vérifiés</p>
+            <p className="page-subtitle">Professionnels et organisations de votre réseau</p>
           </div>
 
           {/* ── Controls ───────────────────────────────────────────────────── */}
@@ -128,10 +125,16 @@ export default function ExplorePage() {
                 <p className="font-semibold text-text-primary text-sm">
                   {search
                     ? `Aucun résultat pour « ${search} »`
-                    : `Aucun${view === 'profils' ? ' profil' : 'e organisation'} trouvé${view === 'organisations' ? 'e' : ''}`}
+                    : view === 'profils'
+                      ? 'Aucun collègue trouvé'
+                      : 'Aucune organisation liée'}
                 </p>
-                <p className="text-xs text-text-secondary mt-1">
-                  {search ? 'Essayez d\'autres mots-clés' : 'Revenez bientôt !'}
+                <p className="text-xs text-text-secondary mt-1 max-w-xs mx-auto">
+                  {search
+                    ? 'Essayez d\'autres mots-clés'
+                    : view === 'profils'
+                      ? 'Rejoignez une organisation pour voir les profils de vos collègues'
+                      : 'Rejoignez une organisation depuis Mon organisation'}
                 </p>
               </div>
             </div>
