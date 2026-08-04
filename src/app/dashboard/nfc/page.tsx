@@ -21,6 +21,16 @@ const DESIGNS = {
     gradient: 'linear-gradient(135deg, #0F0E1A 0%, #1A1A2E 50%, #0F3460 100%)',
     accent: '#60A5FA',
   },
+  obsidian: {
+    label: 'Obsidian',
+    gradient: 'linear-gradient(135deg, #050505 0%, #111111 40%, #1C1C1C 70%, #0A0A0A 100%)',
+    accent: '#C9A84C',
+  },
+  rouge: {
+    label: 'Rouge',
+    gradient: 'linear-gradient(135deg, #7F0000 0%, #B91C1C 50%, #DC2626 100%)',
+    accent: '#FCA5A5',
+  },
 } as const
 type Design = keyof typeof DESIGNS
 const PRICE = '29 000 FCFA'
@@ -84,8 +94,19 @@ function NFCCard3D({
         {/* Glass sheen */}
         <div style={{
           position: 'absolute', inset: 0, pointerEvents: 'none',
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.02) 60%, transparent 100%)',
+          background: design === 'obsidian'
+            ? 'linear-gradient(135deg, rgba(201,168,76,0.12) 0%, rgba(255,255,255,0.03) 50%, transparent 100%)'
+            : 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.02) 60%, transparent 100%)',
         }} />
+
+        {/* Obsidian grain */}
+        {design === 'obsidian' && (
+          <div style={{
+            position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.04,
+            backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noise\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noise)\'/%3E%3C/svg%3E")',
+            backgroundSize: '200px 200px',
+          }} />
+        )}
 
         {/* Top edge highlight */}
         <div style={{
