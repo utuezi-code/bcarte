@@ -35,7 +35,7 @@ export async function PUT(req: NextRequest) {
   if (!session) return NextResponse.json(null, { status: 401 })
 
   const body = await req.json()
-  const { fullName, title, city, country, bio, phone, linkedin, slug, skills } = body
+  const { fullName, title, city, country, bio, phone, linkedin, slug, skills, avatarUrl } = body
 
   const { data: existing } = await supabaseAdmin
     .from('profiles')
@@ -54,7 +54,8 @@ export async function PUT(req: NextRequest) {
     if (taken) return NextResponse.json({ error: 'Ce slug est déjà utilisé' }, { status: 409 })
   }
 
-  const coreFields = { fullName, title, city, country, bio, phone, linkedin, slug: slug || null }
+  const coreFields: Record<string, unknown> = { fullName, title, city, country, bio, phone, linkedin, slug: slug || null }
+  if (avatarUrl !== undefined) coreFields.avatarUrl = avatarUrl
 
   if (!existing) {
     const { error } = await supabaseAdmin.from('profiles').insert({

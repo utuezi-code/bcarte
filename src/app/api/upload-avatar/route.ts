@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
-import { getSupabaseAdmin } from '@/lib/supabase-server'
+import { supabaseAdmin } from '@/lib/supabase-server'
 
 export async function POST(req: NextRequest) {
   const session = await getSession()
@@ -17,9 +17,7 @@ export async function POST(req: NextRequest) {
   const path   = `avatars/${session.userId}.${ext}`
   const buffer = Buffer.from(await file.arrayBuffer())
 
-  const supabase = getSupabaseAdmin()
-
-  const { error: uploadError } = await supabase.storage
+  const { error: uploadError } = await supabaseAdmin.storage
     .from('profiles')
     .upload(path, buffer, { contentType: file.type, upsert: true })
 
@@ -28,20 +26,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: uploadError.message }, { status: 500 })
   }
 
-  const { data: { publicUrl } } = supabase.storage.from('profiles').getPublicUrl(path)
+  const { data: { publicUrl } } = supabaseAdmin.storage.from('profiles').getPublicUrl(path)
 
-  /* append cache-buster so browsers always fetch the latest image */
   const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`
 
-  /* save avatarUrl on profile */
-  const { error: dbError } = await supabase
+  const { error: dbError } = await supabaseAdmin
     .from('profiles')
     .update({ avatarUrl: urlWithCacheBust })
     .eq('userId', session.userId)
 
   if (dbError) {
     console.error('db update error:', dbError)
-    return NextResponse.json({ error: `DB update failed: ${dbError.message}`, url: publicUrl }, { status: 500 })
+    return NextResponse.json({ error: `DB update failed: ${dbError.message}`, url: urlWithCacheBust }, { status: 500 })
   }
 
   return NextResponse.json({ url: urlWithCacheBust })
