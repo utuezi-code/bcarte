@@ -20,7 +20,8 @@ export default function DashboardOrgPage() {
   useEffect(() => {
     fetch('/api/org/join')
       .then(r => r.ok ? r.json() : [])
-      .then(d => { setMyOrgs(d); setLoading(false) })
+      .then(d => { setMyOrgs(Array.isArray(d) ? d : []); setLoading(false) })
+      .catch(() => setLoading(false))
   }, [])
 
   useEffect(() => {
@@ -29,7 +30,8 @@ export default function DashboardOrgPage() {
     const t = setTimeout(() => {
       fetch(`/api/orgs?search=${encodeURIComponent(search)}`)
         .then(r => r.json())
-        .then(d => { setOrgs(d); setSearching(false) })
+        .then(d => { setOrgs(Array.isArray(d) ? d : []); setSearching(false) })
+        .catch(() => setSearching(false))
     }, 350)
     return () => clearTimeout(t)
   }, [search])
@@ -42,8 +44,9 @@ export default function DashboardOrgPage() {
     })
     const data = await res.json()
     if (!res.ok) { setError(data.error ?? 'Erreur'); setJoining(null); return }
-    const updated = await fetch('/api/org/join').then(r => r.json())
-    setMyOrgs(updated); setSearch(''); setOrgs([]); setJoining(null)
+    const updated = await fetch('/api/org/join').then(r => r.json()).catch(() => myOrgs)
+    setMyOrgs(Array.isArray(updated) ? updated : myOrgs)
+    setSearch(''); setOrgs([]); setJoining(null)
   }
 
   const leave = async (orgId: string) => {
@@ -105,7 +108,7 @@ export default function DashboardOrgPage() {
             </div>
           </div>
 
-          {/* My orgs summary */}
+          {/* My orgs count */}
           {myOrgs.length > 0 && (
             <div className="card flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center flex-shrink-0">
@@ -238,13 +241,11 @@ export default function DashboardOrgPage() {
                 if (!o) return null
                 return (
                   <div key={o.id} className="card flex items-center gap-4 hover:border-primary/20 transition-colors group">
-                    {/* Logo */}
                     <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm"
                       style={{ backgroundColor: o.logoColor ?? '#6C47FF' }}>
                       {o.name?.slice(0, 2).toUpperCase()}
                     </div>
 
-                    {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-semibold text-text-primary text-sm truncate">{o.name}</p>
@@ -263,7 +264,6 @@ export default function DashboardOrgPage() {
                       )}
                     </div>
 
-                    {/* Actions */}
                     <button
                       onClick={() => leave(o.id)}
                       disabled={leaving === o.id}
