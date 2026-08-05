@@ -55,7 +55,8 @@ export default function ProfilePage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [dirty,       setDirty]       = useState(false)
   const [autoSaving,  setAutoSaving]  = useState(false)
-  const [verifTarget, setVerifTarget] = useState<{ type: 'EXPÉRIENCE' | 'FORMATION'; refId: string; label: string } | null>(null)
+  const [verifTarget,    setVerifTarget]    = useState<{ type: 'EXPÉRIENCE' | 'FORMATION'; refId: string; label: string } | null>(null)
+  const [verifications,  setVerifications]  = useState<any[]>([])
   const orgRef    = useRef<HTMLDivElement>(null)
   const avatarRef = useRef<HTMLInputElement>(null)
 
@@ -74,7 +75,11 @@ export default function ProfilePage() {
 
   /* load */
   useEffect(() => {
-    fetch('/api/profile').then(r => r.ok ? r.json() : null).then(d => {
+    Promise.all([
+      fetch('/api/profile').then(r => r.ok ? r.json() : null),
+      fetch('/api/verifications').then(r => r.ok ? r.json() : []),
+      fetch('/api/me').then(r => r.ok ? r.json() : null),
+    ]).then(([d, verifs, me]) => {
       if (d) {
         setProfile(d)
         setSkills(d.skills ?? [])
@@ -91,10 +96,9 @@ export default function ProfilePage() {
         })
         setVisibleToOrgs(d.visibleToOrgs !== false)
       }
+      setVerifications(Array.isArray(verifs) ? verifs : [])
+      if (me?.email) setPersonalEmail(me.email)
       setLoading(false)
-    })
-    fetch('/api/me').then(r => r.ok ? r.json() : null).then(d => {
-      if (d?.email) setPersonalEmail(d.email)
     })
   }, [])
 
@@ -578,13 +582,13 @@ export default function ProfilePage() {
               )}
 
               {(profile?.experiences ?? []).map((exp: any) => {
-                const st = STATUS[exp.status as keyof typeof STATUS]
+                const verifStatus = verifications.find(v => v.refId === exp.id)?.status ?? null
+                const st = verifStatus ? STATUS[verifStatus as keyof typeof STATUS] : null
                 const start = exp.startDate
                   ? new Date(exp.startDate).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' }) : null
                 const end = exp.isCurrent ? 'En cours'
                   : exp.endDate
                     ? new Date(exp.endDate).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' }) : null
-                const isVerified = exp.status === 'CONFIRMEE'
                 return (
                   <div key={exp.id}
                     className="card flex items-start gap-4 group hover:border-primary/20 transition-colors">
@@ -700,7 +704,8 @@ export default function ProfilePage() {
               )}
 
               {(profile?.educations ?? []).map((edu: any) => {
-                const st = STATUS[edu.status as keyof typeof STATUS]
+                const verifStatus = verifications.find(v => v.refId === edu.id)?.status ?? null
+                const st = verifStatus ? STATUS[verifStatus as keyof typeof STATUS] : null
                 return (
                   <div key={edu.id}
                     className="card flex items-start gap-4 group hover:border-primary/20 transition-colors">
@@ -829,7 +834,13 @@ export default function ProfilePage() {
           refId={verifTarget.refId}
           label={verifTarget.label}
           onClose={() => setVerifTarget(null)}
-          onDone={() => setVerifTarget(null)}
+          onDone={() => {
+            setVerifications(v => [
+              ...v,
+              { refId: verifTarget.refId, status: 'EN_ATTENTE' },
+            ])
+            setVerifTarget(null)
+          }}
         />
       )}
     </div>
