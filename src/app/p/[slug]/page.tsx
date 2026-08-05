@@ -216,7 +216,7 @@ export default function PublicProfilePage() {
         {/* Contact */}
         {hasContact && (
           <div className="rounded-[20px] overflow-hidden divide-y"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', divideColor: 'rgba(255,255,255,0.06)' }}>
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
             {profile.phone && (
               <a href={`tel:${profile.phone}`}
                 className="flex items-center gap-4 px-5 py-4 transition-colors group"
