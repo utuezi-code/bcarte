@@ -30,10 +30,13 @@ export async function POST(req: NextRequest) {
 
   const { data: { publicUrl } } = supabase.storage.from('profiles').getPublicUrl(path)
 
+  /* append cache-buster so browsers always fetch the latest image */
+  const urlWithCacheBust = `${publicUrl}?t=${Date.now()}`
+
   /* save avatarUrl on profile */
   const { error: dbError } = await supabase
     .from('profiles')
-    .update({ avatarUrl: publicUrl })
+    .update({ avatarUrl: urlWithCacheBust })
     .eq('userId', session.userId)
 
   if (dbError) {
@@ -41,5 +44,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `DB update failed: ${dbError.message}`, url: publicUrl }, { status: 500 })
   }
 
-  return NextResponse.json({ url: publicUrl })
+  return NextResponse.json({ url: urlWithCacheBust })
 }
