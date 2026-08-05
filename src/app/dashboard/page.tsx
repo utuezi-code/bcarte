@@ -8,15 +8,35 @@ import {
   IconCopy, IconCheck, IconShare,
 } from '@tabler/icons-react'
 
+type CheckItem = { label: string; done: boolean }
+
+function computeCompletion(p: any): { pct: number; items: CheckItem[] } {
+  const items: CheckItem[] = [
+    { label: 'Photo',        done: !!p?.avatarUrl },
+    { label: 'Titre',        done: !!p?.title },
+    { label: 'Bio',          done: !!p?.bio },
+    { label: 'Contact',      done: !!(p?.phone || p?.linkedin) },
+    { label: 'Compétences',  done: (p?.skills?.length ?? 0) > 0 },
+    { label: 'Expériences',  done: (p?.experiences?.length ?? 0) > 0 },
+    { label: 'Formations',   done: (p?.educations?.length ?? 0) > 0 },
+  ]
+  const pct = Math.round((items.filter(i => i.done).length / items.length) * 100)
+  return { pct, items }
+}
+
 export default function DashboardPage() {
-  const [name,   setName]   = useState('')
-  const [slug,   setSlug]   = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
+  const [name,       setName]       = useState('')
+  const [slug,       setSlug]       = useState<string | null>(null)
+  const [copied,     setCopied]     = useState(false)
+  const [completion, setCompletion] = useState<{ pct: number; items: CheckItem[] } | null>(null)
 
   useEffect(() => {
     fetch('/api/me').then(r => r.ok ? r.json() : null).then(d => {
       if (d?.name) setName(d.name.split(' ')[0])
       if (d?.slug) setSlug(d.slug)
+    })
+    fetch('/api/profile').then(r => r.ok ? r.json() : null).then(d => {
+      if (d) setCompletion(computeCompletion(d))
     })
   }, [])
 
@@ -83,32 +103,31 @@ export default function DashboardPage() {
       </div>
 
       {/* Complétion du profil */}
-      <div className="card">
+      <Link href="/dashboard/profile" className="card block hover:shadow-card-hover transition-all">
         <div className="flex items-center justify-between mb-3">
           <div>
             <p className="font-semibold text-sm text-text-primary">Complétez votre profil</p>
             <p className="text-xs text-text-secondary mt-0.5">Un profil complet augmente votre visibilité</p>
           </div>
-          <span className="text-xl font-black text-primary">40%</span>
+          <span className="text-xl font-black text-primary">
+            {completion ? `${completion.pct}%` : '—'}
+          </span>
         </div>
         <div className="h-1.5 bg-border-subtle rounded-full overflow-hidden">
-          <div className="h-full bg-primary rounded-full transition-all" style={{ width: '40%' }} />
+          <div className="h-full bg-primary rounded-full transition-all duration-700"
+            style={{ width: completion ? `${completion.pct}%` : '0%' }} />
         </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-4">
-          {[
-            { label: 'Titre',         done: true  },
-            { label: 'Expériences',   done: true  },
-            { label: 'Photo',         done: false },
-            { label: 'Bio',           done: false },
-            { label: 'Compétences',   done: false },
-          ].map(item => (
-            <div key={item.label} className="flex items-center gap-1.5">
-              <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.done ? 'bg-success' : 'bg-border'}`} />
-              <span className={`text-xs ${item.done ? 'text-text-secondary' : 'text-text-tertiary'}`}>{item.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+        {completion && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-4">
+            {completion.items.map(item => (
+              <div key={item.label} className="flex items-center gap-1.5">
+                <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.done ? 'bg-success' : 'bg-border'}`} />
+                <span className={`text-xs ${item.done ? 'text-text-secondary' : 'text-text-tertiary'}`}>{item.label}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Link>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
