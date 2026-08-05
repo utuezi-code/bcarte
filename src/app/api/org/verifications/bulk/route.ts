@@ -5,11 +5,14 @@ import { getOrgAccess } from '@/lib/org-auth'
 
 export const dynamic = 'force-dynamic'
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json(null, { status: 401 })
 
-  const { status } = await req.json()
+  const { ids, status } = await req.json()
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return NextResponse.json({ error: 'ids requis' }, { status: 400 })
+  }
   if (!['CONFIRMEE', 'REJETEE'].includes(status)) {
     return NextResponse.json({ error: 'Statut invalide' }, { status: 400 })
   }
@@ -17,18 +20,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const access = await getOrgAccess(session.userId)
   if (!access) return NextResponse.json({ error: 'Organisation introuvable' }, { status: 403 })
 
-  const { data, error } = await supabaseAdmin
+  const { error } = await supabaseAdmin
     .from('verifications')
     .update({ status, updatedAt: new Date().toISOString() })
-    .eq('id', params.id)
+    .in('id', ids)
     .eq('organisationId', access.orgId)
-    .select()
-    .single()
 
   if (error) {
-    console.error('org verifications PATCH error:', error.message)
+    console.error('bulk verifications error:', error.message)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json(data)
+  return NextResponse.json({ ok: true, count: ids.length })
 }
