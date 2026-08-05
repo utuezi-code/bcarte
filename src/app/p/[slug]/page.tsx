@@ -9,7 +9,6 @@ import {
   IconPhone, IconShare, IconDownload, IconArrowUpRight,
   IconUser,
 } from '@tabler/icons-react'
-import Image from 'next/image'
 
 function initials(name: string) {
   return name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?'
@@ -121,7 +120,7 @@ export default function PublicProfilePage() {
             <div className="w-[88px] h-[88px] rounded-full border-4 border-white shadow-lg overflow-hidden flex items-center justify-center text-white font-black text-2xl mb-3 flex-shrink-0"
               style={{ backgroundColor: color }}>
               {profile.avatarUrl
-                ? <Image src={profile.avatarUrl} alt={profile.fullName} width={88} height={88} className="object-cover w-full h-full" unoptimized />
+                ? <img src={profile.avatarUrl} alt={profile.fullName} className="object-cover w-full h-full" />
                 : initials(profile.fullName ?? '')}
             </div>
 
