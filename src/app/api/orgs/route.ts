@@ -10,11 +10,12 @@ export async function GET(req: NextRequest) {
 
   let query = supabaseAdmin
     .from('organisations')
-    .select('id, name, slug, type, sector, city, country, logoColor, verified')
+    .select('*')
 
   if (search)  query = query.ilike('name', `%${search}%`)
   if (country) query = query.eq('country', country)
 
-  const { data } = await query.limit(50)
+  const { data, error } = await query.limit(50)
+  if (error) console.error('orgs search error:', error.message)
   return NextResponse.json(data ?? [])
 }

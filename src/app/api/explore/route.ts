@@ -17,12 +17,13 @@ export async function GET(req: NextRequest) {
   if (type === 'orgs') {
     let query = supabaseAdmin
       .from('organisations')
-      .select('id, name, slug, type, sector, city, country, logoColor, verified')
+      .select('*')
 
     if (search)  query = query.ilike('name', `%${search}%`)
     if (country) query = query.eq('country', country)
 
-    const { data } = await query.order('name').limit(100)
+    const { data, error } = await query.order('name').limit(100)
+    if (error) console.error('explore orgs error:', error.message)
     return NextResponse.json(data ?? [])
   }
 
@@ -32,12 +33,12 @@ export async function GET(req: NextRequest) {
       .from('profiles')
       .select('id, fullName, title, city, country, avatarUrl, skills, slug, isPublic')
       .eq('isPublic', true)
-      .or('visibleToOrgs.is.null,visibleToOrgs.eq.true')
 
     if (search)  query = query.or(`fullName.ilike.%${search}%,title.ilike.%${search}%`)
     if (country) query = query.eq('country', country)
 
-    const { data } = await query.limit(100)
+    const { data, error } = await query.limit(100)
+    if (error) console.error('explore profiles (org) error:', error.message)
     return NextResponse.json(data ?? [])
   }
 
@@ -76,6 +77,7 @@ export async function GET(req: NextRequest) {
   if (search)  query = query.or(`fullName.ilike.%${search}%,title.ilike.%${search}%`)
   if (country) query = query.eq('country', country)
 
-  const { data } = await query.limit(50)
+  const { data, error } = await query.limit(50)
+  if (error) console.error('explore profiles (pro) error:', error.message)
   return NextResponse.json(data ?? [])
 }
