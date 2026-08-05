@@ -9,6 +9,7 @@ import {
 } from '@tabler/icons-react'
 import Image from 'next/image'
 import { COUNTRIES } from '@/lib/constants'
+import { computeCompletion } from '@/lib/completion'
 
 type Tab = 'infos' | 'competences' | 'experiences' | 'formations'
 
@@ -22,16 +23,6 @@ function initials(name: string) {
   return name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?'
 }
 
-function completionPct(form: Record<string, string>, skills: string[], profile: any) {
-  const checks = [
-    !!form.fullName, !!form.title, !!form.city, !!form.bio,
-    !!form.phone, !!form.linkedin,
-    skills.length > 0,
-    (profile?.experiences?.length ?? 0) > 0,
-    (profile?.educations?.length  ?? 0) > 0,
-  ]
-  return Math.round((checks.filter(Boolean).length / checks.length) * 100)
-}
 
 const BLANK_EXP = { title: '', company: '', city: '', startDate: '', endDate: '', isCurrent: false }
 const BLANK_EDU = { degree: '', field: '', startYear: '', endYear: '', isCurrent: false, orgSearch: '', orgId: '' }
@@ -208,7 +199,17 @@ export default function ProfilePage() {
     </div>
   )
 
-  const pct = completionPct(form, skills, profile)
+  const { pct } = computeCompletion({
+    avatarUrl:   profile?.avatarUrl,
+    fullName:    form.fullName,
+    title:       form.title,
+    bio:         form.bio,
+    phone:       form.phone,
+    linkedin:    form.linkedin,
+    skills,
+    experiences: profile?.experiences,
+    educations:  profile?.educations,
+  })
 
   const TABS: { id: Tab; label: string; count?: number }[] = [
     { id: 'infos',       label: 'Informations' },

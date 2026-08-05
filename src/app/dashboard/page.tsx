@@ -7,22 +7,7 @@ import {
   IconBuilding, IconArrowUpRight, IconCircleCheck, IconClock, IconEye,
   IconCopy, IconCheck, IconShare,
 } from '@tabler/icons-react'
-
-type CheckItem = { label: string; done: boolean }
-
-function computeCompletion(p: any): { pct: number; items: CheckItem[] } {
-  const items: CheckItem[] = [
-    { label: 'Photo',        done: !!p?.avatarUrl },
-    { label: 'Titre',        done: !!p?.title },
-    { label: 'Bio',          done: !!p?.bio },
-    { label: 'Contact',      done: !!(p?.phone || p?.linkedin) },
-    { label: 'Compétences',  done: (p?.skills?.length ?? 0) > 0 },
-    { label: 'Expériences',  done: (p?.experiences?.length ?? 0) > 0 },
-    { label: 'Formations',   done: (p?.educations?.length ?? 0) > 0 },
-  ]
-  const pct = Math.round((items.filter(i => i.done).length / items.length) * 100)
-  return { pct, items }
-}
+import { computeCompletion, type CheckItem } from '@/lib/completion'
 
 export default function DashboardPage() {
   const [name,       setName]       = useState('')
