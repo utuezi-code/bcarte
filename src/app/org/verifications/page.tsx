@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react'
 import {
   IconShieldCheck, IconLoader2, IconCheck, IconX,
   IconMapPin, IconBriefcase, IconSchool, IconClock,
-  IconCircleCheck, IconAlertCircle, IconUser,
+  IconCircleCheck, IconAlertCircle,
   IconPhone, IconBrandLinkedin, IconMail,
 } from '@tabler/icons-react'
+import Sidebar from '@/components/layout/Sidebar'
+import BottomNav from '@/components/layout/BottomNav'
 
 const AVATAR_COLORS = ['#6C47FF', '#059669', '#C9A84C', '#2563EB', '#DC2626']
 function avatarColor(name: string) {
@@ -57,7 +59,10 @@ export default function OrgVerificationsPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-bg-light">
+      <Sidebar />
+      <main className="lg:pl-[220px] pb-16 lg:pb-0 min-h-screen">
+      <div className="max-w-3xl mx-auto px-5 py-7 lg:px-8 lg:py-9 space-y-6">
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
@@ -265,6 +270,9 @@ export default function OrgVerificationsPage() {
           })}
         </div>
       )}
+      </div>
+      </main>
+      <BottomNav />
     </div>
   )
 }
