@@ -16,12 +16,20 @@ export async function GET() {
 
   if (!org) return NextResponse.json([])
 
-  const { data } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from('verifications')
-    .select('*')
+    .select(`
+      id, type, label, refId, status, createdAt,
+      profile:profiles (
+        id, fullName, title, city, country, avatarUrl, slug, phone, linkedin, emailPro,
+        experiences (*),
+        educations (*, organisation:organisations(name))
+      )
+    `)
     .eq('organisationId', org.id)
     .order('createdAt', { ascending: false })
 
+  if (error) console.error('org verifications GET error:', error.message)
   return NextResponse.json(data ?? [])
 }
 

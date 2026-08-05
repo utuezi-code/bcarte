@@ -7,6 +7,7 @@ import {
   IconLayoutDashboard, IconUser, IconFileText,
   IconCompass, IconCreditCard, IconSettings, IconLogout,
   IconBriefcase, IconBuilding, IconChevronRight, IconExternalLink, IconCopy, IconCheck,
+  IconShieldCheck,
 } from '@tabler/icons-react'
 import { useUser } from '@/lib/user-context'
 
@@ -20,12 +21,13 @@ const PRO_NAV = [
 ]
 
 const ORG_NAV = [
-  { href: '/org/dashboard',  label: 'Tableau de bord', icon: IconLayoutDashboard, exact: true },
-  { href: '/explore',        label: 'Explorer',         icon: IconCompass },
-  { href: '/recruiter',      label: 'Recruteur',        icon: IconBriefcase },
+  { href: '/org/dashboard',       label: 'Tableau de bord', icon: IconLayoutDashboard, exact: true },
+  { href: '/org/verifications',   label: 'Vérifications',   icon: IconShieldCheck },
+  { href: '/explore',             label: 'Explorer',        icon: IconCompass },
+  { href: '/recruiter',           label: 'Recruteur',       icon: IconBriefcase },
 ]
 
-interface MeData { name: string; email: string; slug: string | null }
+interface MeData { name: string; email: string; slug: string | null; pendingVerifications?: number }
 
 function initials(name: string) {
   return name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?'
@@ -54,6 +56,18 @@ export default function Sidebar() {
   useEffect(() => {
     fetch('/api/me').then(r => r.ok ? r.json() : null).then(d => { if (d) setMe(d) })
   }, [])
+
+  useEffect(() => {
+    if (effectiveRole !== 'organisation') return
+    fetch('/api/org/verifications')
+      .then(r => r.ok ? r.json() : [])
+      .then(d => {
+        if (Array.isArray(d)) {
+          const count = d.filter((v: any) => v.status === 'EN_ATTENTE').length
+          setMe(prev => prev ? { ...prev, pendingVerifications: count } : prev)
+        }
+      })
+  }, [effectiveRole])
 
   const nav = effectiveRole === 'organisation' ? ORG_NAV : PRO_NAV
   const displayName    = me?.name ?? '…'
@@ -140,6 +154,7 @@ export default function Sidebar() {
         {nav.map((item) => {
           const Icon   = item.icon
           const active = isActive(item.href, item.exact)
+          const badge  = item.href === '/org/verifications' ? (me?.pendingVerifications ?? 0) : 0
           return (
             <Link key={item.href} href={item.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-[9px] text-[13px] font-medium transition-colors relative ${
@@ -151,7 +166,12 @@ export default function Sidebar() {
                 <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-full bg-primary" />
               )}
               <Icon size={16} strokeWidth={active ? 2.2 : 1.8} />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {badge > 0 && (
+                <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[#D97706] text-white text-[10px] font-bold flex-shrink-0">
+                  {badge}
+                </span>
+              )}
             </Link>
           )
         })}
