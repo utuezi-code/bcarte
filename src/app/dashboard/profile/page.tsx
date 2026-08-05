@@ -6,10 +6,12 @@ import {
   IconPlus, IconX, IconCircleCheck, IconClock, IconCheck,
   IconLoader2, IconBriefcase, IconSchool, IconTrash,
   IconMapPin, IconArrowUpRight, IconCopy, IconShare, IconCamera,
+  IconShieldCheck,
 } from '@tabler/icons-react'
 import Image from 'next/image'
 import { COUNTRIES } from '@/lib/constants'
 import { computeCompletion } from '@/lib/completion'
+import VerifModal from '@/components/VerifModal'
 
 type Tab = 'infos' | 'competences' | 'experiences' | 'formations'
 
@@ -53,6 +55,7 @@ export default function ProfilePage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [dirty,       setDirty]       = useState(false)
   const [autoSaving,  setAutoSaving]  = useState(false)
+  const [verifTarget, setVerifTarget] = useState<{ type: 'EXPÉRIENCE' | 'FORMATION'; refId: string; label: string } | null>(null)
   const orgRef    = useRef<HTMLDivElement>(null)
   const avatarRef = useRef<HTMLInputElement>(null)
 
@@ -581,6 +584,7 @@ export default function ProfilePage() {
                 const end = exp.isCurrent ? 'En cours'
                   : exp.endDate
                     ? new Date(exp.endDate).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' }) : null
+                const isVerified = exp.status === 'CONFIRMEE'
                 return (
                   <div key={exp.id}
                     className="card flex items-start gap-4 group hover:border-primary/20 transition-colors">
@@ -597,14 +601,20 @@ export default function ProfilePage() {
                           {[start, end].filter(Boolean).join(' — ')}
                         </p>
                       )}
-                      {st && (
+                      {st ? (
                         <span className={`mt-2 inline-flex items-center gap-1 ${st.cls}`}>
                           <st.Icon size={9} /> {st.label}
                         </span>
+                      ) : (
+                        <button
+                          onClick={() => setVerifTarget({ type: 'EXPÉRIENCE', refId: exp.id, label: `${exp.title} — ${exp.company}` })}
+                          className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-text-tertiary hover:text-primary transition-colors">
+                          <IconShieldCheck size={11} /> Demander la vérification
+                        </button>
                       )}
                     </div>
                     <button onClick={() => delExp(exp.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg text-text-tertiary hover:text-danger hover:bg-red-50">
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg text-text-tertiary hover:text-danger hover:bg-red-50 flex-shrink-0">
                       <IconTrash size={14} />
                     </button>
                   </div>
@@ -706,10 +716,16 @@ export default function ProfilePage() {
                         {edu.startYear ?? ''}
                         {edu.isCurrent ? ' — Présent' : edu.endYear ? ` — ${edu.endYear}` : ''}
                       </p>
-                      {st && (
+                      {st ? (
                         <span className={`mt-2 inline-flex items-center gap-1 ${st.cls}`}>
                           <st.Icon size={9} /> {st.label}
                         </span>
+                      ) : (
+                        <button
+                          onClick={() => setVerifTarget({ type: 'FORMATION', refId: edu.id, label: `${edu.degree} — ${edu.organisation?.name ?? ''}` })}
+                          className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-text-tertiary hover:text-primary transition-colors">
+                          <IconShieldCheck size={11} /> Demander la vérification
+                        </button>
                       )}
                     </div>
                     <button onClick={() => delEdu(edu.id)}
@@ -806,6 +822,16 @@ export default function ProfilePage() {
 
         </div>
       </div>
+
+      {verifTarget && (
+        <VerifModal
+          type={verifTarget.type}
+          refId={verifTarget.refId}
+          label={verifTarget.label}
+          onClose={() => setVerifTarget(null)}
+          onDone={() => setVerifTarget(null)}
+        />
+      )}
     </div>
   )
 }
