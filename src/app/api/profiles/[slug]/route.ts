@@ -41,6 +41,6 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
     educations:    educations    ?? [],
     verifications: verifications ?? [],
   }, {
-    headers: { 'Cache-Control': 'no-store' },
+    headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate' },
   })
 }
