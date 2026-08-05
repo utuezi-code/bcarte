@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import {
-  IconShieldCheck, IconMapPin, IconBriefcase, IconBrandLinkedin,
-  IconLoader2, IconCheck, IconSchool, IconPhone, IconShare,
-  IconDownload, IconArrowUpRight,
+  IconShieldCheck, IconMapPin, IconBrandLinkedin,
+  IconLoader2, IconCheck, IconPhone, IconShare,
+  IconDownload, IconArrowUpRight, IconChevronDown, IconChevronUp,
 } from '@tabler/icons-react'
 
 function initials(name: string) {
@@ -42,11 +42,14 @@ function downloadVCard(profile: any) {
   a.click(); URL.revokeObjectURL(url)
 }
 
+const BIO_LIMIT = 160
+
 export default function PublicProfilePage() {
   const { slug }  = useParams<{ slug: string }>()
-  const [profile, setProfile] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [copied,  setCopied]  = useState(false)
+  const [profile,      setProfile]      = useState<any>(null)
+  const [loading,      setLoading]      = useState(true)
+  const [copied,       setCopied]       = useState(false)
+  const [bioExpanded,  setBioExpanded]  = useState(false)
 
   useEffect(() => {
     fetch(`/api/profiles/${slug}`)
@@ -76,9 +79,11 @@ export default function PublicProfilePage() {
     </div>
   )
 
-  const hasContact = profile.phone || profile.linkedin
-  const expList    = profile.experiences ?? []
-  const eduList    = profile.educations  ?? []
+  const hasContact  = profile.phone || profile.linkedin
+  const expList     = profile.experiences ?? []
+  const eduList     = profile.educations  ?? []
+  const bio         = profile.bio ?? ''
+  const bioTruncated = bio.length > BIO_LIMIT
 
   return (
     <div className="min-h-screen bg-white">
@@ -101,62 +106,78 @@ export default function PublicProfilePage() {
 
       <main className="max-w-[480px] mx-auto px-5">
 
-        {/* ── Photo hero ───────────────────────────────────────────────────── */}
-        <div className="flex flex-col items-center pt-10 pb-6">
+        {/* ── Hero ─────────────────────────────────────────────────────────── */}
+        <div className="flex flex-col items-center pt-9 pb-6">
 
-          {/* Avatar — large and centred */}
-          <div className="w-[148px] h-[148px] rounded-full overflow-hidden shadow-xl ring-4 ring-white mb-5 flex-shrink-0 flex items-center justify-center text-white font-black text-4xl"
+          {/* Avatar */}
+          <div className="w-[120px] h-[120px] rounded-full overflow-hidden shadow-lg ring-[3px] ring-white mb-4 flex-shrink-0 flex items-center justify-center text-white font-black text-3xl"
             style={{ backgroundColor: color }}>
             {profile.avatarUrl
               ? <img src={profile.avatarUrl} alt={profile.fullName} className="object-cover w-full h-full block" />
               : initials(profile.fullName ?? '')}
           </div>
 
-          {/* Identity */}
-          <h1 className="text-[26px] font-black text-gray-900 text-center leading-tight tracking-tight">
+          {/* Name */}
+          <h1 className="text-2xl font-black text-gray-900 text-center leading-tight tracking-tight">
             {profile.fullName}
           </h1>
 
+          {/* Title */}
           {profile.title && (
-            <p className="text-base font-semibold text-center mt-1" style={{ color }}>
+            <p className="text-sm font-semibold text-center mt-1" style={{ color }}>
               {profile.title}
             </p>
           )}
 
-          {(profile.city || profile.country) && (
-            <p className="flex items-center gap-1 text-xs text-gray-400 mt-2">
-              <IconMapPin size={11} />
-              {[profile.city, profile.country].filter(Boolean).join(', ')}
-            </p>
-          )}
+          {/* Location + verif */}
+          <div className="flex items-center gap-3 mt-2 flex-wrap justify-center">
+            {(profile.city || profile.country) && (
+              <span className="flex items-center gap-1 text-xs text-gray-400">
+                <IconMapPin size={11} />
+                {[profile.city, profile.country].filter(Boolean).join(', ')}
+              </span>
+            )}
+            {verifiedCount > 0 && (
+              <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full"
+                style={{ background: `${color}12`, color }}>
+                <IconShieldCheck size={11} /> {verifiedCount} vérifié{verifiedCount > 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
 
-          {verifiedCount > 0 && (
-            <span className="mt-3 flex items-center gap-1.5 text-[11px] font-bold px-3 py-1 rounded-full"
-              style={{ background: `${color}12`, color }}>
-              <IconShieldCheck size={12} /> {verifiedCount} vérification{verifiedCount > 1 ? 's' : ''}
-            </span>
-          )}
-
-          {profile.bio && (
-            <p className="text-sm text-gray-500 text-center mt-4 leading-relaxed max-w-[340px]">
-              {profile.bio}
-            </p>
-          )}
-
-          {/* Actions */}
-          <div className="flex gap-2.5 mt-6 w-full">
+          {/* ── Action buttons — ABOVE bio so always visible ── */}
+          <div className="flex gap-2.5 mt-5 w-full">
             <button onClick={() => downloadVCard(profile)}
-              className="flex-1 flex items-center justify-center gap-2 h-11 rounded-full text-sm font-bold text-white transition-all active:scale-[0.97]"
+              className="flex-1 flex items-center justify-center gap-2 h-12 rounded-full text-sm font-bold text-white shadow-sm transition-all active:scale-[0.97]"
               style={{ backgroundColor: color }}>
-              <IconDownload size={15} /> Enregistrer
+              <IconDownload size={15} /> Enregistrer le contact
             </button>
             <button onClick={handleShare}
-              className="flex-1 h-11 flex items-center justify-center gap-2 rounded-full text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors active:scale-[0.97]">
+              className="w-12 h-12 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors active:scale-[0.97] flex-shrink-0">
               {copied
-                ? <><IconCheck size={14} style={{ color }} /> Copié !</>
-                : <><IconShare size={14} /> Partager</>}
+                ? <IconCheck size={16} style={{ color }} />
+                : <IconShare size={16} className="text-gray-500" />}
             </button>
           </div>
+
+          {/* ── Bio — truncated with expand ── */}
+          {bio && (
+            <div className="mt-5 w-full text-left">
+              <p className="text-sm text-gray-500 leading-relaxed">
+                {bioExpanded || !bioTruncated ? bio : `${bio.slice(0, BIO_LIMIT)}…`}
+              </p>
+              {bioTruncated && (
+                <button
+                  onClick={() => setBioExpanded(v => !v)}
+                  className="mt-1.5 flex items-center gap-1 text-xs font-semibold"
+                  style={{ color }}>
+                  {bioExpanded
+                    ? <><IconChevronUp size={13} /> Réduire</>
+                    : <><IconChevronDown size={13} /> Lire la suite</>}
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ── Divider ──────────────────────────────────────────────────────── */}
@@ -164,7 +185,7 @@ export default function PublicProfilePage() {
 
         {/* ── Contact ──────────────────────────────────────────────────────── */}
         {hasContact && (
-          <div className="py-5 space-y-1">
+          <div className="py-4 space-y-1">
             {profile.phone && (
               <a href={`tel:${profile.phone}`}
                 className="flex items-center gap-4 py-3 px-3 -mx-3 rounded-2xl hover:bg-gray-50 transition-colors group">
@@ -203,11 +224,11 @@ export default function PublicProfilePage() {
 
         {/* ── Skills ───────────────────────────────────────────────────────── */}
         {(profile.skills?.length ?? 0) > 0 && (
-          <div className="py-5">
-            <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3">Compétences</p>
+          <div className="py-4">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Compétences</p>
             <div className="flex flex-wrap gap-2">
               {profile.skills.map((s: string) => (
-                <span key={s} className="text-xs font-semibold px-3.5 py-1.5 rounded-full bg-gray-100 text-gray-700">
+                <span key={s} className="text-xs font-semibold px-3 py-1.5 rounded-full bg-gray-100 text-gray-700">
                   {s}
                 </span>
               ))}
@@ -221,8 +242,8 @@ export default function PublicProfilePage() {
 
         {/* ── Experiences ──────────────────────────────────────────────────── */}
         {expList.length > 0 && (
-          <div className="py-5">
-            <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-4">Expériences</p>
+          <div className="py-4">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Expériences</p>
             <div className="space-y-4">
               {expList.map((exp: any) => {
                 const isVerified = profile.verifications?.some(
@@ -230,7 +251,7 @@ export default function PublicProfilePage() {
                 )
                 return (
                   <div key={exp.id} className="flex gap-3.5">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-black flex-shrink-0 mt-0.5"
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-[11px] font-black flex-shrink-0 mt-0.5"
                       style={{ backgroundColor: color }}>
                       {initials(exp.company ?? '')}
                     </div>
@@ -263,14 +284,14 @@ export default function PublicProfilePage() {
 
         {/* ── Educations ───────────────────────────────────────────────────── */}
         {eduList.length > 0 && (
-          <div className="py-5">
-            <p className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-4">Formations</p>
+          <div className="py-4">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Formations</p>
             <div className="space-y-4">
               {eduList.map((edu: any) => {
                 const orgName = edu.organisation?.name ?? edu.school ?? ''
                 return (
                   <div key={edu.id} className="flex gap-3.5">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black flex-shrink-0 mt-0.5 bg-gray-100 text-gray-500">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-[11px] font-black flex-shrink-0 mt-0.5 bg-gray-100 text-gray-500">
                       {initials(orgName)}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -289,7 +310,7 @@ export default function PublicProfilePage() {
         )}
 
         {/* ── Footer ───────────────────────────────────────────────────────── */}
-        <div className="border-t border-gray-100 py-8 flex flex-col items-center gap-2">
+        <div className="border-t border-gray-100 py-7 flex flex-col items-center gap-2">
           <Link href="/register"
             className="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-full border border-gray-200 text-gray-500 hover:border-gray-400 hover:text-gray-900 transition-colors">
             Créer ma bcarte gratuite <IconArrowUpRight size={11} />

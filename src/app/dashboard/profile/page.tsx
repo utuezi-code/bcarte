@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
   IconPlus, IconX, IconCircleCheck, IconClock, IconCheck,
@@ -58,6 +58,8 @@ export default function ProfilePage() {
   const [searchOrg, setSearchOrg] = useState(false)
   const [copied,      setCopied]      = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [dirty,       setDirty]       = useState(false)
+  const [autoSaving,  setAutoSaving]  = useState(false)
   const orgRef    = useRef<HTMLDivElement>(null)
   const avatarRef = useRef<HTMLInputElement>(null)
 
@@ -113,25 +115,36 @@ export default function ProfilePage() {
   }, [])
 
   /* save */
-  const handleSave = async () => {
+  const handleSave = useCallback(async (isAuto = false) => {
     setSlugError('')
-    setSaving(true)
+    if (isAuto) setAutoSaving(true); else setSaving(true)
     const res = await fetch('/api/profile', {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...form, skills }),
     })
-    setSaving(false)
+    if (isAuto) setAutoSaving(false); else setSaving(false)
     if (res.status === 409) { setSlugError('Ce lien est déjà pris, choisis-en un autre.'); return }
     if (!res.ok) {
-      const d = await res.json().catch(() => ({}))
-      setSlugError(d.error ?? 'Erreur lors de l\'enregistrement.')
+      if (!isAuto) {
+        const d = await res.json().catch(() => ({}))
+        setSlugError(d.error ?? 'Erreur lors de l\'enregistrement.')
+      }
       return
     }
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
-    // Reload profile to get updated slug
+    setDirty(false)
+    if (!isAuto) {
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    }
     fetch('/api/profile').then(r => r.ok ? r.json() : null).then(d => { if (d) setProfile(d) })
-  }
+  }, [form, skills])
+
+  /* auto-save after 2s of inactivity */
+  useEffect(() => {
+    if (!dirty) return
+    const t = setTimeout(() => handleSave(true), 2000)
+    return () => clearTimeout(t)
+  }, [form, skills, dirty, handleSave])
 
   const suggestSlug = () => {
     if (form.slug || !form.fullName) return
@@ -186,7 +199,7 @@ export default function ProfilePage() {
 
   const addSkill = () => {
     const s = newSkill.trim()
-    if (s && !skills.includes(s) && skills.length < 15) { setSkills([...skills, s]); setNewSkill('') }
+    if (s && !skills.includes(s) && skills.length < 15) { setSkills([...skills, s]); setNewSkill(''); setDirty(true) }
   }
 
   if (loading) return (
@@ -213,11 +226,18 @@ export default function ProfilePage() {
           <h1 className="page-title">Mon profil</h1>
           <p className="page-subtitle">Gérez vos informations professionnelles</p>
         </div>
-        <button onClick={handleSave} disabled={saving} className="btn-primary">
-          {saving ? <IconLoader2 size={15} className="animate-spin" />
-                  : saved  ? <IconCheck size={15} /> : null}
-          {saved ? 'Enregistré !' : 'Enregistrer'}
-        </button>
+        <div className="flex items-center gap-3">
+          {autoSaving && (
+            <span className="text-xs text-text-tertiary flex items-center gap-1.5">
+              <IconLoader2 size={12} className="animate-spin" /> Sauvegarde…
+            </span>
+          )}
+          <button onClick={() => handleSave(false)} disabled={saving} className="btn-primary">
+            {saving ? <IconLoader2 size={15} className="animate-spin" />
+                    : saved  ? <IconCheck size={15} /> : null}
+            {saved ? 'Enregistré !' : 'Enregistrer'}
+          </button>
+        </div>
       </div>
 
       {/* ── Two-column layout ──────────────────────────────────────────────── */}
@@ -387,7 +407,7 @@ export default function ProfilePage() {
                     <label className="label">{f.label}</label>
                     <input type={f.type} className="input"
                       value={(form as any)[f.key]}
-                      onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+                      onChange={e => { setForm({ ...form, [f.key]: e.target.value }); setDirty(true) }}
                       onBlur={(f as any).onBlur}
                       placeholder={f.placeholder} />
                   </div>
@@ -395,7 +415,7 @@ export default function ProfilePage() {
                 <div>
                   <label className="label">Pays</label>
                   <select className="input" value={form.country}
-                    onChange={e => setForm({ ...form, country: e.target.value })}>
+                    onChange={e => { setForm({ ...form, country: e.target.value }); setDirty(true) }}>
                     {COUNTRIES.map(c => <option key={c}>{c}</option>)}
                   </select>
                 </div>
@@ -403,7 +423,7 @@ export default function ProfilePage() {
               <div>
                 <label className="label">Bio</label>
                 <textarea rows={4} className="input resize-none leading-relaxed" value={form.bio}
-                  onChange={e => setForm({ ...form, bio: e.target.value })}
+                  onChange={e => { setForm({ ...form, bio: e.target.value }); setDirty(true) }}
                   placeholder="Présentez-vous en quelques lignes…" />
               </div>
 
@@ -422,6 +442,7 @@ export default function ProfilePage() {
                       onChange={e => {
                         setSlugError('')
                         setForm({ ...form, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/--+/g, '-') })
+                        setDirty(true)
                       }}
                     />
                   </div>
@@ -462,7 +483,7 @@ export default function ProfilePage() {
                   <span key={s}
                     className="group flex items-center gap-1.5 bg-primary-light text-primary text-xs font-semibold px-3 py-1.5 rounded-full">
                     {s}
-                    <button onClick={() => setSkills(skills.filter(x => x !== s))}
+                    <button onClick={() => { setSkills(skills.filter(x => x !== s)); setDirty(true) }}
                       className="opacity-40 group-hover:opacity-100 transition-opacity hover:text-danger">
                       <IconX size={10} />
                     </button>
