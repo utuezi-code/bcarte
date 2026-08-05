@@ -98,29 +98,39 @@ export default function Sidebar() {
           </div>
         </div>
         <div className="mt-2.5 flex flex-col gap-1">
-          <Link href="/dashboard/profile"
-            className="flex items-center justify-between text-[11px] font-semibold text-primary hover:underline">
-            Éditer mon profil
-            <IconChevronRight size={11} />
-          </Link>
-          {me?.slug && (
-            <div className="flex items-center gap-1">
-              <Link href={`/p/${me.slug}`} target="_blank"
-                className="flex-1 flex items-center justify-between text-[11px] font-semibold text-text-secondary hover:text-primary hover:underline transition-colors">
-                Profil public
-                <IconExternalLink size={11} />
+          {effectiveRole === 'organisation' ? (
+            <Link href="/org/dashboard"
+              className="flex items-center justify-between text-[11px] font-semibold text-primary hover:underline">
+              Gérer l&apos;organisation
+              <IconChevronRight size={11} />
+            </Link>
+          ) : (
+            <>
+              <Link href="/dashboard/profile"
+                className="flex items-center justify-between text-[11px] font-semibold text-primary hover:underline">
+                Éditer mon profil
+                <IconChevronRight size={11} />
               </Link>
-              <button
-                title="Copier le lien"
-                onClick={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}/p/${me!.slug}`)
-                  setCopied(true)
-                  setTimeout(() => setCopied(false), 2000)
-                }}
-                className="flex-shrink-0 p-0.5 text-text-tertiary hover:text-primary transition-colors">
-                {copied ? <IconCheck size={11} className="text-success" /> : <IconCopy size={11} />}
-              </button>
-            </div>
+              {me?.slug && (
+                <div className="flex items-center gap-1">
+                  <Link href={`/p/${me.slug}`} target="_blank"
+                    className="flex-1 flex items-center justify-between text-[11px] font-semibold text-text-secondary hover:text-primary hover:underline transition-colors">
+                    Profil public
+                    <IconExternalLink size={11} />
+                  </Link>
+                  <button
+                    title="Copier le lien"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/p/${me!.slug}`)
+                      setCopied(true)
+                      setTimeout(() => setCopied(false), 2000)
+                    }}
+                    className="flex-shrink-0 p-0.5 text-text-tertiary hover:text-primary transition-colors">
+                    {copied ? <IconCheck size={11} className="text-success" /> : <IconCopy size={11} />}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
