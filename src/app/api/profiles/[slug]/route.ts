@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-server'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(_req: NextRequest, { params }: { params: { slug: string } }) {
   /* core profile */
   const { data: profile, error: profileError } = await supabaseAdmin
@@ -38,5 +40,7 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
     experiences:   experiences   ?? [],
     educations:    educations    ?? [],
     verifications: verifications ?? [],
+  }, {
+    headers: { 'Cache-Control': 'no-store' },
   })
 }
