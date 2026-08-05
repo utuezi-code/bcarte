@@ -13,10 +13,21 @@ export async function GET(req: NextRequest) {
   const country = searchParams.get('country') ?? ''
   const type    = searchParams.get('type')    ?? 'profiles'
 
-  /* ── Organisation users: see all visible professionals ───────────────── */
-  if (session.role === 'ORGANISATION') {
-    if (type === 'orgs') return NextResponse.json([])
+  /* ── ORGANISATIONS: visible to everyone ─────────────────────────────── */
+  if (type === 'orgs') {
+    let query = supabaseAdmin
+      .from('organisations')
+      .select('id, name, slug, type, sector, city, country, logoColor, verified')
 
+    if (search)  query = query.ilike('name', `%${search}%`)
+    if (country) query = query.eq('country', country)
+
+    const { data } = await query.order('name').limit(100)
+    return NextResponse.json(data ?? [])
+  }
+
+  /* ── PROFILES for organisation users: all visible professionals ───────── */
+  if (session.role === 'ORGANISATION') {
     let query = supabaseAdmin
       .from('profiles')
       .select('id, fullName, title, city, country, avatarUrl, skills, slug, isPublic')
@@ -30,7 +41,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(data ?? [])
   }
 
-  /* ── Professional users: see colleagues in shared organisations ───────── */
+  /* ── PROFILES for professional users: colleagues in shared orgs ───────── */
   const { data: myProfile } = await supabaseAdmin
     .from('profiles')
     .select('id')
@@ -45,21 +56,7 @@ export async function GET(req: NextRequest) {
     .eq('profileId', myProfile.id)
 
   const myOrgIds = (myMemberships ?? []).map((m: any) => m.organisationId)
-
   if (myOrgIds.length === 0) return NextResponse.json([])
-
-  if (type === 'orgs') {
-    let query = supabaseAdmin
-      .from('organisations')
-      .select('id, name, slug, type, sector, city, country, logoColor, verified')
-      .in('id', myOrgIds)
-
-    if (search)  query = query.ilike('name', `%${search}%`)
-    if (country) query = query.eq('country', country)
-
-    const { data } = await query.limit(50)
-    return NextResponse.json(data ?? [])
-  }
 
   const { data: orgMembers } = await supabaseAdmin
     .from('team_members')
