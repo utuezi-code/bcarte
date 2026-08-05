@@ -29,7 +29,7 @@ export async function GET() {
   if (!verifs || verifs.length === 0) return NextResponse.json([])
 
   /* fetch full profile data for each unique profileId */
-  const profileIds = [...new Set(verifs.map((v: any) => v.profileId))]
+  const profileIds = Array.from(new Set(verifs.map((v: any) => v.profileId)))
 
   const [{ data: profiles }, { data: experiences }, { data: educations }] = await Promise.all([
     supabaseAdmin
