@@ -45,11 +45,11 @@ function downloadVCard(profile: any) {
 const BIO_LIMIT = 160
 
 export default function PublicProfilePage() {
-  const { slug }  = useParams<{ slug: string }>()
-  const [profile,      setProfile]      = useState<any>(null)
-  const [loading,      setLoading]      = useState(true)
-  const [copied,       setCopied]       = useState(false)
-  const [bioExpanded,  setBioExpanded]  = useState(false)
+  const { slug }         = useParams<{ slug: string }>()
+  const [profile,        setProfile]       = useState<any>(null)
+  const [loading,        setLoading]       = useState(true)
+  const [copied,         setCopied]        = useState(false)
+  const [bioExpanded,    setBioExpanded]   = useState(false)
 
   useEffect(() => {
     fetch(`/api/profiles/${slug}`)
@@ -79,58 +79,73 @@ export default function PublicProfilePage() {
     </div>
   )
 
-  const hasContact  = profile.phone || profile.linkedin
-  const expList     = profile.experiences ?? []
-  const eduList     = profile.educations  ?? []
-  const bio         = profile.bio ?? ''
+  const hasContact   = profile.phone || profile.linkedin
+  const expList      = profile.experiences ?? []
+  const eduList      = profile.educations  ?? []
+  const bio          = profile.bio ?? ''
   const bioTruncated = bio.length > BIO_LIMIT
 
   return (
     <div className="min-h-screen bg-white">
+      <div className="max-w-[480px] mx-auto">
 
-      {/* ── Nav ──────────────────────────────────────────────────────────── */}
-      <header className="border-b border-gray-100">
-        <div className="max-w-[480px] mx-auto px-5 h-12 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-1.5">
-            <div className="w-6 h-6 rounded-[6px] flex items-center justify-center"
-              style={{ background: `linear-gradient(135deg, ${color} 0%, #9B6DFF 100%)` }}>
-              <span className="text-white text-[10px] font-black">b</span>
+        {/* ── Hero photo — full width, wave bottom ─────────────────────────── */}
+        <div className="relative w-full" style={{ height: 'min(72vw, 420px)' }}>
+
+          {/* Photo / fallback */}
+          {profile.avatarUrl ? (
+            <img
+              src={profile.avatarUrl}
+              alt={profile.fullName}
+              className="absolute inset-0 w-full h-full object-cover object-top"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-white font-black"
+              style={{ backgroundColor: color, fontSize: 'clamp(48px, 15vw, 96px)' }}>
+              {initials(profile.fullName ?? '')}
             </div>
-            <span className="text-sm font-black text-gray-900 tracking-tight">bcarte</span>
-          </Link>
-          <Link href="/register" className="text-xs font-semibold text-gray-400 hover:text-gray-900 transition-colors">
+          )}
+
+          {/* Wave mask — white shape cuts into bottom of photo */}
+          <svg
+            className="absolute bottom-0 left-0 w-full"
+            viewBox="0 0 480 56"
+            preserveAspectRatio="none"
+            style={{ height: 56 }}>
+            <path d="M0,38 C80,56 160,20 240,32 C320,44 400,14 480,28 L480,56 L0,56 Z" fill="white" />
+          </svg>
+
+          {/* bcarte badge — bottom-right corner */}
+          <div className="absolute bottom-4 right-4 w-[58px] h-[58px] rounded-full bg-white shadow-lg flex flex-col items-center justify-center gap-0.5"
+            style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }}>
+            <div className="w-[22px] h-[22px] rounded-[6px] flex items-center justify-center"
+              style={{ background: `linear-gradient(135deg, ${color} 0%, #9B6DFF 100%)` }}>
+              <span className="text-white text-[10px] font-black leading-none">b</span>
+            </div>
+            <span className="text-[9px] font-black text-gray-900 tracking-tight leading-none">carte</span>
+          </div>
+
+          {/* "Créer mon profil" — top-right, subtle */}
+          <Link href="/register"
+            className="absolute top-3 right-3 text-[11px] font-semibold text-white/80 bg-black/20 backdrop-blur-sm px-2.5 py-1 rounded-full hover:bg-black/35 transition-colors">
             Créer mon profil →
           </Link>
         </div>
-      </header>
 
-      <main className="max-w-[480px] mx-auto px-5">
+        {/* ── Identity + actions ───────────────────────────────────────────── */}
+        <div className="px-5 pt-3 pb-5">
 
-        {/* ── Hero ─────────────────────────────────────────────────────────── */}
-        <div className="flex flex-col items-center pt-9 pb-6">
-
-          {/* Avatar */}
-          <div className="w-[120px] h-[120px] rounded-full overflow-hidden shadow-lg ring-[3px] ring-white mb-4 flex-shrink-0 flex items-center justify-center text-white font-black text-3xl"
-            style={{ backgroundColor: color }}>
-            {profile.avatarUrl
-              ? <img src={profile.avatarUrl} alt={profile.fullName} className="object-cover w-full h-full block" />
-              : initials(profile.fullName ?? '')}
-          </div>
-
-          {/* Name */}
-          <h1 className="text-2xl font-black text-gray-900 text-center leading-tight tracking-tight">
+          <h1 className="text-2xl font-black text-gray-900 leading-tight tracking-tight">
             {profile.fullName}
           </h1>
 
-          {/* Title */}
           {profile.title && (
-            <p className="text-sm font-semibold text-center mt-1" style={{ color }}>
+            <p className="text-sm font-semibold mt-0.5" style={{ color }}>
               {profile.title}
             </p>
           )}
 
-          {/* Location + verif */}
-          <div className="flex items-center gap-3 mt-2 flex-wrap justify-center">
+          <div className="flex items-center gap-2.5 mt-2 flex-wrap">
             {(profile.city || profile.country) && (
               <span className="flex items-center gap-1 text-xs text-gray-400">
                 <IconMapPin size={11} />
@@ -139,14 +154,14 @@ export default function PublicProfilePage() {
             )}
             {verifiedCount > 0 && (
               <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full"
-                style={{ background: `${color}12`, color }}>
+                style={{ background: `${color}15`, color }}>
                 <IconShieldCheck size={11} /> {verifiedCount} vérifié{verifiedCount > 1 ? 's' : ''}
               </span>
             )}
           </div>
 
-          {/* ── Action buttons — ABOVE bio so always visible ── */}
-          <div className="flex gap-2.5 mt-5 w-full">
+          {/* CTA buttons */}
+          <div className="flex gap-2.5 mt-5">
             <button onClick={() => downloadVCard(profile)}
               className="flex-1 flex items-center justify-center gap-2 h-12 rounded-full text-sm font-bold text-white shadow-sm transition-all active:scale-[0.97]"
               style={{ backgroundColor: color }}>
@@ -160,20 +175,17 @@ export default function PublicProfilePage() {
             </button>
           </div>
 
-          {/* ── Bio — truncated with expand ── */}
+          {/* Bio */}
           {bio && (
-            <div className="mt-5 w-full text-left">
+            <div className="mt-4">
               <p className="text-sm text-gray-500 leading-relaxed">
                 {bioExpanded || !bioTruncated ? bio : `${bio.slice(0, BIO_LIMIT)}…`}
               </p>
               {bioTruncated && (
-                <button
-                  onClick={() => setBioExpanded(v => !v)}
-                  className="mt-1.5 flex items-center gap-1 text-xs font-semibold"
+                <button onClick={() => setBioExpanded(v => !v)}
+                  className="mt-1 flex items-center gap-1 text-xs font-semibold"
                   style={{ color }}>
-                  {bioExpanded
-                    ? <><IconChevronUp size={13} /> Réduire</>
-                    : <><IconChevronDown size={13} /> Lire la suite</>}
+                  {bioExpanded ? <><IconChevronUp size={13} /> Réduire</> : <><IconChevronDown size={13} /> Lire la suite</>}
                 </button>
               )}
             </div>
@@ -185,7 +197,7 @@ export default function PublicProfilePage() {
 
         {/* ── Contact ──────────────────────────────────────────────────────── */}
         {hasContact && (
-          <div className="py-4 space-y-1">
+          <div className="px-5 py-4 space-y-1">
             {profile.phone && (
               <a href={`tel:${profile.phone}`}
                 className="flex items-center gap-4 py-3 px-3 -mx-3 rounded-2xl hover:bg-gray-50 transition-colors group">
@@ -224,7 +236,7 @@ export default function PublicProfilePage() {
 
         {/* ── Skills ───────────────────────────────────────────────────────── */}
         {(profile.skills?.length ?? 0) > 0 && (
-          <div className="py-4">
+          <div className="px-5 py-4">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Compétences</p>
             <div className="flex flex-wrap gap-2">
               {profile.skills.map((s: string) => (
@@ -242,7 +254,7 @@ export default function PublicProfilePage() {
 
         {/* ── Experiences ──────────────────────────────────────────────────── */}
         {expList.length > 0 && (
-          <div className="py-4">
+          <div className="px-5 py-4">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Expériences</p>
             <div className="space-y-4">
               {expList.map((exp: any) => {
@@ -284,7 +296,7 @@ export default function PublicProfilePage() {
 
         {/* ── Educations ───────────────────────────────────────────────────── */}
         {eduList.length > 0 && (
-          <div className="py-4">
+          <div className="px-5 py-4">
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Formations</p>
             <div className="space-y-4">
               {eduList.map((edu: any) => {
@@ -310,7 +322,7 @@ export default function PublicProfilePage() {
         )}
 
         {/* ── Footer ───────────────────────────────────────────────────────── */}
-        <div className="border-t border-gray-100 py-7 flex flex-col items-center gap-2">
+        <div className="border-t border-gray-100 px-5 py-7 flex flex-col items-center gap-2">
           <Link href="/register"
             className="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-full border border-gray-200 text-gray-500 hover:border-gray-400 hover:text-gray-900 transition-colors">
             Créer ma bcarte gratuite <IconArrowUpRight size={11} />
@@ -320,7 +332,7 @@ export default function PublicProfilePage() {
           </p>
         </div>
 
-      </main>
+      </div>
     </div>
   )
 }
