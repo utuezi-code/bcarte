@@ -5,20 +5,27 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   IconShieldCheck, IconMapPin, IconBriefcase, IconBrandLinkedin,
-  IconLoader2, IconCopy, IconCheck, IconSchool, IconCode,
+  IconLoader2, IconCheck, IconSchool, IconCode,
   IconPhone, IconShare, IconDownload, IconArrowUpRight,
-  IconUser,
+  IconStar,
 } from '@tabler/icons-react'
 
 function initials(name: string) {
   return name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?'
 }
 
-const PALETTE = ['#6C47FF', '#059669', '#2563EB', '#D97706', '#DC2626', '#7C3AED', '#0891B2', '#C026D3']
+const PALETTE = ['#6C47FF', '#0891B2', '#059669', '#D97706', '#DC2626', '#7C3AED', '#2563EB', '#C026D3']
 function accentColor(name: string) {
   let h = 0
   for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h)
   return PALETTE[Math.abs(h) % PALETTE.length]
+}
+
+function hexToRgb(hex: string) {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `${r}, ${g}, ${b}`
 }
 
 function fmtDate(d: string | null | undefined) {
@@ -61,194 +68,203 @@ export default function PublicProfilePage() {
   }
 
   const verifiedCount = profile?.verifications?.filter((v: any) => v.status === 'CONFIRMEE').length ?? 0
-  const color = profile ? accentColor(profile.fullName ?? '') : '#6C47FF'
+  const color  = profile ? accentColor(profile.fullName ?? '') : '#6C47FF'
+  const rgb    = hexToRgb(color)
   const hasContact = profile?.phone || profile?.linkedin
   const hasContent = (profile?.skills?.length ?? 0) > 0 || (profile?.experiences?.length ?? 0) > 0 || (profile?.educations?.length ?? 0) > 0
 
   if (loading) return (
-    <div className="min-h-screen bg-[#F4F3FB] flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: '#0D0824' }}>
       <IconLoader2 size={28} className="animate-spin" style={{ color }} />
     </div>
   )
 
   if (!profile) return (
     <div className="min-h-screen bg-[#F4F3FB] flex flex-col items-center justify-center gap-4 px-5 text-center">
-      <p className="font-bold text-text-primary text-lg">Profil introuvable</p>
-      <p className="text-sm text-text-secondary">Ce profil n&apos;existe pas ou a été supprimé.</p>
-      <Link href="/" className="btn-primary mt-2">Retour à l&apos;accueil</Link>
+      <p className="font-bold text-lg" style={{ color }}>Profil introuvable</p>
+      <p className="text-sm text-gray-500">Ce profil n&apos;existe pas ou a été supprimé.</p>
+      <Link href="/" className="mt-2 px-5 py-2.5 rounded-full text-sm font-bold text-white" style={{ backgroundColor: color }}>
+        Retour à l&apos;accueil
+      </Link>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-[#F4F3FB] flex flex-col">
-      {/* accent bar */}
-      <div className="h-1 w-full flex-shrink-0" style={{ backgroundColor: color }} />
+    <div className="min-h-screen" style={{ background: `linear-gradient(160deg, #0D0824 0%, #160D3A 50%, #0D0824 100%)` }}>
 
-      {/* nav */}
-      <header className="bg-white border-b border-[#EEEEF5]">
-        <div className="max-w-[480px] mx-auto px-5 h-12 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-1.5">
-            <div className="w-6 h-6 rounded-[6px] flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #6C47FF 0%, #9B6DFF 100%)' }}>
-              <span className="text-white text-[10px] font-black">b</span>
-            </div>
-            <span className="text-[13px] font-black text-text-primary tracking-tight">bcarte</span>
-          </Link>
-          <Link href="/register" className="text-[11px] font-semibold text-primary hover:underline">
-            Créer mon profil →
-          </Link>
-        </div>
+      {/* ── Top nav ──────────────────────────────────────────────────────── */}
+      <header className="max-w-[520px] mx-auto px-5 h-14 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-[8px] flex items-center justify-center"
+            style={{ background: `linear-gradient(135deg, ${color} 0%, #9B6DFF 100%)` }}>
+            <span className="text-white text-[11px] font-black">b</span>
+          </div>
+          <span className="text-white/80 text-sm font-bold tracking-tight">bcarte</span>
+        </Link>
+        <Link href="/register"
+          className="text-xs font-semibold px-3.5 py-1.5 rounded-full border border-white/20 text-white/70 hover:text-white hover:border-white/40 transition-colors">
+          Créer mon profil →
+        </Link>
       </header>
 
-      <main className="flex-1 max-w-[480px] mx-auto w-full px-4 py-5 space-y-3">
+      {/* ── Hero card ────────────────────────────────────────────────────── */}
+      <div className="max-w-[520px] mx-auto px-4 pt-2 pb-4">
+        <div className="relative rounded-[28px] overflow-hidden"
+          style={{ background: `linear-gradient(145deg, rgba(${rgb},0.25) 0%, rgba(${rgb},0.08) 100%)`, border: `1px solid rgba(${rgb},0.3)` }}>
 
-        {/* ── Identity card ──────────────────────────────────────────────── */}
-        <div className="bg-white rounded-[24px] border border-[#EEEEF5] shadow-sm">
+          {/* Glow background */}
+          <div className="absolute inset-0 pointer-events-none"
+            style={{ background: `radial-gradient(ellipse 80% 60% at 50% 0%, rgba(${rgb},0.3) 0%, transparent 70%)` }} />
 
-          {/* Cover + avatar overlapping */}
-          <div className="relative"
-            style={{ background: `linear-gradient(145deg, #0D0824 0%, #2A1180 55%, ${color} 100%)` }}>
-            <div className="h-36" />
-            {verifiedCount > 0 && (
-              <span className="absolute top-3 right-3 flex items-center gap-1 text-[10px] font-bold text-white bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full">
-                <IconShieldCheck size={10} /> Vérifié
-              </span>
-            )}
-            {/* Avatar centred on the cover bottom edge */}
-            <div className="absolute left-1/2 -translate-x-1/2 -bottom-14">
-              <div className="w-[112px] h-[112px] rounded-full border-[5px] border-white shadow-xl overflow-hidden flex items-center justify-center text-white font-black text-3xl flex-shrink-0"
-                style={{ backgroundColor: color }}>
+          {/* Verified badge */}
+          {verifiedCount > 0 && (
+            <div className="absolute top-4 right-4 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold"
+              style={{ background: `rgba(${rgb},0.2)`, color, border: `1px solid rgba(${rgb},0.4)` }}>
+              <IconShieldCheck size={11} /> Vérifié
+            </div>
+          )}
+
+          <div className="relative px-6 pt-8 pb-7 flex flex-col items-center text-center">
+
+            {/* Avatar */}
+            <div className="relative mb-5">
+              <div className="absolute inset-0 rounded-full blur-xl opacity-60"
+                style={{ backgroundColor: color, transform: 'scale(1.2)' }} />
+              <div className="relative w-[120px] h-[120px] rounded-full overflow-hidden border-[3px] shadow-2xl"
+                style={{ borderColor: `rgba(${rgb}, 0.5)` }}>
                 {profile.avatarUrl
                   ? <img src={profile.avatarUrl} alt={profile.fullName} className="object-cover w-full h-full block" />
-                  : initials(profile.fullName ?? '')}
+                  : (
+                    <div className="w-full h-full flex items-center justify-center text-white font-black text-4xl"
+                      style={{ background: `linear-gradient(135deg, ${color}, #0D0824)` }}>
+                      {initials(profile.fullName ?? '')}
+                    </div>
+                  )}
               </div>
             </div>
-          </div>
 
-          {/* Identity — padding-top leaves room for the avatar */}
-          <div className="px-6 pb-5 pt-16 flex flex-col items-center text-center">
-
-            <h1 className="text-[22px] font-bold text-text-primary leading-tight">
+            {/* Name */}
+            <h1 className="text-[28px] font-black text-white leading-tight tracking-tight">
               {profile.fullName}
             </h1>
 
-            {profile.title ? (
-              <p className="text-sm text-text-secondary mt-1 font-medium">{profile.title}</p>
-            ) : (
-              <p className="text-sm text-text-tertiary mt-1 italic">Titre non renseigné</p>
+            {/* Title */}
+            {profile.title && (
+              <p className="text-base font-semibold mt-1.5" style={{ color }}>
+                {profile.title}
+              </p>
             )}
 
-            <div className="flex items-center justify-center gap-3 mt-2 flex-wrap">
-              {(profile.city || profile.country) && (
-                <span className="flex items-center gap-1 text-xs text-text-tertiary">
-                  <IconMapPin size={11} />
-                  {[profile.city, profile.country].filter(Boolean).join(', ')}
-                </span>
-              )}
-            </div>
+            {/* Location */}
+            {(profile.city || profile.country) && (
+              <p className="flex items-center gap-1.5 text-xs text-white/50 mt-2 font-medium">
+                <IconMapPin size={12} />
+                {[profile.city, profile.country].filter(Boolean).join(', ')}
+              </p>
+            )}
 
             {/* Bio */}
             {profile.bio && (
-              <p className="text-sm text-text-secondary mt-3 leading-relaxed text-center max-w-xs">
+              <p className="text-sm text-white/65 mt-4 leading-relaxed max-w-[320px]">
                 {profile.bio}
               </p>
             )}
 
-            {/* Actions */}
-            <div className="flex gap-2.5 mt-4 w-full">
+            {/* CTA buttons */}
+            <div className="flex gap-3 mt-6 w-full">
               <button onClick={() => downloadVCard(profile)}
-                className="flex-1 flex items-center justify-center gap-2 h-11 rounded-[12px] text-sm font-semibold text-white transition-all active:scale-[0.97] shadow-sm"
-                style={{ backgroundColor: color }}>
-                <IconDownload size={15} /> Enregistrer
+                className="flex-1 flex items-center justify-center gap-2 h-12 rounded-[14px] text-sm font-bold text-white transition-all active:scale-[0.97] shadow-lg"
+                style={{ background: `linear-gradient(135deg, ${color} 0%, rgba(${rgb},0.7) 100%)`, boxShadow: `0 4px 20px rgba(${rgb},0.4)` }}>
+                <IconDownload size={16} /> Enregistrer
               </button>
               <button onClick={handleShare}
-                className="flex-1 h-11 btn-secondary rounded-[12px] justify-center gap-2 text-sm">
-                {copied ? <><IconCheck size={14} className="text-success" /> Copié !</> : <><IconShare size={14} /> Partager</>}
+                className="flex-1 h-12 flex items-center justify-center gap-2 rounded-[14px] text-sm font-bold transition-all active:scale-[0.97]"
+                style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'white' }}>
+                {copied
+                  ? <><IconCheck size={15} style={{ color }} /> Copié !</>
+                  : <><IconShare size={15} /> Partager</>}
               </button>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* ── Stats ──────────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { label: 'Expériences', value: profile.experiences?.length ?? 0, color: '#6C47FF', bg: '#F0EDFF' },
-            { label: 'Vérifiées',   value: verifiedCount,                    color: '#059669', bg: '#ECFDF5' },
-            { label: 'Formations',  value: profile.educations?.length  ?? 0, color: '#2563EB', bg: '#EFF6FF' },
-          ].map(s => (
-            <div key={s.label} className="bg-white border border-[#EEEEF5] rounded-[16px] py-3.5 text-center">
-              <p className={`text-2xl font-black leading-none ${s.value === 0 ? 'text-text-tertiary' : ''}`}
-                style={s.value > 0 ? { color: s.color } : {}}>
-                {s.value}
-              </p>
-              <p className="text-[10px] text-text-tertiary mt-1 font-medium">{s.label}</p>
-            </div>
-          ))}
-        </div>
+      {/* ── Main content ─────────────────────────────────────────────────── */}
+      <div className="max-w-[520px] mx-auto px-4 pb-10 space-y-3">
 
-        {/* ── Contact ────────────────────────────────────────────────────── */}
+        {/* Stats */}
+        {(profile.experiences?.length > 0 || profile.educations?.length > 0 || verifiedCount > 0) && (
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { label: 'Expériences', value: profile.experiences?.length ?? 0 },
+              { label: 'Vérifiées',   value: verifiedCount },
+              { label: 'Formations',  value: profile.educations?.length  ?? 0 },
+            ].map(s => (
+              <div key={s.label}
+                className="rounded-[18px] py-4 text-center"
+                style={{ background: `rgba(255,255,255,0.05)`, border: '1px solid rgba(255,255,255,0.08)' }}>
+                <p className="text-2xl font-black leading-none"
+                  style={{ color: s.value > 0 ? color : 'rgba(255,255,255,0.2)' }}>
+                  {s.value}
+                </p>
+                <p className="text-[10px] mt-1 font-medium" style={{ color: 'rgba(255,255,255,0.35)' }}>{s.label}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Contact */}
         {hasContact && (
-          <div className="bg-white rounded-[20px] border border-[#EEEEF5] shadow-sm overflow-hidden divide-y divide-[#F4F3FB]">
+          <div className="rounded-[20px] overflow-hidden divide-y"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', divideColor: 'rgba(255,255,255,0.06)' }}>
             {profile.phone && (
               <a href={`tel:${profile.phone}`}
-                className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#FAFAFA] transition-colors group">
-                <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: `${color}18` }}>
-                  <IconPhone size={15} style={{ color }} />
+                className="flex items-center gap-4 px-5 py-4 transition-colors group"
+                style={{ borderBottom: profile.linkedin ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
+                <div className="w-10 h-10 rounded-[12px] flex items-center justify-center flex-shrink-0"
+                  style={{ background: `rgba(${rgb},0.2)` }}>
+                  <IconPhone size={16} style={{ color }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] text-text-tertiary font-semibold uppercase tracking-wide">Téléphone</p>
-                  <p className="text-sm font-semibold text-text-primary">{profile.phone}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest mb-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>Téléphone</p>
+                  <p className="text-sm font-bold text-white">{profile.phone}</p>
                 </div>
-                <IconArrowUpRight size={14} className="text-text-tertiary group-hover:text-text-secondary" />
+                <IconArrowUpRight size={15} style={{ color: 'rgba(255,255,255,0.3)' }} />
               </a>
             )}
             {profile.linkedin && (
               <a href={profile.linkedin.startsWith('http') ? profile.linkedin : `https://${profile.linkedin}`}
                 target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#FAFAFA] transition-colors group">
-                <div className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: `${color}18` }}>
-                  <IconBrandLinkedin size={15} style={{ color }} />
+                className="flex items-center gap-4 px-5 py-4 transition-colors group">
+                <div className="w-10 h-10 rounded-[12px] flex items-center justify-center flex-shrink-0"
+                  style={{ background: `rgba(${rgb},0.2)` }}>
+                  <IconBrandLinkedin size={16} style={{ color }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] text-text-tertiary font-semibold uppercase tracking-wide">LinkedIn</p>
-                  <p className="text-sm font-semibold text-text-primary truncate">
+                  <p className="text-[10px] font-bold uppercase tracking-widest mb-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>LinkedIn</p>
+                  <p className="text-sm font-bold text-white truncate">
                     {profile.linkedin.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, '').replace(/\/$/, '')}
                   </p>
                 </div>
-                <IconArrowUpRight size={14} className="text-text-tertiary group-hover:text-text-secondary" />
+                <IconArrowUpRight size={15} style={{ color: 'rgba(255,255,255,0.3)' }} />
               </a>
             )}
           </div>
         )}
 
-        {/* ── Empty state ─────────────────────────────────────────────────── */}
-        {!hasContent && !hasContact && (
-          <div className="bg-white rounded-[20px] border border-[#EEEEF5] px-5 py-8 text-center space-y-2">
-            <div className="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center" style={{ backgroundColor: `${color}15` }}>
-              <IconUser size={20} style={{ color }} />
-            </div>
-            <p className="text-sm font-semibold text-text-primary">Profil en construction</p>
-            <p className="text-xs text-text-tertiary max-w-[200px] mx-auto">
-              Ce profil n&apos;a pas encore été complété.
-            </p>
-          </div>
-        )}
-
-        {/* ── Skills ─────────────────────────────────────────────────────── */}
+        {/* Skills */}
         {(profile.skills?.length ?? 0) > 0 && (
-          <div className="bg-white rounded-[20px] border border-[#EEEEF5] shadow-sm px-5 py-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}18` }}>
-                <IconCode size={12} style={{ color }} />
-              </div>
-              <p className="text-xs font-bold text-text-primary uppercase tracking-wide">Compétences</p>
+          <div className="rounded-[20px] px-5 py-5"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="flex items-center gap-2 mb-4">
+              <IconCode size={14} style={{ color }} />
+              <p className="text-xs font-black text-white uppercase tracking-widest">Compétences</p>
             </div>
             <div className="flex flex-wrap gap-2">
               {profile.skills.map((s: string) => (
-                <span key={s} className="text-xs font-semibold px-3 py-1.5 rounded-full"
-                  style={{ backgroundColor: `${color}15`, color }}>
+                <span key={s}
+                  className="text-xs font-bold px-3.5 py-1.5 rounded-full"
+                  style={{ background: `rgba(${rgb},0.15)`, color, border: `1px solid rgba(${rgb},0.3)` }}>
                   {s}
                 </span>
               ))}
@@ -256,14 +272,13 @@ export default function PublicProfilePage() {
           </div>
         )}
 
-        {/* ── Experiences ─────────────────────────────────────────────────── */}
+        {/* Experiences */}
         {(profile.experiences?.length ?? 0) > 0 && (
-          <div className="bg-white rounded-[20px] border border-[#EEEEF5] shadow-sm px-5 py-4">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}18` }}>
-                <IconBriefcase size={12} style={{ color }} />
-              </div>
-              <p className="text-xs font-bold text-text-primary uppercase tracking-wide">Expériences</p>
+          <div className="rounded-[20px] px-5 py-5"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="flex items-center gap-2 mb-5">
+              <IconBriefcase size={14} style={{ color }} />
+              <p className="text-xs font-black text-white uppercase tracking-widest">Expériences</p>
             </div>
             {profile.experiences.map((exp: any, i: number) => {
               const isVerified = profile.verifications?.some(
@@ -271,25 +286,28 @@ export default function PublicProfilePage() {
               )
               const isLast = i === profile.experiences.length - 1
               return (
-                <div key={exp.id} className="flex gap-3">
+                <div key={exp.id} className="flex gap-4">
                   <div className="flex flex-col items-center">
-                    <div className="w-9 h-9 rounded-[10px] flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                      style={{ backgroundColor: accentColor(exp.company ?? '') }}>
+                    <div className="w-10 h-10 rounded-[12px] flex items-center justify-center text-white text-xs font-black flex-shrink-0"
+                      style={{ background: `rgba(${rgb},0.2)`, border: `1px solid rgba(${rgb},0.3)`, color }}>
                       {initials(exp.company ?? '')}
                     </div>
-                    {!isLast && <div className="w-px bg-[#EEEEF5] flex-1 mt-1.5 mb-1.5 min-h-[16px]" />}
+                    {!isLast && <div className="w-px flex-1 mt-2 mb-2 min-h-[12px]" style={{ background: 'rgba(255,255,255,0.08)' }} />}
                   </div>
-                  <div className={`flex-1 min-w-0 ${isLast ? '' : 'pb-4'}`}>
-                    <div className="flex items-start gap-1.5 flex-wrap">
-                      <p className="text-sm font-semibold text-text-primary leading-snug">{exp.title}</p>
+                  <div className={`flex-1 min-w-0 ${isLast ? '' : 'pb-5'}`}>
+                    <div className="flex items-start gap-2 flex-wrap">
+                      <p className="text-sm font-bold text-white leading-snug">{exp.title}</p>
                       {isVerified && (
-                        <span className="badge-verified flex-shrink-0 mt-0.5">
+                        <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+                          style={{ background: 'rgba(5,150,105,0.2)', color: '#34D399', border: '1px solid rgba(52,211,153,0.3)' }}>
                           <IconShieldCheck size={9} /> Vérifié
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-text-secondary mt-0.5">{exp.company}{exp.city ? ` · ${exp.city}` : ''}</p>
-                    <p className="text-xs text-text-tertiary mt-0.5">
+                    <p className="text-xs font-medium mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                      {exp.company}{exp.city ? ` · ${exp.city}` : ''}
+                    </p>
+                    <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
                       {fmtDate(exp.startDate)} – {exp.isCurrent ? 'Présent' : (fmtDate(exp.endDate) ?? 'Présent')}
                     </p>
                   </div>
@@ -299,32 +317,31 @@ export default function PublicProfilePage() {
           </div>
         )}
 
-        {/* ── Educations ──────────────────────────────────────────────────── */}
+        {/* Educations */}
         {(profile.educations?.length ?? 0) > 0 && (
-          <div className="bg-white rounded-[20px] border border-[#EEEEF5] shadow-sm px-5 py-4">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}18` }}>
-                <IconSchool size={12} style={{ color }} />
-              </div>
-              <p className="text-xs font-bold text-text-primary uppercase tracking-wide">Formations</p>
+          <div className="rounded-[20px] px-5 py-5"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="flex items-center gap-2 mb-5">
+              <IconSchool size={14} style={{ color }} />
+              <p className="text-xs font-black text-white uppercase tracking-widest">Formations</p>
             </div>
             {profile.educations.map((edu: any, i: number) => {
               const orgName = edu.organisation?.name ?? edu.school ?? ''
               const isLast  = i === profile.educations.length - 1
               return (
-                <div key={edu.id} className="flex gap-3">
+                <div key={edu.id} className="flex gap-4">
                   <div className="flex flex-col items-center">
-                    <div className="w-9 h-9 rounded-[10px] flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                      style={{ backgroundColor: accentColor(orgName) }}>
+                    <div className="w-10 h-10 rounded-[12px] flex items-center justify-center text-xs font-black flex-shrink-0"
+                      style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.6)' }}>
                       {initials(orgName)}
                     </div>
-                    {!isLast && <div className="w-px bg-[#EEEEF5] flex-1 mt-1.5 mb-1.5 min-h-[16px]" />}
+                    {!isLast && <div className="w-px flex-1 mt-2 mb-2 min-h-[12px]" style={{ background: 'rgba(255,255,255,0.08)' }} />}
                   </div>
-                  <div className={`flex-1 min-w-0 ${isLast ? '' : 'pb-4'}`}>
-                    <p className="text-sm font-semibold text-text-primary leading-snug">{edu.degree}</p>
+                  <div className={`flex-1 min-w-0 ${isLast ? '' : 'pb-5'}`}>
+                    <p className="text-sm font-bold text-white leading-snug">{edu.degree}</p>
                     {edu.field && <p className="text-xs font-semibold mt-0.5" style={{ color }}>{edu.field}</p>}
-                    <p className="text-xs text-text-secondary mt-0.5">{orgName}</p>
-                    <p className="text-xs text-text-tertiary mt-0.5">
+                    <p className="text-xs font-medium mt-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{orgName}</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>
                       {edu.startYear} – {edu.isCurrent ? 'Présent' : (edu.endYear ?? 'Présent')}
                     </p>
                   </div>
@@ -334,18 +351,32 @@ export default function PublicProfilePage() {
           </div>
         )}
 
-        {/* ── Footer ──────────────────────────────────────────────────────── */}
-        <div className="pt-2 pb-6 flex flex-col items-center gap-2">
+        {/* Empty state */}
+        {!hasContent && !hasContact && (
+          <div className="rounded-[20px] px-5 py-10 text-center"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <div className="w-12 h-12 rounded-2xl mx-auto flex items-center justify-center mb-3"
+              style={{ background: `rgba(${rgb},0.15)` }}>
+              <IconStar size={20} style={{ color }} />
+            </div>
+            <p className="text-sm font-bold text-white/60">Profil en construction</p>
+            <p className="text-xs text-white/30 mt-1">Bientôt disponible.</p>
+          </div>
+        )}
+
+        {/* Footer CTA */}
+        <div className="pt-3 pb-2 flex flex-col items-center gap-3">
           <Link href="/register"
-            className="flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-full border border-[#EEEEF5] bg-white text-text-secondary hover:text-primary hover:border-primary/30 transition-colors shadow-sm">
-            Créer ma bcarte gratuite <IconArrowUpRight size={12} />
+            className="flex items-center gap-2 text-xs font-bold px-5 py-2.5 rounded-full transition-all"
+            style={{ background: `rgba(${rgb},0.15)`, border: `1px solid rgba(${rgb},0.3)`, color }}>
+            Créer ma bcarte gratuite <IconArrowUpRight size={13} />
           </Link>
-          <p className="text-[10px] text-text-tertiary">
-            Propulsé par <Link href="/" className="font-semibold text-primary hover:underline">bcarte.io</Link>
+          <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.2)' }}>
+            Propulsé par <Link href="/" className="font-bold hover:underline" style={{ color: `rgba(${rgb},0.7)` }}>bcarte.io</Link>
           </p>
         </div>
 
-      </main>
+      </div>
     </div>
   )
 }
