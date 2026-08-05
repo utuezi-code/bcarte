@@ -106,7 +106,7 @@ export default function PublicProfilePage() {
         <div className="bg-white rounded-[24px] overflow-hidden border border-[#EEEEF5] shadow-sm">
 
           {/* Cover */}
-          <div className="h-28 relative"
+          <div className="h-36 relative"
             style={{ background: `linear-gradient(145deg, #0D0824 0%, #2A1180 55%, ${color} 100%)` }}>
             {verifiedCount > 0 && (
               <span className="absolute top-3 right-3 flex items-center gap-1 text-[10px] font-bold text-white bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full">
@@ -116,8 +116,8 @@ export default function PublicProfilePage() {
           </div>
 
           {/* Avatar + identity */}
-          <div className="px-6 pb-5 -mt-11 flex flex-col items-center text-center">
-            <div className="w-[88px] h-[88px] rounded-full border-4 border-white shadow-lg overflow-hidden flex items-center justify-center text-white font-black text-2xl mb-3 flex-shrink-0"
+          <div className="px-6 pb-5 -mt-14 flex flex-col items-center text-center">
+            <div className="w-[112px] h-[112px] rounded-full border-[5px] border-white shadow-xl overflow-hidden flex items-center justify-center text-white font-black text-3xl mb-3 flex-shrink-0"
               style={{ backgroundColor: color }}>
               {profile.avatarUrl
                 ? <img src={profile.avatarUrl} alt={profile.fullName} className="object-cover w-full h-full" />
