@@ -6,9 +6,11 @@ import {
   IconSearch, IconX, IconLoader2, IconMapPin,
   IconShieldCheck, IconUsers, IconBriefcase,
   IconArrowUpRight, IconUserCircle, IconBuilding,
+  IconFileText,
 } from '@tabler/icons-react'
 import Sidebar from '@/components/layout/Sidebar'
 import BottomNav from '@/components/layout/BottomNav'
+import ProfileModal from '@/components/ProfileModal'
 import { COUNTRIES } from '@/lib/constants'
 
 type View = 'profils' | 'organisations'
@@ -27,14 +29,23 @@ function initials(name: string) {
 }
 
 export default function ExplorePage() {
-  const [view,     setView]     = useState<View>('profils')
-  const [profiles, setProfiles] = useState<any[]>([])
-  const [orgs,     setOrgs]     = useState<any[]>([])
-  const [loading,  setLoading]  = useState(false)
-  const [search,   setSearch]   = useState('')
-  const [country,  setCountry]  = useState('')
+  const [view,          setView]          = useState<View>('profils')
+  const [profiles,      setProfiles]      = useState<any[]>([])
+  const [orgs,          setOrgs]          = useState<any[]>([])
+  const [loading,       setLoading]       = useState(false)
+  const [search,        setSearch]        = useState('')
+  const [country,       setCountry]       = useState('')
+  const [isOrg,         setIsOrg]         = useState(false)
+  const [modalSlug,     setModalSlug]     = useState<string | null>(null)
 
-  /* debounced fetch — scoped to user's organisations */
+  /* detect current user role */
+  useEffect(() => {
+    fetch('/api/me').then(r => r.ok ? r.json() : null).then(d => {
+      if (d?.role === 'organisation') setIsOrg(true)
+    })
+  }, [])
+
+  /* debounced fetch */
   useEffect(() => {
     setLoading(true)
     const t = setTimeout(() => {
@@ -149,14 +160,16 @@ export default function ExplorePage() {
                     const color = avatarColor(p.fullName ?? '')
                     const skills: string[] = p.skills ?? []
                     const href = p.slug ? `/p/${p.slug}` : '#'
-                    return (
-                      <Link key={p.id} href={href}
-                        className="card hover:shadow-card-hover hover:border-primary/20 transition-all group block space-y-3">
-                        {/* Identity */}
+
+                    const cardContent = (
+                      <>
+                        {/* Avatar + identity */}
                         <div className="flex items-start gap-3">
-                          <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+                          <div className="w-11 h-11 rounded-xl overflow-hidden flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
                             style={{ backgroundColor: color }}>
-                            {initials(p.fullName ?? '')}
+                            {p.avatarUrl
+                              ? <img src={p.avatarUrl} alt={p.fullName} className="w-full h-full object-cover object-top" />
+                              : initials(p.fullName ?? '')}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-text-primary text-sm truncate group-hover:text-primary transition-colors">
@@ -168,8 +181,9 @@ export default function ExplorePage() {
                               {[p.city, p.country].filter(Boolean).join(', ') || '—'}
                             </p>
                           </div>
-                          <IconArrowUpRight size={13}
-                            className="text-text-tertiary group-hover:text-primary transition-colors flex-shrink-0 mt-0.5" />
+                          {isOrg
+                            ? <IconFileText size={13} className="text-text-tertiary group-hover:text-primary transition-colors flex-shrink-0 mt-0.5" />
+                            : <IconArrowUpRight size={13} className="text-text-tertiary group-hover:text-primary transition-colors flex-shrink-0 mt-0.5" />}
                         </div>
 
                         {/* Skills */}
@@ -188,6 +202,28 @@ export default function ExplorePage() {
                             )}
                           </div>
                         )}
+
+                        {/* Org CTA */}
+                        {isOrg && (
+                          <div className="pt-1 border-t border-border-subtle">
+                            <span className="text-[11px] font-semibold text-primary flex items-center gap-1">
+                              <IconFileText size={11} /> Voir le profil & CV
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    )
+
+                    return isOrg ? (
+                      <button key={p.id}
+                        onClick={() => p.slug && setModalSlug(p.slug)}
+                        className="card hover:shadow-card-hover hover:border-primary/20 transition-all group block space-y-3 text-left w-full">
+                        {cardContent}
+                      </button>
+                    ) : (
+                      <Link key={p.id} href={href}
+                        className="card hover:shadow-card-hover hover:border-primary/20 transition-all group block space-y-3">
+                        {cardContent}
                       </Link>
                     )
                   })}
@@ -253,6 +289,10 @@ export default function ExplorePage() {
         </div>
       </main>
       <BottomNav />
+
+      {modalSlug && (
+        <ProfileModal slug={modalSlug} onClose={() => setModalSlug(null)} />
+      )}
     </div>
   )
 }

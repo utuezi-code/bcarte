@@ -38,7 +38,8 @@ export default function ProfilePage() {
   const [form,      setForm]      = useState({
     fullName: '', title: '', city: '', country: 'Sénégal', bio: '', phone: '', linkedin: '', slug: '', emailPro: '',
   })
-  const [personalEmail, setPersonalEmail] = useState('')
+  const [personalEmail,  setPersonalEmail]  = useState('')
+  const [visibleToOrgs, setVisibleToOrgs] = useState(true)
   const [slugError, setSlugError] = useState('')
   const [showExp,   setShowExp]   = useState(false)
   const [expForm,   setExpForm]   = useState(BLANK_EXP)
@@ -85,6 +86,7 @@ export default function ProfilePage() {
           slug:     d.slug      ?? '',
           emailPro: d.emailPro  ?? '',
         })
+        setVisibleToOrgs(d.visibleToOrgs !== false)
       }
       setLoading(false)
     })
@@ -116,7 +118,7 @@ export default function ProfilePage() {
     if (isAuto) setAutoSaving(true); else setSaving(true)
     const res = await fetch('/api/profile', {
       method: 'PUT', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, skills }),
+      body: JSON.stringify({ ...form, skills, visibleToOrgs }),
     })
     if (isAuto) setAutoSaving(false); else setSaving(false)
     if (res.status === 409) { setSlugError('Ce lien est déjà pris, choisis-en un autre.'); return }
@@ -133,14 +135,14 @@ export default function ProfilePage() {
       setTimeout(() => setSaved(false), 3000)
     }
     fetch('/api/profile').then(r => r.ok ? r.json() : null).then(d => { if (d) setProfile(d) })
-  }, [form, skills])
+  }, [form, skills, visibleToOrgs])
 
   /* auto-save after 2s of inactivity */
   useEffect(() => {
     if (!dirty) return
     const t = setTimeout(() => handleSave(true), 2000)
     return () => clearTimeout(t)
-  }, [form, skills, dirty, handleSave])
+  }, [form, skills, visibleToOrgs, dirty, handleSave])
 
   const suggestSlug = () => {
     if (form.slug || !form.fullName) return
@@ -490,6 +492,24 @@ export default function ProfilePage() {
                     ? <p className="text-xs text-text-tertiary mt-1.5">Votre profil sera accessible sur <span className="text-primary font-medium">bcarte.io/p/{form.slug}</span></p>
                     : <p className="text-xs text-text-tertiary mt-1.5">Choisissez un identifiant unique pour votre profil public (ex&nbsp;: mamadou-traore)</p>
                 }
+              </div>
+
+              {/* Visibilité organisations */}
+              <div className="flex items-start justify-between gap-4 pt-1 border-t border-border-subtle">
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-text-primary">Visible par les organisations</p>
+                  <p className="text-xs text-text-secondary mt-0.5 leading-relaxed">
+                    Les recruteurs et organisations peuvent voir votre profil et télécharger votre CV depuis la page Explorer.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setVisibleToOrgs(!visibleToOrgs); setDirty(true) }}
+                  className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 mt-0.5 ${visibleToOrgs ? 'bg-primary' : 'bg-border'}`}
+                  role="switch"
+                  aria-checked={visibleToOrgs}>
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${visibleToOrgs ? 'translate-x-5' : 'translate-x-0'}`} />
+                </button>
               </div>
             </div>
           )}

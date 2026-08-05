@@ -2,12 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase-server'
 
-/**
- * GET /api/explore?search=&country=&type=profiles|orgs
- *
- * Profiles : members of the same organisations as the current user.
- * Orgs     : organisations the current user has joined.
- */
+export const dynamic = 'force-dynamic'
+
 export async function GET(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json([], { status: 401 })
@@ -17,7 +13,24 @@ export async function GET(req: NextRequest) {
   const country = searchParams.get('country') ?? ''
   const type    = searchParams.get('type')    ?? 'profiles'
 
-  /* ── Get current user's profile ──────────────────────────────────────── */
+  /* ── Organisation users: see all visible professionals ───────────────── */
+  if (session.role === 'ORGANISATION') {
+    if (type === 'orgs') return NextResponse.json([])
+
+    let query = supabaseAdmin
+      .from('profiles')
+      .select('id, fullName, title, city, country, avatarUrl, skills, slug, isPublic')
+      .eq('isPublic', true)
+      .or('visibleToOrgs.is.null,visibleToOrgs.eq.true')
+
+    if (search)  query = query.or(`fullName.ilike.%${search}%,title.ilike.%${search}%`)
+    if (country) query = query.eq('country', country)
+
+    const { data } = await query.limit(100)
+    return NextResponse.json(data ?? [])
+  }
+
+  /* ── Professional users: see colleagues in shared organisations ───────── */
   const { data: myProfile } = await supabaseAdmin
     .from('profiles')
     .select('id')
@@ -26,7 +39,6 @@ export async function GET(req: NextRequest) {
 
   if (!myProfile) return NextResponse.json([])
 
-  /* ── Get organisations the user belongs to ───────────────────────────── */
   const { data: myMemberships } = await supabaseAdmin
     .from('team_members')
     .select('organisationId')
@@ -36,7 +48,6 @@ export async function GET(req: NextRequest) {
 
   if (myOrgIds.length === 0) return NextResponse.json([])
 
-  /* ── ORGS: return the organisations the user has joined ──────────────── */
   if (type === 'orgs') {
     let query = supabaseAdmin
       .from('organisations')
@@ -50,7 +61,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(data ?? [])
   }
 
-  /* ── PROFILES: members of my organisations (excluding self) ──────────── */
   const { data: orgMembers } = await supabaseAdmin
     .from('team_members')
     .select('profileId')
@@ -58,7 +68,6 @@ export async function GET(req: NextRequest) {
     .neq('profileId', myProfile.id)
 
   const peerIds = Array.from(new Set((orgMembers ?? []).map((m: any) => m.profileId)))
-
   if (peerIds.length === 0) return NextResponse.json([])
 
   let query = supabaseAdmin

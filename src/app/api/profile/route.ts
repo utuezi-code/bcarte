@@ -37,7 +37,7 @@ export async function PUT(req: NextRequest) {
   if (!session) return NextResponse.json(null, { status: 401 })
 
   const body = await req.json()
-  const { fullName, title, city, country, bio, phone, linkedin, slug, skills, avatarUrl, emailPro } = body
+  const { fullName, title, city, country, bio, phone, linkedin, slug, skills, avatarUrl, emailPro, visibleToOrgs } = body
 
   const { data: existing } = await supabaseAdmin
     .from('profiles')
@@ -57,7 +57,8 @@ export async function PUT(req: NextRequest) {
   }
 
   const coreFields: Record<string, unknown> = { fullName, title, city, country, bio, phone, linkedin, slug: slug || null, emailPro: emailPro || null }
-  if (avatarUrl !== undefined) coreFields.avatarUrl = avatarUrl
+  if (avatarUrl !== undefined)     coreFields.avatarUrl     = avatarUrl
+  if (visibleToOrgs !== undefined) coreFields.visibleToOrgs = visibleToOrgs
 
   if (!existing) {
     const { error } = await supabaseAdmin.from('profiles').insert({
