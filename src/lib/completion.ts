@@ -7,6 +7,7 @@ export function computeCompletion(data: {
   bio?: string | null
   phone?: string | null
   linkedin?: string | null
+  emailPro?: string | null
   skills?: string[]
   experiences?: unknown[]
   educations?: unknown[]
@@ -16,7 +17,7 @@ export function computeCompletion(data: {
     { label: 'Nom',         done: !!data.fullName },
     { label: 'Titre',       done: !!data.title },
     { label: 'Bio',         done: !!data.bio },
-    { label: 'Contact',     done: !!(data.phone || data.linkedin) },
+    { label: 'Contact',     done: !!(data.phone || data.linkedin || data.emailPro) },
     { label: 'Compétences', done: (data.skills?.length ?? 0) > 0 },
     { label: 'Expériences', done: (data.experiences?.length ?? 0) > 0 },
     { label: 'Formations',  done: (data.educations?.length ?? 0) > 0 },

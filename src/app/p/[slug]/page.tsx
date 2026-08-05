@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import {
-  IconShieldCheck, IconMapPin, IconBrandLinkedin,
+  IconShieldCheck, IconMapPin, IconBrandLinkedin, IconMail,
   IconLoader2, IconCheck, IconPhone, IconShare,
   IconDownload, IconArrowUpRight, IconChevronDown, IconChevronUp,
 } from '@tabler/icons-react'
@@ -37,8 +37,9 @@ function downloadVCard(profile: any) {
   const lines = [
     'BEGIN:VCARD', 'VERSION:3.0',
     `FN:${profile.fullName ?? ''}`,
-    profile.title    ? `TITLE:${profile.title}`   : '',
-    profile.phone    ? `TEL:${profile.phone}`     : '',
+    profile.title    ? `TITLE:${profile.title}`            : '',
+    profile.emailPro ? `EMAIL;type=WORK:${profile.emailPro}` : '',
+    profile.phone    ? `TEL:${profile.phone}`              : '',
     profile.linkedin ? `URL;type=LinkedIn:${profile.linkedin}` : '',
     `URL:${window.location.href}`,
     'END:VCARD',
@@ -87,7 +88,7 @@ export default function PublicProfilePage() {
     </div>
   )
 
-  const hasContact   = profile.phone || profile.linkedin
+  const hasContact   = profile.phone || profile.linkedin || profile.emailPro
   const expList      = profile.experiences ?? []
   const eduList      = profile.educations  ?? []
   const bio          = profile.bio ?? ''
@@ -235,6 +236,20 @@ export default function PublicProfilePage() {
           <>
             <div className="mx-6 border-t border-gray-100" />
             <div className="px-6 py-4 space-y-1">
+              {profile.emailPro && (
+                <a href={`mailto:${profile.emailPro}`}
+                  className="flex items-center gap-3.5 py-3 px-3 -mx-3 rounded-2xl hover:bg-gray-50 transition-colors group">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ background: `rgba(${rgb}, 0.1)` }}>
+                    <IconMail size={16} style={{ color }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Email</p>
+                    <p className="text-[13px] font-semibold text-gray-900 mt-0.5 truncate">{profile.emailPro}</p>
+                  </div>
+                  <IconArrowUpRight size={14} className="text-gray-300 group-hover:text-gray-500 transition-colors flex-shrink-0" />
+                </a>
+              )}
               {profile.phone && (
                 <a href={`tel:${profile.phone}`}
                   className="flex items-center gap-3.5 py-3 px-3 -mx-3 rounded-2xl hover:bg-gray-50 transition-colors group">

@@ -36,8 +36,9 @@ export default function ProfilePage() {
   const [skills,    setSkills]    = useState<string[]>([])
   const [newSkill,  setNewSkill]  = useState('')
   const [form,      setForm]      = useState({
-    fullName: '', title: '', city: '', country: 'Sénégal', bio: '', phone: '', linkedin: '', slug: '',
+    fullName: '', title: '', city: '', country: 'Sénégal', bio: '', phone: '', linkedin: '', slug: '', emailPro: '',
   })
+  const [personalEmail, setPersonalEmail] = useState('')
   const [slugError, setSlugError] = useState('')
   const [showExp,   setShowExp]   = useState(false)
   const [expForm,   setExpForm]   = useState(BLANK_EXP)
@@ -74,17 +75,21 @@ export default function ProfilePage() {
         setProfile(d)
         setSkills(d.skills ?? [])
         setForm({
-          fullName: d.fullName ?? '',
-          title:    d.title    ?? '',
-          city:     d.city     ?? '',
-          country:  d.country  ?? 'Sénégal',
-          bio:      d.bio      ?? '',
-          phone:    d.phone    ?? '',
-          linkedin: d.linkedin ?? '',
-          slug:     d.slug     ?? '',
+          fullName: d.fullName  ?? '',
+          title:    d.title     ?? '',
+          city:     d.city      ?? '',
+          country:  d.country   ?? 'Sénégal',
+          bio:      d.bio       ?? '',
+          phone:    d.phone     ?? '',
+          linkedin: d.linkedin  ?? '',
+          slug:     d.slug      ?? '',
+          emailPro: d.emailPro  ?? '',
         })
       }
       setLoading(false)
+    })
+    fetch('/api/me').then(r => r.ok ? r.json() : null).then(d => {
+      if (d?.email) setPersonalEmail(d.email)
     })
   }, [])
 
@@ -206,6 +211,7 @@ export default function ProfilePage() {
     bio:         form.bio,
     phone:       form.phone,
     linkedin:    form.linkedin,
+    emailPro:    form.emailPro,
     skills,
     experiences: profile?.experiences,
     educations:  profile?.educations,
@@ -419,6 +425,30 @@ export default function ProfilePage() {
                     onChange={e => { setForm({ ...form, country: e.target.value }); setDirty(true) }}>
                     {COUNTRIES.map(c => <option key={c}>{c}</option>)}
                   </select>
+                </div>
+
+                {/* Email professionnel */}
+                <div className="sm:col-span-2">
+                  <label className="label">Email professionnel</label>
+                  <input type="email" className="input"
+                    value={form.emailPro}
+                    onChange={e => { setForm({ ...form, emailPro: e.target.value }); setDirty(true) }}
+                    placeholder="contact@monentreprise.com" />
+                  {personalEmail && !form.emailPro && (
+                    <p className="text-xs text-text-tertiary mt-1.5 flex items-center gap-2">
+                      Email du compte : <span className="font-medium text-text-secondary">{personalEmail}</span>
+                      <button type="button"
+                        onClick={() => { setForm({ ...form, emailPro: personalEmail }); setDirty(true) }}
+                        className="text-primary font-semibold hover:underline">
+                        Utiliser
+                      </button>
+                    </p>
+                  )}
+                  {form.emailPro && personalEmail && form.emailPro !== personalEmail && (
+                    <p className="text-xs text-text-tertiary mt-1.5">
+                      Email du compte : {personalEmail}
+                    </p>
+                  )}
                 </div>
               </div>
               <div>
