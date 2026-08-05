@@ -16,21 +16,46 @@ export async function GET() {
 
   if (!org) return NextResponse.json([])
 
-  const { data, error } = await supabaseAdmin
+  const { data: verifs, error } = await supabaseAdmin
     .from('verifications')
-    .select(`
-      id, type, label, refId, status, createdAt,
-      profile:profiles (
-        id, fullName, title, city, country, avatarUrl, slug, phone, linkedin, emailPro,
-        experiences (*),
-        educations (*, organisation:organisations(name))
-      )
-    `)
+    .select('id, type, label, refId, status, createdAt, profileId')
     .eq('organisationId', org.id)
     .order('createdAt', { ascending: false })
 
-  if (error) console.error('org verifications GET error:', error.message)
-  return NextResponse.json(data ?? [])
+  if (error) {
+    console.error('org verifications GET error:', error.message)
+    return NextResponse.json([])
+  }
+  if (!verifs || verifs.length === 0) return NextResponse.json([])
+
+  /* fetch full profile data for each unique profileId */
+  const profileIds = [...new Set(verifs.map((v: any) => v.profileId))]
+
+  const [{ data: profiles }, { data: experiences }, { data: educations }] = await Promise.all([
+    supabaseAdmin
+      .from('profiles')
+      .select('id, fullName, title, city, country, avatarUrl, slug, phone, linkedin, emailPro')
+      .in('id', profileIds),
+    supabaseAdmin
+      .from('experiences')
+      .select('*')
+      .in('profileId', profileIds),
+    supabaseAdmin
+      .from('educations')
+      .select('*, organisation:organisations(name)')
+      .in('profileId', profileIds),
+  ])
+
+  const profileMap = Object.fromEntries(
+    (profiles ?? []).map((p: any) => [p.id, {
+      ...p,
+      experiences: (experiences ?? []).filter((e: any) => e.profileId === p.id),
+      educations:  (educations  ?? []).filter((e: any) => e.profileId === p.id),
+    }])
+  )
+
+  const result = verifs.map((v: any) => ({ ...v, profile: profileMap[v.profileId] ?? null }))
+  return NextResponse.json(result)
 }
 
 export async function PATCH(req: NextRequest) {
