@@ -7,7 +7,7 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
   /* core profile */
   const { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles')
-    .select('id, fullName, title, bio, city, country, phone, linkedin, avatarUrl, skills, slug')
+    .select('*')
     .eq('slug', params.slug)
     .single()
 
