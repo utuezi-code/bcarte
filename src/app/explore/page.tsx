@@ -137,15 +137,15 @@ export default function ExplorePage() {
                   {search
                     ? `Aucun résultat pour « ${search} »`
                     : view === 'profils'
-                      ? 'Aucun collègue trouvé'
-                      : 'Aucune organisation liée'}
+                      ? 'Aucun profil trouvé'
+                      : 'Aucune organisation trouvée'}
                 </p>
                 <p className="text-xs text-text-secondary mt-1 max-w-xs mx-auto">
                   {search
-                    ? 'Essayez d\'autres mots-clés'
+                    ? 'Essayez d\'autres mots-clés ou supprimez les filtres'
                     : view === 'profils'
-                      ? 'Rejoignez une organisation pour voir les profils de vos collègues'
-                      : 'Rejoignez une organisation depuis Mon organisation'}
+                      ? 'Aucun professionnel visible pour le moment'
+                      : 'Aucune organisation enregistrée pour le moment'}
                 </p>
               </div>
             </div>
