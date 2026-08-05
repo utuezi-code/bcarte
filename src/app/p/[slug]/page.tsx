@@ -103,26 +103,30 @@ export default function PublicProfilePage() {
       <main className="flex-1 max-w-[480px] mx-auto w-full px-4 py-5 space-y-3">
 
         {/* ── Identity card ──────────────────────────────────────────────── */}
-        <div className="bg-white rounded-[24px] overflow-hidden border border-[#EEEEF5] shadow-sm">
+        <div className="bg-white rounded-[24px] border border-[#EEEEF5] shadow-sm">
 
-          {/* Cover */}
-          <div className="h-36 relative"
+          {/* Cover + avatar overlapping */}
+          <div className="relative"
             style={{ background: `linear-gradient(145deg, #0D0824 0%, #2A1180 55%, ${color} 100%)` }}>
+            <div className="h-36" />
             {verifiedCount > 0 && (
               <span className="absolute top-3 right-3 flex items-center gap-1 text-[10px] font-bold text-white bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full">
                 <IconShieldCheck size={10} /> Vérifié
               </span>
             )}
+            {/* Avatar centred on the cover bottom edge */}
+            <div className="absolute left-1/2 -translate-x-1/2 -bottom-14">
+              <div className="w-[112px] h-[112px] rounded-full border-[5px] border-white shadow-xl overflow-hidden flex items-center justify-center text-white font-black text-3xl flex-shrink-0"
+                style={{ backgroundColor: color }}>
+                {profile.avatarUrl
+                  ? <img src={profile.avatarUrl} alt={profile.fullName} className="object-cover w-full h-full block" />
+                  : initials(profile.fullName ?? '')}
+              </div>
+            </div>
           </div>
 
-          {/* Avatar + identity */}
-          <div className="px-6 pb-5 -mt-14 flex flex-col items-center text-center">
-            <div className="w-[112px] h-[112px] rounded-full border-[5px] border-white shadow-xl overflow-hidden flex items-center justify-center text-white font-black text-3xl mb-3 flex-shrink-0"
-              style={{ backgroundColor: color }}>
-              {profile.avatarUrl
-                ? <img src={profile.avatarUrl} alt={profile.fullName} className="object-cover w-full h-full" />
-                : initials(profile.fullName ?? '')}
-            </div>
+          {/* Identity — padding-top leaves room for the avatar */}
+          <div className="px-6 pb-5 pt-16 flex flex-col items-center text-center">
 
             <h1 className="text-[22px] font-bold text-text-primary leading-tight">
               {profile.fullName}
