@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
-  IconCircleCheck, IconX, IconClock, IconUsers, IconBriefcase,
+  IconCircleCheck, IconClock, IconUsers, IconBriefcase,
   IconExternalLink, IconPlus, IconTrash, IconEye, IconLoader2,
 } from '@tabler/icons-react'
 import Sidebar from '@/components/layout/Sidebar'
@@ -39,15 +39,6 @@ export default function OrgDashboardPage() {
       setLoading(false)
     })
   }, [])
-
-  const handleVerif = async (id: string, status: string) => {
-    await fetch('/api/org/verifications', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, status }),
-    })
-    setVerifications(verifications.map(v => v.id === id ? { ...v, status } : v))
-  }
 
   const handleAddOffer = async () => {
     const data = await fetch('/api/org/offers', {
@@ -162,15 +153,9 @@ export default function OrgDashboardPage() {
                     <Link href="/org/verifications" className="text-sm text-primary">Tout traiter →</Link>
                   </div>
                   {pending.slice(0, 3).map((v: any) => (
-                    <div key={v.id} className="flex items-center justify-between py-3 border-b border-[#F3F4F6] last:border-0">
-                      <div>
-                        <span className="text-xs bg-[#F3F4F6] text-text-secondary px-2 py-0.5 rounded-full mr-2">{v.type}</span>
-                        <span className="text-sm font-medium text-text-primary">{v.label}</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => handleVerif(v.id, 'CONFIRMEE')} className="text-xs bg-success-light text-success px-3 py-1 rounded-lg font-medium">Confirmer</button>
-                        <button onClick={() => handleVerif(v.id, 'REJETEE')} className="text-xs bg-red-50 text-danger px-3 py-1 rounded-lg font-medium">Rejeter</button>
-                      </div>
+                    <div key={v.id} className="flex items-center gap-3 py-3 border-b border-[#F3F4F6] last:border-0">
+                      <span className="text-xs bg-[#F3F4F6] text-text-secondary px-2 py-0.5 rounded-full flex-shrink-0">{v.type}</span>
+                      <span className="text-sm font-medium text-text-primary truncate">{v.label}</span>
                     </div>
                   ))}
                 </div>
