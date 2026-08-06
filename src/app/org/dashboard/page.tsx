@@ -9,7 +9,7 @@ import {
 import Sidebar from '@/components/layout/Sidebar'
 import BottomNav from '@/components/layout/BottomNav'
 
-const TABS = ['Aperçu', 'Vérifications', 'Offres', 'Équipe', 'Profil']
+const TABS = ['Aperçu', 'Offres', 'Équipe', 'Profil']
 
 export default function OrgDashboardPage() {
   const [tab, setTab]                   = useState(0)
@@ -129,9 +129,6 @@ export default function OrgDashboardPage() {
               <button key={t} onClick={() => setTab(i)}
                 className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors ${tab === i ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>
                 {t}
-                {t === 'Vérifications' && pending.length > 0 && (
-                  <span className="ml-1.5 bg-primary text-white text-xs rounded-full px-1.5 py-0.5">{pending.length}</span>
-                )}
               </button>
             ))}
           </div>
@@ -162,7 +159,7 @@ export default function OrgDashboardPage() {
                 <div className="card">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="font-semibold text-text-primary">Vérifications récentes</h2>
-                    <button onClick={() => setTab(1)} className="text-sm text-primary">Tout traiter →</button>
+                    <Link href="/org/verifications" className="text-sm text-primary">Tout traiter →</Link>
                   </div>
                   {pending.slice(0, 3).map((v: any) => (
                     <div key={v.id} className="flex items-center justify-between py-3 border-b border-[#F3F4F6] last:border-0">
@@ -181,39 +178,8 @@ export default function OrgDashboardPage() {
             </div>
           )}
 
-          {/* Vérifications */}
-          {tab === 1 && (
-            <div className="space-y-3">
-              {verifications.length === 0 ? (
-                <div className="card text-center py-12">
-                  <IconCircleCheck size={32} className="text-text-tertiary mx-auto mb-3" />
-                  <p className="font-medium text-text-primary">Aucune demande de vérification</p>
-                  <p className="text-sm text-text-secondary mt-1">Les demandes des membres apparaîtront ici</p>
-                </div>
-              ) : verifications.map((v: any) => (
-                <div key={v.id} className="card flex items-center justify-between">
-                  <div>
-                    <span className="text-xs bg-[#F3F4F6] text-text-secondary px-2 py-0.5 rounded-full mr-2">{v.type}</span>
-                    <span className="text-sm font-semibold text-text-primary">{v.label}</span>
-                    <p className="text-xs text-text-secondary mt-0.5">
-                      {v.status === 'EN_ATTENTE' ? <span className="text-[#D97706]">En attente</span>
-                       : v.status === 'CONFIRMEE' ? <span className="text-success">Confirmée</span>
-                       : <span className="text-danger">Rejetée</span>}
-                    </p>
-                  </div>
-                  {v.status === 'EN_ATTENTE' && (
-                    <div className="flex gap-2">
-                      <button onClick={() => handleVerif(v.id, 'CONFIRMEE')} className="text-xs bg-success-light text-success px-3 py-1.5 rounded-lg font-medium flex items-center gap-1"><IconCircleCheck size={12} /> Confirmer</button>
-                      <button onClick={() => handleVerif(v.id, 'REJETEE')} className="text-xs bg-red-50 text-danger px-3 py-1.5 rounded-lg font-medium flex items-center gap-1"><IconX size={12} /> Rejeter</button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
           {/* Offres */}
-          {tab === 2 && (
+          {tab === 1 && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h2 className="font-semibold text-text-primary">{offers.length} offre{offers.length !== 1 ? 's' : ''}</h2>
@@ -275,7 +241,7 @@ export default function OrgDashboardPage() {
           )}
 
           {/* Équipe */}
-          {tab === 3 && (
+          {tab === 2 && (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h2 className="font-semibold text-text-primary">{team.length} membre{team.length !== 1 ? 's' : ''}</h2>
@@ -301,7 +267,7 @@ export default function OrgDashboardPage() {
           )}
 
           {/* Profil org */}
-          {tab === 4 && (
+          {tab === 3 && (
             <div className="card space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold text-text-primary">Profil de l&apos;organisation</h2>

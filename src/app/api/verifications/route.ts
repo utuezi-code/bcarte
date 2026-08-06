@@ -44,19 +44,29 @@ export async function POST(req: NextRequest) {
 
   if (!profile) return NextResponse.json({ error: 'Profil introuvable' }, { status: 404 })
 
-  /* prevent duplicate pending request for the same item */
+  /* auto-confirm if already a team member of this org */
+  const { data: membership } = await supabaseAdmin
+    .from('team_members')
+    .select('id')
+    .eq('profileId', profile.id)
+    .eq('organisationId', organisationId)
+    .maybeSingle()
+
+  const autoStatus = membership ? 'CONFIRMEE' : 'EN_ATTENTE'
+
+  /* prevent duplicate for the same item (any non-rejected status) */
   if (refId) {
     const { data: existing } = await supabaseAdmin
       .from('verifications')
-      .select('id')
+      .select('id, status')
       .eq('profileId', profile.id)
       .eq('organisationId', organisationId)
       .eq('refId', refId)
-      .eq('status', 'EN_ATTENTE')
+      .neq('status', 'REJETEE')
       .maybeSingle()
 
     if (existing) {
-      return NextResponse.json({ error: 'Une demande est déjà en attente pour cet élément' }, { status: 409 })
+      return NextResponse.json({ error: 'Une demande est déjà en cours pour cet élément' }, { status: 409 })
     }
   }
 
@@ -69,7 +79,7 @@ export async function POST(req: NextRequest) {
       type,
       label,
       refId: refId ?? null,
-      status: 'EN_ATTENTE',
+      status: autoStatus,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     })
