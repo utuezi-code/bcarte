@@ -62,7 +62,10 @@ export default function VerifyTokenPage() {
               <div>
                 <p className="font-black text-text-primary text-lg">Vérifiées !</p>
                 <p className="text-sm text-text-secondary mt-1">
-                  {result.confirmed} expérience{result.confirmed > 1 ? 's ont été confirmées' : ' a été confirmée'} par <span className="font-semibold">{result.orgName}</span>
+                  {result.confirmed > 0
+                    ? <>{result.confirmed} demande{result.confirmed > 1 ? 's ont été confirmées' : ' a été confirmée'} par <span className="font-semibold">{result.orgName}</span></>
+                    : <>Aucune demande en attente pour <span className="font-semibold">{result.orgName}</span>. Faites d&apos;abord une demande de vérification depuis votre profil.</>
+                  }
                 </p>
               </div>
               <Link href="/dashboard/profile?tab=experiences"

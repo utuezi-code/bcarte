@@ -42,7 +42,7 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
 
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('id, experiences(*)')
+    .select('id')
     .eq('userId', session.userId)
     .single()
 
@@ -57,9 +57,8 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
   if (!org) return NextResponse.json({ error: 'Organisation introuvable' }, { status: 404 })
 
   const now = new Date().toISOString()
-  let confirmed = 0
 
-  /* confirm all pending verifications for this org */
+  /* confirm only verifications explicitly requested by the professional for this org */
   const { data: pending } = await supabaseAdmin
     .from('verifications')
     .select('id')
@@ -67,40 +66,14 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
     .eq('organisationId', orgId)
     .eq('status', 'EN_ATTENTE')
 
-  if (pending && pending.length > 0) {
-    await supabaseAdmin
-      .from('verifications')
-      .update({ status: 'CONFIRMEE', updatedAt: now })
-      .in('id', pending.map((v: any) => v.id))
-    confirmed += pending.length
+  if (!pending || pending.length === 0) {
+    return NextResponse.json({ ok: true, confirmed: 0, orgName: org.name })
   }
 
-  /* auto-create confirmed verifications for matching experiences */
-  const experiences: any[] = (profile as any).experiences ?? []
-  for (const exp of experiences) {
-    const { data: exists } = await supabaseAdmin
-      .from('verifications')
-      .select('id')
-      .eq('profileId', profile.id)
-      .eq('organisationId', orgId)
-      .eq('refId', exp.id)
-      .maybeSingle()
+  await supabaseAdmin
+    .from('verifications')
+    .update({ status: 'CONFIRMEE', updatedAt: now })
+    .in('id', pending.map((v: any) => v.id))
 
-    if (!exists) {
-      await supabaseAdmin.from('verifications').insert({
-        id: crypto.randomUUID(),
-        profileId: profile.id,
-        organisationId: orgId,
-        type: 'EXPÉRIENCE',
-        label: `${exp.title} — ${exp.company}`,
-        refId: exp.id,
-        status: 'CONFIRMEE',
-        createdAt: now,
-        updatedAt: now,
-      })
-      confirmed++
-    }
-  }
-
-  return NextResponse.json({ ok: true, confirmed, orgName: org.name })
+  return NextResponse.json({ ok: true, confirmed: pending.length, orgName: org.name })
 }
