@@ -23,6 +23,7 @@ export default function OrgDashboardPage() {
   const [orgForm, setOrgForm]           = useState<any>({})
   const [savingOrg, setSavingOrg]       = useState(false)
   const [savedOrg, setSavedOrg]         = useState(false)
+  const [saveOrgError, setSaveOrgError] = useState('')
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [logoError, setLogoError]       = useState('')
 
@@ -78,12 +79,18 @@ export default function OrgDashboardPage() {
 
   const handleSaveOrg = async () => {
     setSavingOrg(true)
-    await fetch('/api/org', {
+    setSaveOrgError('')
+    const res = await fetch('/api/org', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(orgForm),
     })
+    const data = await res.json()
     setSavingOrg(false)
+    if (!res.ok) {
+      setSaveOrgError(data.error ?? 'Erreur lors de la sauvegarde')
+      return
+    }
     setSavedOrg(true)
     setTimeout(() => setSavedOrg(false), 3000)
   }
@@ -287,9 +294,12 @@ export default function OrgDashboardPage() {
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold text-text-primary">Profil de l&apos;organisation</h2>
                 <button onClick={handleSaveOrg} disabled={savingOrg} className="btn-primary px-5 py-2.5 text-sm">
-                  {savedOrg ? 'Enregistré !' : 'Enregistrer'}
+                  {savingOrg ? 'Sauvegarde…' : savedOrg ? 'Enregistré !' : 'Enregistrer'}
                 </button>
               </div>
+              {saveOrgError && (
+                <p className="text-sm text-red-500">{saveOrgError}</p>
+              )}
 
               {/* Logo upload */}
               <div>
