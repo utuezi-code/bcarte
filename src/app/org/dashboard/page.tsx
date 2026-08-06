@@ -154,8 +154,11 @@ export default function OrgDashboardPage() {
                   </div>
                   {pending.slice(0, 3).map((v: any) => (
                     <div key={v.id} className="flex items-center gap-3 py-3 border-b border-[#F3F4F6] last:border-0">
-                      <span className="text-xs bg-[#F3F4F6] text-text-secondary px-2 py-0.5 rounded-full flex-shrink-0">{v.type}</span>
-                      <span className="text-sm font-medium text-text-primary truncate">{v.label}</span>
+                      <span className="text-xs bg-[#F3F4F6] text-text-secondary px-2 py-0.5 rounded-full flex-shrink-0">{v.type === 'EXPÉRIENCE' ? 'Expérience' : 'Formation'}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-text-primary truncate">{v.profile?.fullName ?? '—'}</p>
+                        <p className="text-xs text-text-secondary truncate">{v.label}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
