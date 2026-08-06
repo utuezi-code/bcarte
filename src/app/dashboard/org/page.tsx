@@ -25,14 +25,15 @@ export default function DashboardOrgPage() {
   }, [])
 
   useEffect(() => {
-    if (!search) { setOrgs([]); return }
     setSearching(true)
     const t = setTimeout(() => {
-      fetch(`/api/orgs?search=${encodeURIComponent(search)}`)
-        .then(r => r.json())
+      const params = new URLSearchParams()
+      if (search) params.set('search', search)
+      fetch(`/api/orgs?${params}`)
+        .then(r => r.ok ? r.json() : [])
         .then(d => { setOrgs(Array.isArray(d) ? d : []); setSearching(false) })
         .catch(() => setSearching(false))
-    }, 350)
+    }, search ? 350 : 0)
     return () => clearTimeout(t)
   }, [search])
 
@@ -59,7 +60,7 @@ export default function DashboardOrgPage() {
     setLeaving(null)
   }
 
-  const showResults = !searching && orgs.length > 0
+  const showResults = !searching
 
   return (
     <div className="space-y-6">
@@ -168,7 +169,7 @@ export default function DashboardOrgPage() {
             {showResults && (
               <div className="space-y-2">
                 <p className="text-[11px] font-bold text-text-tertiary uppercase tracking-widest">
-                  {orgs.length} résultat{orgs.length > 1 ? 's' : ''}
+                  {search ? `${orgs.length} résultat${orgs.length > 1 ? 's' : ''}` : `${orgs.length} organisation${orgs.length > 1 ? 's' : ''}`}
                 </p>
                 <div className="space-y-2 max-h-72 overflow-y-auto -mx-1 px-1">
                   {orgs.map((o: any) => {
@@ -208,10 +209,12 @@ export default function DashboardOrgPage() {
             )}
 
             {/* No results */}
-            {!searching && search && orgs.length === 0 && (
+            {!searching && orgs.length === 0 && (
               <div className="text-center py-6 space-y-1">
-                <p className="text-sm text-text-secondary font-medium">Aucun résultat pour « {search} »</p>
-                <p className="text-xs text-text-tertiary">Vérifiez l'orthographe ou essayez un autre terme</p>
+                <p className="text-sm text-text-secondary font-medium">
+                  {search ? `Aucun résultat pour « ${search} »` : 'Aucune organisation disponible'}
+                </p>
+                {search && <p className="text-xs text-text-tertiary">Vérifiez l'orthographe ou essayez un autre terme</p>}
               </div>
             )}
           </div>
