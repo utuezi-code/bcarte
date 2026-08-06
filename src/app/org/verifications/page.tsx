@@ -6,8 +6,8 @@ import {
   IconMapPin, IconBriefcase, IconSchool, IconClock,
   IconCircleCheck, IconAlertCircle,
   IconPhone, IconBrandLinkedin, IconMail,
-  IconSearch, IconFilter, IconCheckbox, IconSquare,
-  IconChevronDown,
+  IconSearch, IconCheckbox, IconSquare,
+  IconChevronDown, IconLink, IconCopy, IconExternalLink,
 } from '@tabler/icons-react'
 import Sidebar from '@/components/layout/Sidebar'
 import BottomNav from '@/components/layout/BottomNav'
@@ -37,6 +37,29 @@ export default function OrgVerificationsPage() {
   const [acting,      setActing]      = useState<string | null>(null)
   const [bulkActing,  setBulkActing]  = useState(false)
   const [expanded,    setExpanded]    = useState<Set<string>>(new Set())
+
+  /* ── magic link ── */
+  const [linkUrl,     setLinkUrl]     = useState<string | null>(null)
+  const [linkLoading, setLinkLoading] = useState(false)
+  const [copied,      setCopied]      = useState(false)
+
+  const generateLink = async () => {
+    setLinkLoading(true)
+    const res = await fetch('/api/org/verify-link')
+    if (res.ok) {
+      const d = await res.json()
+      setLinkUrl(d.url)
+    }
+    setLinkLoading(false)
+  }
+
+  const copyLink = () => {
+    if (!linkUrl) return
+    navigator.clipboard.writeText(linkUrl).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
 
   useEffect(() => {
     fetch('/api/org/verifications')
@@ -143,6 +166,48 @@ export default function OrgVerificationsPage() {
             <span className="inline-flex items-center gap-1.5 bg-[#FFFBEB] text-[#D97706] text-xs font-bold px-3 py-1.5 rounded-full border border-[#FDE68A] flex-shrink-0">
               <IconClock size={12} /> {stats.pending} en attente
             </span>
+          )}
+        </div>
+
+        {/* ── Magic link panel ── */}
+        <div className="card p-5 space-y-3">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-primary-light flex items-center justify-center flex-shrink-0">
+              <IconLink size={17} className="text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-text-primary text-sm">Lien de vérification automatique</p>
+              <p className="text-xs text-text-secondary mt-0.5">
+                Partagez ce lien avec vos employés. En cliquant dessus, leurs expériences chez vous sont confirmées instantanément.
+              </p>
+            </div>
+          </div>
+
+          {linkUrl ? (
+            <div className="flex items-center gap-2 bg-bg-light border border-border rounded-xl px-3 py-2">
+              <p className="text-xs text-text-secondary font-mono flex-1 truncate">{linkUrl}</p>
+              <button onClick={copyLink}
+                className={`flex items-center gap-1.5 h-8 px-3 rounded-[8px] text-xs font-semibold flex-shrink-0 transition-all ${
+                  copied
+                    ? 'bg-success text-white'
+                    : 'bg-primary-light text-primary hover:bg-primary hover:text-white'
+                }`}>
+                {copied ? <IconCheck size={12} /> : <IconCopy size={12} />}
+                {copied ? 'Copié !' : 'Copier'}
+              </button>
+              <a href={linkUrl} target="_blank" rel="noopener noreferrer"
+                className="h-8 w-8 flex items-center justify-center rounded-[8px] bg-border-subtle hover:bg-border transition-colors flex-shrink-0">
+                <IconExternalLink size={13} className="text-text-secondary" />
+              </a>
+            </div>
+          ) : (
+            <button onClick={generateLink} disabled={linkLoading}
+              className="btn-primary w-full justify-center text-sm">
+              {linkLoading
+                ? <IconLoader2 size={14} className="animate-spin" />
+                : <IconLink size={14} />}
+              Générer le lien
+            </button>
           )}
         </div>
 
