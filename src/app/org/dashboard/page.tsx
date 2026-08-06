@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   IconCircleCheck, IconClock, IconUsers, IconBriefcase,
-  IconExternalLink, IconPlus, IconTrash, IconEye, IconLoader2,
+  IconExternalLink, IconPlus, IconTrash, IconEye, IconLoader2, IconCamera,
 } from '@tabler/icons-react'
 import Sidebar from '@/components/layout/Sidebar'
 import BottomNav from '@/components/layout/BottomNav'
@@ -23,6 +23,8 @@ export default function OrgDashboardPage() {
   const [orgForm, setOrgForm]           = useState<any>({})
   const [savingOrg, setSavingOrg]       = useState(false)
   const [savedOrg, setSavedOrg]         = useState(false)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [logoError, setLogoError]       = useState('')
 
   useEffect(() => {
     Promise.all([
@@ -60,6 +62,20 @@ export default function OrgDashboardPage() {
     setOffers(offers.filter(o => o.id !== id))
   }
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingLogo(true)
+    setLogoError('')
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch('/api/org/upload-logo', { method: 'POST', body: fd })
+    const data = await res.json()
+    if (!res.ok) { setLogoError(data.error ?? 'Erreur upload'); setUploadingLogo(false); return }
+    setOrg((prev: any) => ({ ...prev, logoUrl: data.url }))
+    setUploadingLogo(false)
+  }
+
   const handleSaveOrg = async () => {
     setSavingOrg(true)
     await fetch('/api/org', {
@@ -91,9 +107,11 @@ export default function OrgDashboardPage() {
           {/* Header org */}
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-xl"
-                style={{ backgroundColor: org?.logoColor ?? '#6C47FF' }}>
-                {(org?.name ?? 'O').slice(0, 2).toUpperCase()}
+              <div className="w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center text-white font-bold text-xl flex-shrink-0"
+                style={{ backgroundColor: org?.logoUrl ? 'transparent' : (org?.logoColor ?? '#6C47FF') }}>
+                {org?.logoUrl
+                  ? <img src={org.logoUrl} alt={org.name} className="w-full h-full object-contain" />
+                  : (org?.name ?? 'O').slice(0, 2).toUpperCase()}
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -272,6 +290,30 @@ export default function OrgDashboardPage() {
                   {savedOrg ? 'Enregistré !' : 'Enregistrer'}
                 </button>
               </div>
+
+              {/* Logo upload */}
+              <div>
+                <label className="label">Logo</label>
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden flex items-center justify-center text-white font-bold text-xl flex-shrink-0"
+                    style={{ backgroundColor: org?.logoUrl ? '#F3F4F6' : (org?.logoColor ?? '#6C47FF') }}>
+                    {org?.logoUrl
+                      ? <img src={org.logoUrl} alt={org?.name} className="w-full h-full object-contain" />
+                      : (org?.name ?? 'O').slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <label className={`flex items-center gap-2 h-9 px-4 rounded-[10px] border border-border text-sm font-medium text-text-secondary hover:border-primary hover:text-primary transition-colors cursor-pointer w-fit ${uploadingLogo ? 'opacity-50 pointer-events-none' : ''}`}>
+                      {uploadingLogo
+                        ? <><IconLoader2 size={14} className="animate-spin" /> Envoi…</>
+                        : <><IconCamera size={14} /> {org?.logoUrl ? 'Changer le logo' : 'Ajouter un logo'}</>}
+                      <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={uploadingLogo} />
+                    </label>
+                    <p className="text-[11px] text-text-tertiary">PNG, JPG, SVG — max 5 Mo</p>
+                    {logoError && <p className="text-[11px] text-danger">{logoError}</p>}
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="label">Type d&apos;organisation</label>
                 <select className="input" value={orgForm.type ?? ''} onChange={e => setOrgForm({...orgForm, type: e.target.value})}>
