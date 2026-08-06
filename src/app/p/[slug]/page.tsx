@@ -1,274 +1,405 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import {
-  IconMapPin, IconCircleCheck, IconBrandWhatsapp, IconMail,
-  IconExternalLink, IconCheck, IconArrowUpRight,
+  IconShieldCheck, IconMapPin, IconBrandLinkedin, IconMail,
+  IconLoader2, IconCheck, IconPhone, IconShare,
+  IconDownload, IconArrowUpRight, IconChevronDown, IconChevronUp,
 } from '@tabler/icons-react'
-import { MOCK_PROFILES, CURRENT_USER } from '@/lib/mock-data'
-import { AvailabilityStatus } from '@/lib/types'
-
-const AVAIL: Record<AvailabilityStatus, { dot: string; label: string }> = {
-  disponible:   { dot: '#059669', label: 'Disponible' },
-  en_veille:    { dot: '#F59E0B', label: 'En veille'  },
-  indisponible: { dot: '#9CA3AF', label: 'Indisponible' },
-}
 
 function initials(name: string) {
-  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+  return name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?'
 }
 
-function fmtDate(d: string) {
-  const [y, m] = d.split('-')
-  return ['jan', 'fév', 'mar', 'avr', 'mai', 'jun', 'jul', 'aoû', 'sep', 'oct', 'nov', 'déc'][+m - 1] + ' ' + y
+const PALETTE = ['#6C47FF', '#0891B2', '#059669', '#D97706', '#DC2626', '#7C3AED', '#2563EB', '#C026D3']
+function accentColor(name: string) {
+  let h = 0
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h)
+  return PALETTE[Math.abs(h) % PALETTE.length]
 }
 
-function duration(start: string, end: string | null, current: boolean) {
-  const s = new Date(start)
-  const e = current ? new Date() : new Date(end ?? start)
-  const m = (e.getFullYear() - s.getFullYear()) * 12 + e.getMonth() - s.getMonth()
-  if (m < 12) return `${m} mois`
-  const y = Math.floor(m / 12), r = m % 12
-  return r ? `${y} an${y > 1 ? 's' : ''} ${r} mois` : `${y} an${y > 1 ? 's' : ''}`
+function hexToRgb(hex: string) {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `${r}, ${g}, ${b}`
 }
 
-export default function PublicProfilePage({ params }: { params: { slug: string } }) {
-  const [copied, setCopied] = useState(false)
+function fmtDate(d: string | null | undefined) {
+  if (!d) return null
+  try { return new Date(d).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' }) }
+  catch { return d }
+}
 
-  const profile = params.slug === CURRENT_USER.publicUrlSlug
-    ? CURRENT_USER
-    : MOCK_PROFILES.find(p => p.publicUrlSlug === params.slug)
+function downloadVCard(profile: any) {
+  const lines = [
+    'BEGIN:VCARD', 'VERSION:3.0',
+    `FN:${profile.fullName ?? ''}`,
+    profile.title    ? `TITLE:${profile.title}`            : '',
+    profile.emailPro ? `EMAIL;type=WORK:${profile.emailPro}` : '',
+    profile.phone    ? `TEL:${profile.phone}`              : '',
+    profile.linkedin ? `URL;type=LinkedIn:${profile.linkedin}` : '',
+    `URL:${window.location.href}`,
+    'END:VCARD',
+  ].filter(Boolean).join('\n')
+  const blob = new Blob([lines], { type: 'text/vcard' })
+  const url  = URL.createObjectURL(blob)
+  const a    = Object.assign(document.createElement('a'), { href: url, download: `${(profile.fullName ?? 'contact').replace(/\s+/g, '_')}.vcf` })
+  a.click(); URL.revokeObjectURL(url)
+}
 
-  if (!profile) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <p className="text-text-tertiary text-sm">Ce profil n&apos;existe pas.</p>
-          <Link href="/explore" className="text-primary text-sm font-medium hover:underline">Explorer les profils →</Link>
-        </div>
-      </div>
-    )
+const BIO_LIMIT = 160
+
+export default function PublicProfilePage() {
+  const { slug }       = useParams<{ slug: string }>()
+  const [profile,      setProfile]    = useState<any>(null)
+  const [loading,      setLoading]    = useState(true)
+  const [copied,       setCopied]     = useState(false)
+  const [bioExpanded,  setBioExpanded]= useState(false)
+
+  useEffect(() => {
+    fetch(`/api/profiles/${slug}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { setProfile(d); setLoading(false) })
+  }, [slug])
+
+  const handleShare = () => {
+    if (navigator.share) navigator.share({ title: profile?.fullName, url: window.location.href })
+    else { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2500) }
   }
 
-  const av = AVAIL[profile.availabilityStatus]
+  const verifiedCount = profile?.verifications?.filter((v: any) => v.status === 'CONFIRMEE').length ?? 0
+  const color  = profile ? accentColor(profile.fullName ?? '') : '#6C47FF'
+  const rgb    = hexToRgb(color)
 
-  const copy = () => {
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
+  if (loading) return (
+    <div className="min-h-screen bg-white flex items-center justify-center">
+      <IconLoader2 size={22} className="animate-spin text-gray-200" />
+    </div>
+  )
+
+  if (!profile) return (
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-3 px-5 text-center">
+      <p className="font-bold text-gray-900">Profil introuvable</p>
+      <p className="text-sm text-gray-400">Ce profil n&apos;existe pas ou a été supprimé.</p>
+      <Link href="/" className="text-sm font-semibold text-gray-400 hover:text-gray-900 transition-colors mt-1">← Retour</Link>
+    </div>
+  )
+
+  const hasContact   = profile.phone || profile.linkedin || profile.emailPro
+  const expList      = profile.experiences ?? []
+  const eduList      = profile.educations  ?? []
+  const bio          = profile.bio ?? ''
+  const bioTruncated = bio.length > BIO_LIMIT
 
   return (
     <div className="min-h-screen bg-white">
+      <div className="max-w-[480px] mx-auto relative">
 
-      {/* Nav — ultra-minimal */}
-      <header className="px-6 py-4 flex items-center justify-between border-b border-[#F3F4F6]">
-        <Link href="/" className="text-lg font-extrabold text-primary">bcarte</Link>
-        <Link href="/register" className="text-xs font-semibold text-text-secondary hover:text-text-primary transition-colors">
-          Créer mon profil →
-        </Link>
-      </header>
+        {/* ── Hero photo ───────────────────────────────────────────────────── */}
+        <div className="relative w-full overflow-hidden" style={{ height: 'min(78vw, 430px)' }}>
 
-      <main className="max-w-[600px] mx-auto px-6 py-12 space-y-12">
+          {/* Photo or initials */}
+          {profile.avatarUrl ? (
+            <img
+              src={profile.avatarUrl}
+              alt={profile.fullName}
+              className="absolute inset-0 w-full h-full object-cover object-top"
+            />
+          ) : (
+            <div
+              className="absolute inset-0 flex items-center justify-center text-white font-black select-none"
+              style={{ background: `linear-gradient(160deg, ${color} 0%, rgba(${rgb},0.7) 100%)`, fontSize: 'clamp(56px, 18vw, 100px)' }}>
+              {initials(profile.fullName ?? '')}
+            </div>
+          )}
 
-        {/* ── IDENTITY ── */}
-        <div className="flex items-start gap-5">
-          {/* Avatar */}
-          <div className="w-[72px] h-[72px] rounded-2xl bg-primary flex-shrink-0 flex items-center justify-center text-white font-extrabold text-xl">
-            {initials(profile.fullName)}
+          {/* Subtle dark gradient at top — keeps "Créer mon profil" readable */}
+          <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-black/25 to-transparent pointer-events-none" />
+
+          {/* Gradient fade at bottom — blends into white wave */}
+          <div
+            className="absolute bottom-0 left-0 right-0 pointer-events-none"
+            style={{ height: 110, background: `linear-gradient(to top, white 20%, rgba(255,255,255,0.85) 50%, transparent 100%)` }}
+          />
+
+          {/* Wave SVG on top of gradient */}
+          <svg
+            className="absolute bottom-0 left-0 w-full pointer-events-none"
+            viewBox="0 0 480 44"
+            preserveAspectRatio="none"
+            style={{ height: 44 }}>
+            <path d="M0,22 Q120,44 240,28 Q360,12 480,30 L480,44 L0,44 Z" fill="white" />
+          </svg>
+
+          {/* bcarte badge — bottom right */}
+          <div
+            className="absolute right-5 z-10"
+            style={{ bottom: 18 }}>
+            <div
+              className="w-[54px] h-[54px] rounded-full bg-white flex flex-col items-center justify-center gap-0.5"
+              style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.16), 0 0 0 2px rgba(255,255,255,0.9)' }}>
+              <div
+                className="w-[20px] h-[20px] rounded-[5px] flex items-center justify-center"
+                style={{ background: `linear-gradient(135deg, ${color} 0%, #9B6DFF 100%)` }}>
+                <span className="text-white font-black leading-none" style={{ fontSize: 9 }}>b</span>
+              </div>
+              <span className="font-black text-gray-900 tracking-tight leading-none" style={{ fontSize: 8 }}>carte</span>
+            </div>
           </div>
 
-          {/* Info */}
-          <div className="flex-1 pt-0.5">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-xl font-bold text-text-primary">{profile.fullName}</h1>
-              {profile.verified && (
-                <IconCircleCheck size={18} className="text-success flex-shrink-0" />
-              )}
-            </div>
-            <p className="text-text-secondary mt-1 text-[15px]">{profile.title}</p>
-            <div className="flex items-center gap-3 mt-2 flex-wrap">
-              <span className="text-text-tertiary text-sm flex items-center gap-1">
-                <IconMapPin size={13} />
-                {profile.city}, {profile.country}
+          {/* Créer mon profil — top right overlay */}
+          <Link
+            href="/register"
+            className="absolute top-3.5 right-4 z-10 text-[11px] font-semibold text-white/90 px-3 py-1 rounded-full transition-colors"
+            style={{ background: 'rgba(0,0,0,0.22)', backdropFilter: 'blur(6px)' }}>
+            Créer mon profil →
+          </Link>
+        </div>
+
+        {/* ── Identity ─────────────────────────────────────────────────────── */}
+        <div className="px-6 pt-1 pb-6">
+
+          <h1 className="text-[26px] font-black text-gray-900 leading-tight tracking-tight">
+            {profile.fullName}
+          </h1>
+
+          {profile.title && (
+            <p className="text-[15px] font-semibold mt-1 leading-snug" style={{ color }}>
+              {profile.title}
+            </p>
+          )}
+
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2.5">
+            {(profile.city || profile.country) && (
+              <span className="flex items-center gap-1 text-[12px] text-gray-400 font-medium">
+                <IconMapPin size={12} />
+                {[profile.city, profile.country].filter(Boolean).join(', ')}
               </span>
-              {profile.externalLink && (
-                <a
-                  href={profile.externalLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-text-tertiary hover:text-primary text-sm flex items-center gap-1 transition-colors"
-                >
-                  <IconExternalLink size={13} />
-                  Portfolio
-                </a>
-              )}
-            </div>
-            {/* Availability */}
-            <div className="flex items-center gap-1.5 mt-3">
-              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: av.dot }} />
-              <span className="text-xs text-text-secondary font-medium">{av.label}</span>
-              {profile.languages.length > 0 && (
-                <>
-                  <span className="text-[#E5E7EB] mx-1">·</span>
-                  <span className="text-xs text-text-tertiary">{profile.languages.join(' · ')}</span>
-                </>
-              )}
-            </div>
+            )}
+            {verifiedCount > 0 && (
+              <span
+                className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-[3px] rounded-full"
+                style={{ background: `rgba(${rgb}, 0.1)`, color }}>
+                <IconShieldCheck size={11} />
+                {verifiedCount} vérifié{verifiedCount > 1 ? 's' : ''}
+              </span>
+            )}
           </div>
+
+          {/* ── Action buttons ── */}
+          <div className="flex gap-2.5 mt-5">
+            <button
+              onClick={() => downloadVCard(profile)}
+              className="flex-1 flex items-center justify-center gap-2 h-[50px] rounded-2xl text-[13px] font-bold text-white transition-all active:scale-[0.97]"
+              style={{
+                background: `linear-gradient(135deg, ${color} 0%, rgba(${rgb}, 0.75) 100%)`,
+                boxShadow: `0 4px 20px rgba(${rgb}, 0.35)`,
+              }}>
+              <IconDownload size={15} strokeWidth={2.5} />
+              Enregistrer le contact
+            </button>
+            <button
+              onClick={handleShare}
+              className="w-[50px] h-[50px] flex items-center justify-center rounded-2xl bg-gray-100 hover:bg-gray-150 transition-colors active:scale-[0.97] flex-shrink-0"
+              style={{ background: '#F3F4F6' }}>
+              {copied
+                ? <IconCheck size={17} style={{ color }} strokeWidth={2.5} />
+                : <IconShare size={17} className="text-gray-500" strokeWidth={2} />}
+            </button>
+          </div>
+
+          {/* ── Bio ── */}
+          {bio && (
+            <div className="mt-5">
+              <p className="text-[13.5px] text-gray-500 leading-[1.65]">
+                {bioExpanded || !bioTruncated ? bio : `${bio.slice(0, BIO_LIMIT)}…`}
+              </p>
+              {bioTruncated && (
+                <button
+                  onClick={() => setBioExpanded(v => !v)}
+                  className="mt-1.5 flex items-center gap-0.5 text-[12px] font-semibold"
+                  style={{ color }}>
+                  {bioExpanded
+                    ? <><IconChevronUp size={13} /> Réduire</>
+                    : <><IconChevronDown size={13} /> Lire la suite</>}
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* ── CONTACT ── */}
-        <div className="flex gap-3">
-          {profile.whatsapp && (
-            <a
-              href={`https://wa.me/${profile.whatsapp.replace(/[\s+]/g, '')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-2 bg-whatsapp text-white font-semibold text-sm py-3 rounded-xl hover:opacity-90 transition-opacity"
-            >
-              <IconBrandWhatsapp size={17} />
-              WhatsApp
-            </a>
-          )}
-          {profile.contactEmail && (
-            <a
-              href={`mailto:${profile.contactEmail}`}
-              className="flex-1 flex items-center justify-center gap-2 bg-[#F3F4F6] hover:bg-primary-light text-text-primary hover:text-primary font-semibold text-sm py-3 rounded-xl transition-colors"
-            >
-              <IconMail size={17} />
-              Email
-            </a>
-          )}
-        </div>
-
-        {/* ── SKILLS ── */}
-        {profile.skills.length > 0 && (
-          <section>
-            <p className="text-[11px] font-bold text-text-tertiary uppercase tracking-[0.1em] mb-3">Compétences</p>
-            <div className="flex flex-wrap gap-2">
-              {profile.skills.map(s => (
-                <span key={s.id} className="text-sm text-text-primary bg-[#F3F4F6] px-3 py-1.5 rounded-lg font-medium">
-                  {s.label}
-                </span>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ── EXPERIENCES ── */}
-        {profile.experiences.length > 0 && (
-          <section>
-            <p className="text-[11px] font-bold text-text-tertiary uppercase tracking-[0.1em] mb-5">Expérience</p>
-            <div className="space-y-6">
-              {profile.experiences.map(exp => (
-                <div key={exp.id} className="flex gap-4">
-                  {/* Org logo placeholder */}
-                  <div className="w-9 h-9 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-text-secondary font-bold text-sm flex-shrink-0 mt-0.5">
-                    {exp.organization[0]}
+        {/* ── Contact ──────────────────────────────────────────────────────── */}
+        {hasContact && (
+          <>
+            <div className="mx-6 border-t border-gray-100" />
+            <div className="px-6 py-4 space-y-1">
+              {profile.emailPro && (
+                <a href={`mailto:${profile.emailPro}`}
+                  className="flex items-center gap-3.5 py-3 px-3 -mx-3 rounded-2xl hover:bg-gray-50 transition-colors group">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ background: `rgba(${rgb}, 0.1)` }}>
+                    <IconMail size={16} style={{ color }} />
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-semibold text-text-primary text-[15px]">{exp.title}</p>
-                      {exp.verificationStatus === 'confirmée' && (
-                        <span className="flex items-center gap-1 text-[11px] font-semibold text-success flex-shrink-0">
-                          <IconCircleCheck size={13} />
-                          Vérifié
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-text-secondary text-sm mt-0.5">{exp.organization}</p>
-                    <p className="text-text-tertiary text-xs mt-1">
-                      {fmtDate(exp.startDate)} — {exp.current ? "Aujourd'hui" : exp.endDate ? fmtDate(exp.endDate) : ''}
-                      <span className="mx-1.5 opacity-40">·</span>
-                      {duration(exp.startDate, exp.endDate, exp.current)}
-                    </p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Email</p>
+                    <p className="text-[13px] font-semibold text-gray-900 mt-0.5 truncate">{profile.emailPro}</p>
                   </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ── EDUCATION ── */}
-        {profile.education.length > 0 && (
-          <section>
-            <p className="text-[11px] font-bold text-text-tertiary uppercase tracking-[0.1em] mb-5">Formation</p>
-            <div className="space-y-6">
-              {profile.education.map(edu => (
-                <div key={edu.id} className="flex gap-4">
-                  <div className="w-9 h-9 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-text-secondary font-bold text-sm flex-shrink-0 mt-0.5">
-                    {edu.institution[0]}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-semibold text-text-primary text-[15px]">{edu.degree}</p>
-                      {edu.verificationStatus === 'confirmée' && (
-                        <span className="flex items-center gap-1 text-[11px] font-semibold text-success flex-shrink-0">
-                          <IconCircleCheck size={13} />
-                          Vérifié
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-text-secondary text-sm mt-0.5">{edu.institution}</p>
-                    <p className="text-text-tertiary text-xs mt-1">
-                      {fmtDate(edu.startDate)} — {edu.current ? "Aujourd'hui" : edu.endDate ? fmtDate(edu.endDate) : ''}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ── PUBLICATIONS ── */}
-        {profile.publications && profile.publications.length > 0 && (
-          <section>
-            <p className="text-[11px] font-bold text-text-tertiary uppercase tracking-[0.1em] mb-4">Publications</p>
-            <div className="space-y-2">
-              {profile.publications.map(pub => (
-                <a
-                  key={pub.id}
-                  href={pub.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between gap-3 p-3.5 rounded-xl hover:bg-[#F3F4F6] transition-colors group"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-text-primary group-hover:text-primary transition-colors truncate">{pub.title}</p>
-                    <p className="text-xs text-text-tertiary capitalize mt-0.5">{pub.type}</p>
-                  </div>
-                  <IconArrowUpRight size={15} className="text-text-tertiary group-hover:text-primary flex-shrink-0 transition-colors" />
+                  <IconArrowUpRight size={14} className="text-gray-300 group-hover:text-gray-500 transition-colors flex-shrink-0" />
                 </a>
-              ))}
+              )}
+              {profile.phone && (
+                <a href={`tel:${profile.phone}`}
+                  className="flex items-center gap-3.5 py-3 px-3 -mx-3 rounded-2xl hover:bg-gray-50 transition-colors group">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ background: `rgba(${rgb}, 0.1)` }}>
+                    <IconPhone size={16} style={{ color }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Téléphone</p>
+                    <p className="text-[13px] font-semibold text-gray-900 mt-0.5">{profile.phone}</p>
+                  </div>
+                  <IconArrowUpRight size={14} className="text-gray-300 group-hover:text-gray-500 transition-colors flex-shrink-0" />
+                </a>
+              )}
+              {profile.linkedin && (
+                <a href={profile.linkedin.startsWith('http') ? profile.linkedin : `https://${profile.linkedin}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-3.5 py-3 px-3 -mx-3 rounded-2xl hover:bg-gray-50 transition-colors group">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-[#EBF3FB]">
+                    <IconBrandLinkedin size={18} className="text-[#0A66C2]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">LinkedIn</p>
+                    <p className="text-[13px] font-semibold text-gray-900 mt-0.5 truncate">
+                      {profile.linkedin.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, '').replace(/\/$/, '')}
+                    </p>
+                  </div>
+                  <IconArrowUpRight size={14} className="text-gray-300 group-hover:text-gray-500 transition-colors flex-shrink-0" />
+                </a>
+              )}
             </div>
-          </section>
+          </>
         )}
 
-        {/* ── SHARE ── */}
-        <div className="flex items-center justify-between py-5 border-t border-[#F3F4F6]">
-          <p className="text-xs text-text-tertiary font-mono">bcarte.io/p/{profile.publicUrlSlug}</p>
-          <button
-            onClick={copy}
-            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg transition-all ${
-              copied ? 'bg-success-light text-success' : 'bg-[#F3F4F6] text-text-secondary hover:text-text-primary'
-            }`}
-          >
-            {copied ? <IconCheck size={13} /> : null}
-            {copied ? 'Copié' : 'Copier le lien'}
-          </button>
-        </div>
+        {/* ── Skills ───────────────────────────────────────────────────────── */}
+        {(profile.skills?.length ?? 0) > 0 && (
+          <>
+            <div className="mx-6 border-t border-gray-100" />
+            <div className="px-6 py-5">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Compétences</p>
+              <div className="flex flex-wrap gap-2">
+                {profile.skills.map((s: string) => (
+                  <span key={s}
+                    className="text-[12px] font-semibold px-3.5 py-1.5 rounded-full"
+                    style={{ background: `rgba(${rgb}, 0.08)`, color }}>
+                    {s}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
 
-        {/* ── FOOTER ── */}
-        <div className="text-center pb-6">
-          <p className="text-xs text-text-tertiary">
-            Propulsé par{' '}
-            <Link href="/" className="font-bold text-primary">bcarte</Link>
-            {' '}· Profils professionnels vérifiés
+        {/* ── Experiences ──────────────────────────────────────────────────── */}
+        {expList.length > 0 && (
+          <>
+            <div className="mx-6 border-t border-gray-100" />
+            <div className="px-6 py-5">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Expériences</p>
+              <div className="space-y-5">
+                {expList.map((exp: any) => {
+                  const verifExp = profile.verifications?.find(
+                    (v: any) => v.refId === exp.id && v.status === 'CONFIRMEE'
+                  )
+                  return (
+                    <div key={exp.id} className="flex gap-3.5">
+                      <div
+                        className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-[11px] font-black flex-shrink-0 mt-0.5"
+                        style={{ background: `linear-gradient(135deg, ${color} 0%, rgba(${rgb}, 0.65) 100%)` }}>
+                        {initials(exp.company ?? '')}
+                      </div>
+                      <div className="flex-1 min-w-0 pt-0.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-[13px] font-bold text-gray-900 leading-snug">{exp.title}</p>
+                          {verifExp && (
+                            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                              <IconShieldCheck size={9} />
+                              Vérifié{verifExp.organisation?.name ? ` par ${verifExp.organisation.name}` : ''}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[12px] text-gray-500 mt-0.5 font-medium">
+                          {exp.company}{exp.city ? ` · ${exp.city}` : ''}
+                        </p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">
+                          {fmtDate(exp.startDate)} – {exp.isCurrent ? 'Présent' : (fmtDate(exp.endDate) ?? 'Présent')}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ── Educations ───────────────────────────────────────────────────── */}
+        {eduList.length > 0 && (
+          <>
+            <div className="mx-6 border-t border-gray-100" />
+            <div className="px-6 py-5">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Formations</p>
+              <div className="space-y-5">
+                {eduList.map((edu: any) => {
+                  const orgName = edu.organisation?.name ?? edu.school ?? ''
+                  const verifEdu = profile.verifications?.find(
+                    (v: any) => v.refId === edu.id && v.status === 'CONFIRMEE'
+                  )
+                  return (
+                    <div key={edu.id} className="flex gap-3.5">
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center text-[11px] font-black flex-shrink-0 mt-0.5 bg-gray-100 text-gray-400">
+                        {initials(orgName)}
+                      </div>
+                      <div className="flex-1 min-w-0 pt-0.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-[13px] font-bold text-gray-900 leading-snug">{edu.degree}</p>
+                          {verifEdu && (
+                            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                              <IconShieldCheck size={9} />
+                              Vérifié{verifEdu.organisation?.name ? ` par ${verifEdu.organisation.name}` : ''}
+                            </span>
+                          )}
+                        </div>
+                        {edu.field && <p className="text-[12px] font-semibold mt-0.5" style={{ color }}>{edu.field}</p>}
+                        <p className="text-[12px] text-gray-500 mt-0.5 font-medium">{orgName}</p>
+                        <p className="text-[11px] text-gray-400 mt-0.5">
+                          {edu.startYear} – {edu.isCurrent ? 'Présent' : (edu.endYear ?? 'Présent')}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ── Footer ───────────────────────────────────────────────────────── */}
+        <div className="mx-6 border-t border-gray-100" />
+        <div className="px-6 py-8 flex flex-col items-center gap-2">
+          <Link href="/register"
+            className="flex items-center gap-1.5 text-[12px] font-bold px-5 py-2.5 rounded-full border border-gray-200 text-gray-500 hover:border-gray-400 hover:text-gray-800 transition-colors">
+            Créer ma bcarte gratuite <IconArrowUpRight size={11} />
+          </Link>
+          <p className="text-[10px] text-gray-300 mt-1">
+            Propulsé par <Link href="/" className="font-semibold hover:text-gray-500 transition-colors">bcarte.io</Link>
           </p>
         </div>
 
-      </main>
+      </div>
     </div>
   )
 }

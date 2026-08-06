@@ -1,158 +1,223 @@
 'use client'
 
-import { useState } from 'react'
-import { IconSearch, IconHeart, IconBuilding, IconBriefcase, IconPlus, IconBrandWhatsapp, IconMail, IconCircleCheck, IconMapPin } from '@tabler/icons-react'
-import { MOCK_PROFILES, MOCK_JOB_OFFERS, SECTORS } from '@/lib/mock-data'
-import ProfileCard from '@/components/profile/ProfileCard'
+import { useEffect, useState } from 'react'
+import {
+  IconSearch, IconLoader2, IconUsers, IconBriefcase,
+  IconMapPin, IconX, IconArrowUpRight, IconShieldCheck,
+} from '@tabler/icons-react'
 import Sidebar from '@/components/layout/Sidebar'
 import BottomNav from '@/components/layout/BottomNav'
+import ProfileModal from '@/components/ProfileModal'
+import { COUNTRIES } from '@/lib/constants'
 
-const TABS = ['Recherche', 'Favoris', 'Mon organisation', 'Offres']
+const TABS = ['Recherche', 'Offres']
 
-const FAVORITES = MOCK_PROFILES.filter(p => p.verified).slice(0, 4)
+const AVATAR_COLORS = ['#6C47FF', '#059669', '#C9A84C', '#2563EB', '#DC2626', '#7C3AED', '#0891B2', '#D97706']
+function avatarColor(name: string) {
+  let h = 0
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h)
+  return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length]
+}
+function initials(name: string) {
+  return name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?'
+}
 
 export default function RecruiterPage() {
-  const [tab, setTab] = useState(0)
-  const [search, setSearch] = useState('')
-  const [sector, setSector] = useState('')
+  const [tab,        setTab]        = useState(0)
+  const [profiles,   setProfiles]   = useState<any[]>([])
+  const [offers,     setOffers]     = useState<any[]>([])
+  const [loading,    setLoading]    = useState(false)
+  const [search,     setSearch]     = useState('')
+  const [country,    setCountry]    = useState('')
+  const [modalSlug,  setModalSlug]  = useState<string | null>(null)
 
-  const filtered = MOCK_PROFILES.filter((p) => {
-    const matchSearch = !search || p.fullName.toLowerCase().includes(search.toLowerCase()) || p.title.toLowerCase().includes(search.toLowerCase())
-    const matchSector = !sector || p.sector === sector
-    return matchSearch && matchSector
-  })
+  /* fetch profiles with debounce */
+  useEffect(() => {
+    if (tab !== 0) return
+    setLoading(true)
+    const t = setTimeout(() => {
+      const params = new URLSearchParams()
+      if (search)  params.set('search', search)
+      if (country) params.set('country', country)
+      fetch(`/api/profiles?${params}`)
+        .then(r => r.ok ? r.json() : [])
+        .then(d => { setProfiles(Array.isArray(d) ? d : []); setLoading(false) })
+        .catch(() => setLoading(false))
+    }, search ? 350 : 0)
+    return () => clearTimeout(t)
+  }, [tab, search, country])
+
+  /* fetch offers */
+  useEffect(() => {
+    if (tab !== 1) return
+    fetch('/api/org/offers')
+      .then(r => r.ok ? r.json() : [])
+      .then(d => setOffers(Array.isArray(d) ? d : []))
+  }, [tab])
 
   return (
     <div className="min-h-screen bg-bg-light">
       <Sidebar />
-      <main className="lg:pl-60 pb-16 lg:pb-0 min-h-screen">
-        <div className="max-w-5xl mx-auto px-5 py-6 lg:px-8 lg:py-8 space-y-6">
+      <main className="lg:pl-[220px] pb-16 lg:pb-0 min-h-screen">
+        <div className="max-w-5xl mx-auto px-5 py-7 lg:px-8 lg:py-9 space-y-6">
+
           {/* Header */}
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Espace Recruteur</h1>
-            <p className="text-text-secondary text-sm mt-1">Trouvez et contactez les meilleurs talents vérifiés</p>
+            <h1 className="page-title">Espace recruteur</h1>
+            <p className="page-subtitle">Trouvez et contactez les meilleurs talents vérifiés</p>
           </div>
 
           {/* Tabs */}
-          <div className="flex border-b border-[#E5E7EB] overflow-x-auto">
+          <div className="flex gap-1 p-1 bg-border-subtle rounded-xl w-fit">
             {TABS.map((t, i) => (
-              <button
-                key={i}
-                onClick={() => setTab(i)}
-                className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2 -mb-px ${
-                  tab === i ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'
-                }`}
-              >
+              <button key={t} onClick={() => setTab(i)}
+                className={`px-5 py-2 rounded-[10px] text-sm font-semibold transition-all ${
+                  tab === i ? 'bg-white text-text-primary shadow-sm' : 'text-text-tertiary hover:text-text-secondary'
+                }`}>
                 {t}
               </button>
             ))}
           </div>
 
-          {/* Recherche tab */}
+          {/* ── Recherche ── */}
           {tab === 0 && (
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" size={16} />
-                  <input className="input pl-9 bg-white" placeholder="Nom, titre, compétence..." value={search} onChange={(e) => setSearch(e.target.value)} />
+            <div className="space-y-5">
+              {/* Search bar */}
+              <div className="card p-4">
+                <div className="flex flex-wrap gap-3">
+                  <div className="relative flex-1 min-w-[200px]">
+                    <IconSearch size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none" />
+                    <input className="input pl-9 pr-9" placeholder="Nom, titre, compétence…"
+                      value={search} onChange={e => setSearch(e.target.value)} />
+                    {search && (
+                      <button onClick={() => setSearch('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary">
+                        <IconX size={14} />
+                      </button>
+                    )}
+                  </div>
+                  <select className="input w-auto min-w-[150px]" value={country}
+                    onChange={e => setCountry(e.target.value)}>
+                    <option value="">Tous les pays</option>
+                    {COUNTRIES.map(c => <option key={c}>{c}</option>)}
+                  </select>
                 </div>
-                <select className="input bg-white w-auto" value={sector} onChange={(e) => setSector(e.target.value)}>
-                  <option value="">Tous les secteurs</option>
-                  {SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
               </div>
-              <p className="text-sm text-text-secondary"><span className="font-semibold text-text-primary">{filtered.length}</span> profils</p>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filtered.map(p => <ProfileCard key={p.id} profile={p} />)}
-              </div>
+
+              {/* Results */}
+              {loading ? (
+                <div className="flex items-center justify-center py-24">
+                  <IconLoader2 size={28} className="animate-spin text-primary" />
+                </div>
+              ) : profiles.length === 0 ? (
+                <div className="card text-center py-20 space-y-3">
+                  <div className="w-14 h-14 rounded-2xl bg-border-subtle flex items-center justify-center mx-auto">
+                    <IconUsers size={26} className="text-text-tertiary" />
+                  </div>
+                  <p className="font-semibold text-text-primary text-sm">Aucun profil trouvé</p>
+                  <p className="text-xs text-text-secondary">Modifiez vos critères de recherche</p>
+                </div>
+              ) : (
+                <>
+                  <p className="section-title">{profiles.length} profil{profiles.length > 1 ? 's' : ''}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {profiles.map((p: any) => {
+                      const color  = avatarColor(p.fullName ?? '')
+                      const skills: string[] = p.skills ?? []
+                      const verified = (p.verificationCount ?? 0) > 0
+
+                      return (
+                        <button key={p.id}
+                          onClick={() => p.slug && setModalSlug(p.slug)}
+                          className="card hover:shadow-card-hover hover:border-primary/20 transition-all group text-left w-full space-y-3">
+
+                          {/* Avatar + identity */}
+                          <div className="flex items-start gap-3">
+                            <div className="w-11 h-11 rounded-xl overflow-hidden flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+                              style={{ backgroundColor: color }}>
+                              {p.avatarUrl
+                                ? <img src={p.avatarUrl} alt={p.fullName} className="w-full h-full object-cover object-top" />
+                                : initials(p.fullName ?? '')}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <p className="font-semibold text-text-primary text-sm truncate group-hover:text-primary transition-colors">
+                                  {p.fullName}
+                                </p>
+                                {verified && (
+                                  <IconShieldCheck size={12} className="text-success flex-shrink-0" />
+                                )}
+                              </div>
+                              <p className="text-xs text-text-secondary mt-0.5 truncate">{p.title || '—'}</p>
+                              <p className="text-xs text-text-tertiary mt-0.5 flex items-center gap-1">
+                                <IconMapPin size={10} />
+                                {[p.city, p.country].filter(Boolean).join(', ') || '—'}
+                              </p>
+                            </div>
+                            <IconArrowUpRight size={13} className="text-text-tertiary group-hover:text-primary transition-colors flex-shrink-0 mt-0.5" />
+                          </div>
+
+                          {/* Skills */}
+                          {skills.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {skills.slice(0, 3).map(s => (
+                                <span key={s} className="text-[11px] bg-primary-light text-primary px-2 py-0.5 rounded-full font-medium">
+                                  {s}
+                                </span>
+                              ))}
+                              {skills.length > 3 && (
+                                <span className="text-[11px] bg-border-subtle text-text-tertiary px-2 py-0.5 rounded-full font-medium">
+                                  +{skills.length - 3}
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          {/* CTA */}
+                          <div className="pt-1 border-t border-border-subtle">
+                            <span className="text-[11px] font-semibold text-primary flex items-center gap-1">
+                              <IconArrowUpRight size={11} /> Voir le profil & CV
+                            </span>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           )}
 
-          {/* Favoris tab */}
+          {/* ── Offres ── */}
           {tab === 1 && (
-            <div className="space-y-4">
-              <p className="text-sm text-text-secondary">{FAVORITES.length} profils sauvegardés</p>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {FAVORITES.map(p => (
-                  <div key={p.id} className="relative">
-                    <button className="absolute top-3 right-3 z-10 w-7 h-7 bg-red-50 rounded-btn flex items-center justify-center hover:bg-red-100" aria-label="Retirer des favoris">
-                      <IconHeart size={14} className="text-danger fill-danger" />
-                    </button>
-                    <ProfileCard profile={p} />
+            <div className="space-y-3">
+              {offers.length === 0 ? (
+                <div className="card text-center py-20 space-y-3">
+                  <div className="w-14 h-14 rounded-2xl bg-border-subtle flex items-center justify-center mx-auto">
+                    <IconBriefcase size={26} className="text-text-tertiary" />
                   </div>
-                ))}
-              </div>
+                  <p className="font-semibold text-text-primary text-sm">Aucune offre publiée</p>
+                  <p className="text-xs text-text-secondary">Gérez vos offres depuis le tableau de bord organisation</p>
+                </div>
+              ) : offers.map((o: any) => (
+                <div key={o.id} className="card">
+                  <p className="font-semibold text-text-primary">{o.title}</p>
+                  <p className="text-sm text-text-secondary mt-0.5">{o.location} · {o.type}</p>
+                  {o.description && (
+                    <p className="text-xs text-text-tertiary mt-2 line-clamp-2">{o.description}</p>
+                  )}
+                </div>
+              ))}
             </div>
           )}
 
-          {/* Organisation tab */}
-          {tab === 2 && (
-            <div className="max-w-lg space-y-4">
-              <div className="card space-y-5">
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-primary-light rounded-card-lg flex items-center justify-center">
-                    <IconBuilding size={28} className="text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-text-primary">Talent Africa Group</p>
-                    <p className="text-sm text-text-secondary">Organisation vérifiée</p>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <label className="label">Nom de l&apos;organisation</label>
-                    <input className="input" defaultValue="Talent Africa Group" />
-                  </div>
-                  <div>
-                    <label className="label">Description</label>
-                    <textarea className="input resize-none" rows={3} defaultValue="Cabinet de recrutement spécialisé dans les talents tech et finance en Afrique de l'Ouest." />
-                  </div>
-                  <div>
-                    <label className="label">Site web</label>
-                    <input className="input" type="url" defaultValue="https://talentagrica.com" />
-                  </div>
-                </div>
-                <button className="btn-primary">Enregistrer</button>
-              </div>
-            </div>
-          )}
-
-          {/* Offres tab */}
-          {tab === 3 && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-text-secondary">{MOCK_JOB_OFFERS.length} offres actives</p>
-                <button className="btn-primary">
-                  <IconPlus size={16} />
-                  Publier une offre
-                </button>
-              </div>
-              <div className="space-y-3">
-                {MOCK_JOB_OFFERS.map((offer) => (
-                  <div key={offer.id} className="card">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="font-semibold text-text-primary">{offer.title}</p>
-                        <p className="text-sm text-text-secondary flex items-center gap-1 mt-1">
-                          <IconMapPin size={14} />
-                          {offer.location}
-                        </p>
-                        <p className="text-sm text-text-secondary mt-2">{offer.description}</p>
-                      </div>
-                      <span className="text-xs text-text-tertiary flex-shrink-0">{offer.createdAt}</span>
-                    </div>
-                    <div className="flex gap-2 mt-4">
-                      <button className="btn-secondary text-xs py-1.5 px-3">Modifier</button>
-                      <button className="btn-ghost text-xs py-1.5 px-3 hover:text-danger">Supprimer</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </main>
       <BottomNav />
+
+      {modalSlug && (
+        <ProfileModal slug={modalSlug} onClose={() => setModalSlug(null)} />
+      )}
     </div>
   )
 }
