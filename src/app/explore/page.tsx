@@ -1,156 +1,298 @@
 'use client'
 
-import { useState } from 'react'
-import { IconSearch, IconFilter, IconX } from '@tabler/icons-react'
-import ProfileCard from '@/components/profile/ProfileCard'
-import { MOCK_PROFILES, SECTORS } from '@/lib/mock-data'
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import {
+  IconSearch, IconX, IconLoader2, IconMapPin,
+  IconShieldCheck, IconUsers, IconBriefcase,
+  IconArrowUpRight, IconUserCircle, IconBuilding,
+  IconFileText,
+} from '@tabler/icons-react'
 import Sidebar from '@/components/layout/Sidebar'
 import BottomNav from '@/components/layout/BottomNav'
+import ProfileModal from '@/components/ProfileModal'
+import { COUNTRIES } from '@/lib/constants'
 
-const AVAILABILITY_OPTIONS = [
-  { value: '', label: 'Toutes disponibilités' },
-  { value: 'disponible', label: 'Disponible' },
-  { value: 'en_veille', label: 'En veille' },
+type View = 'profils' | 'organisations'
+
+const AVATAR_COLORS = [
+  '#6C47FF', '#059669', '#C9A84C', '#2563EB',
+  '#DC2626', '#7C3AED', '#0891B2', '#D97706',
 ]
+function avatarColor(name: string) {
+  let h = 0
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h)
+  return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length]
+}
+function initials(name: string) {
+  return name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?'
+}
 
 export default function ExplorePage() {
-  const [search, setSearch] = useState('')
-  const [sector, setSector] = useState('')
-  const [availability, setAvailability] = useState('')
-  const [showFilters, setShowFilters] = useState(false)
-  const [verified, setVerified] = useState(false)
+  const [view,          setView]          = useState<View>('profils')
+  const [profiles,      setProfiles]      = useState<any[]>([])
+  const [orgs,          setOrgs]          = useState<any[]>([])
+  const [loading,       setLoading]       = useState(false)
+  const [search,        setSearch]        = useState('')
+  const [country,       setCountry]       = useState('')
+  const [isOrg,         setIsOrg]         = useState(false)
+  const [modalSlug,     setModalSlug]     = useState<string | null>(null)
 
-  const filtered = MOCK_PROFILES.filter((p) => {
-    const matchSearch = !search ||
-      p.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      p.title.toLowerCase().includes(search.toLowerCase()) ||
-      p.city.toLowerCase().includes(search.toLowerCase()) ||
-      p.skills.some(s => s.label.toLowerCase().includes(search.toLowerCase()))
-    const matchSector = !sector || p.sector === sector
-    const matchAvail = !availability || p.availabilityStatus === availability
-    const matchVerified = !verified || p.verified
-    return matchSearch && matchSector && matchAvail && matchVerified
-  })
+  /* detect current user role */
+  useEffect(() => {
+    fetch('/api/me').then(r => r.ok ? r.json() : null).then(d => {
+      if (d?.role === 'organisation') setIsOrg(true)
+    })
+  }, [])
+
+  /* debounced fetch */
+  useEffect(() => {
+    setLoading(true)
+    const t = setTimeout(() => {
+      const params = new URLSearchParams()
+      params.set('type', view === 'profils' ? 'profiles' : 'orgs')
+      if (search)  params.set('search', search)
+      if (country) params.set('country', country)
+
+      fetch(`/api/explore?${params}`)
+        .then(r => r.status === 401 ? [] : r.json())
+        .then(d => {
+          if (view === 'profils') setProfiles(d ?? [])
+          else setOrgs(d ?? [])
+          setLoading(false)
+        })
+    }, search ? 350 : 0)
+    return () => clearTimeout(t)
+  }, [view, search, country])
+
+  const results = view === 'profils' ? profiles : orgs
 
   return (
     <div className="min-h-screen bg-bg-light">
       <Sidebar />
-      <main className="lg:pl-60 pb-16 lg:pb-0 min-h-screen">
-        <div className="max-w-5xl mx-auto px-5 py-6 lg:px-8 lg:py-8 space-y-6">
-          {/* Header */}
+      <main className="lg:pl-[220px] pb-16 lg:pb-0 min-h-screen">
+        <div className="max-w-5xl mx-auto px-5 py-7 lg:px-8 lg:py-9 space-y-6">
+
+          {/* ── Header ─────────────────────────────────────────────────────── */}
           <div>
-            <h1 className="text-2xl font-bold text-text-primary">Explorer les profils</h1>
-            <p className="text-text-secondary text-sm mt-1">
-              Découvrez des professionnels vérifiés d&apos;Afrique et du monde
-            </p>
+            <h1 className="page-title">Explorer</h1>
+            <p className="page-subtitle">Professionnels et organisations de votre réseau</p>
           </div>
 
-          {/* Search + Filters */}
-          <div className="space-y-3">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" size={16} />
-                <input
-                  className="input pl-9 bg-white"
-                  placeholder="Rechercher par nom, titre, compétence, ville..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className={`btn-secondary gap-2 ${showFilters ? 'border-primary text-primary bg-primary-light' : ''}`}
-              >
-                <IconFilter size={16} />
-                <span className="hidden sm:block">Filtres</span>
-              </button>
-            </div>
-
-            {showFilters && (
-              <div className="card grid sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="label">Secteur</label>
-                  <select className="input" value={sector} onChange={(e) => setSector(e.target.value)}>
-                    <option value="">Tous les secteurs</option>
-                    {SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="label">Disponibilité</label>
-                  <select className="input" value={availability} onChange={(e) => setAvailability(e.target.value)}>
-                    {AVAILABILITY_OPTIONS.map(o => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="label">Profils vérifiés</label>
-                  <label className="flex items-center gap-2 cursor-pointer mt-2">
-                    <div
-                      className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${verified ? 'bg-primary' : 'bg-[#E5E7EB]'}`}
-                      onClick={() => setVerified(!verified)}
-                    >
-                      <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${verified ? 'translate-x-6' : 'translate-x-1'}`} />
-                    </div>
-                    <span className="text-sm text-text-secondary">Uniquement vérifiés</span>
-                  </label>
-                </div>
-              </div>
-            )}
-
-            {/* Active filters */}
-            {(search || sector || availability || verified) && (
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-text-secondary">Filtres actifs :</span>
-                {search && (
-                  <span className="inline-flex items-center gap-1 text-xs bg-primary-light text-primary px-2 py-1 rounded-badge">
-                    &quot;{search}&quot;
-                    <button onClick={() => setSearch('')}><IconX size={10} /></button>
-                  </span>
-                )}
-                {sector && (
-                  <span className="inline-flex items-center gap-1 text-xs bg-primary-light text-primary px-2 py-1 rounded-badge">
-                    {sector}
-                    <button onClick={() => setSector('')}><IconX size={10} /></button>
-                  </span>
-                )}
-                {availability && (
-                  <span className="inline-flex items-center gap-1 text-xs bg-primary-light text-primary px-2 py-1 rounded-badge">
-                    {availability}
-                    <button onClick={() => setAvailability('')}><IconX size={10} /></button>
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Results count */}
-          <p className="text-sm text-text-secondary">
-            <span className="font-semibold text-text-primary">{filtered.length}</span> profil{filtered.length !== 1 ? 's' : ''} trouvé{filtered.length !== 1 ? 's' : ''}
-          </p>
-
-          {/* Grid */}
-          {filtered.length > 0 ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filtered.map((profile) => (
-                <ProfileCard key={profile.id} profile={profile} />
+          {/* ── Controls ───────────────────────────────────────────────────── */}
+          <div className="card p-4 space-y-3">
+            {/* View toggle */}
+            <div className="flex gap-1 p-1 bg-border-subtle rounded-xl w-fit">
+              {(['profils', 'organisations'] as View[]).map(v => (
+                <button key={v} onClick={() => { setView(v); setSearch(''); setCountry('') }}
+                  className={`px-5 py-2 rounded-[10px] text-sm font-semibold capitalize transition-all ${
+                    view === v
+                      ? 'bg-white text-text-primary shadow-sm'
+                      : 'text-text-tertiary hover:text-text-secondary'
+                  }`}>
+                  {v}
+                </button>
               ))}
             </div>
+
+            {/* Search + filter row */}
+            <div className="flex flex-wrap gap-3">
+              <div className="relative flex-1 min-w-[200px]">
+                <IconSearch size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none" />
+                <input
+                  className="input pl-9 pr-9"
+                  placeholder={view === 'profils' ? 'Nom, titre, compétence…' : 'Nom, secteur…'}
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+                {search && (
+                  <button onClick={() => setSearch('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-tertiary hover:text-text-secondary transition-colors">
+                    <IconX size={14} />
+                  </button>
+                )}
+              </div>
+              <select className="input w-auto min-w-[150px]" value={country}
+                onChange={e => setCountry(e.target.value)}>
+                <option value="">Tous les pays</option>
+                {COUNTRIES.map(c => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* ── Results ────────────────────────────────────────────────────── */}
+          {loading ? (
+            <div className="flex items-center justify-center py-24">
+              <IconLoader2 size={28} className="animate-spin text-primary" />
+            </div>
+          ) : results.length === 0 ? (
+            <div className="card text-center py-20 space-y-3">
+              <div className="w-14 h-14 rounded-2xl bg-border-subtle flex items-center justify-center mx-auto">
+                {view === 'profils'
+                  ? <IconUserCircle size={26} className="text-text-tertiary" />
+                  : <IconBuilding   size={26} className="text-text-tertiary" />}
+              </div>
+              <div>
+                <p className="font-semibold text-text-primary text-sm">
+                  {search
+                    ? `Aucun résultat pour « ${search} »`
+                    : view === 'profils'
+                      ? 'Aucun profil trouvé'
+                      : 'Aucune organisation trouvée'}
+                </p>
+                <p className="text-xs text-text-secondary mt-1 max-w-xs mx-auto">
+                  {search
+                    ? 'Essayez d\'autres mots-clés ou supprimez les filtres'
+                    : view === 'profils'
+                      ? 'Aucun professionnel visible pour le moment'
+                      : 'Aucune organisation enregistrée pour le moment'}
+                </p>
+              </div>
+            </div>
           ) : (
-            <div className="text-center py-16">
-              <p className="text-text-secondary text-lg">Aucun profil trouvé</p>
-              <p className="text-text-tertiary text-sm mt-1">Essayez de modifier vos filtres de recherche</p>
-              <button
-                className="btn-secondary mt-4"
-                onClick={() => { setSearch(''); setSector(''); setAvailability(''); setVerified(false) }}
-              >
-                Réinitialiser les filtres
-              </button>
+            <div className="space-y-3">
+              <p className="section-title">{results.length} résultat{results.length > 1 ? 's' : ''}</p>
+
+              {/* ── Profile cards ─────────────────────────────────────────── */}
+              {view === 'profils' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {profiles.map((p: any) => {
+                    const color = avatarColor(p.fullName ?? '')
+                    const skills: string[] = p.skills ?? []
+                    const href = p.slug ? `/p/${p.slug}` : '#'
+
+                    const cardContent = (
+                      <>
+                        {/* Avatar + identity */}
+                        <div className="flex items-start gap-3">
+                          <div className="w-11 h-11 rounded-xl overflow-hidden flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+                            style={{ backgroundColor: color }}>
+                            {p.avatarUrl
+                              ? <img src={p.avatarUrl} alt={p.fullName} className="w-full h-full object-cover object-top" />
+                              : initials(p.fullName ?? '')}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-text-primary text-sm truncate group-hover:text-primary transition-colors">
+                              {p.fullName}
+                            </p>
+                            <p className="text-xs text-text-secondary mt-0.5 truncate">{p.title || '—'}</p>
+                            <p className="text-xs text-text-tertiary mt-0.5 flex items-center gap-1">
+                              <IconMapPin size={10} />
+                              {[p.city, p.country].filter(Boolean).join(', ') || '—'}
+                            </p>
+                          </div>
+                          {isOrg
+                            ? <IconFileText size={13} className="text-text-tertiary group-hover:text-primary transition-colors flex-shrink-0 mt-0.5" />
+                            : <IconArrowUpRight size={13} className="text-text-tertiary group-hover:text-primary transition-colors flex-shrink-0 mt-0.5" />}
+                        </div>
+
+                        {/* Skills */}
+                        {skills.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {skills.slice(0, 3).map(s => (
+                              <span key={s}
+                                className="text-[11px] bg-primary-light text-primary px-2 py-0.5 rounded-full font-medium">
+                                {s}
+                              </span>
+                            ))}
+                            {skills.length > 3 && (
+                              <span className="text-[11px] bg-border-subtle text-text-tertiary px-2 py-0.5 rounded-full font-medium">
+                                +{skills.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Org CTA */}
+                        {isOrg && (
+                          <div className="pt-1 border-t border-border-subtle">
+                            <span className="text-[11px] font-semibold text-primary flex items-center gap-1">
+                              <IconFileText size={11} /> Voir le profil & CV
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    )
+
+                    return isOrg ? (
+                      <button key={p.id}
+                        onClick={() => p.slug && setModalSlug(p.slug)}
+                        className="card hover:shadow-card-hover hover:border-primary/20 transition-all group block space-y-3 text-left w-full">
+                        {cardContent}
+                      </button>
+                    ) : (
+                      <Link key={p.id} href={href}
+                        className="card hover:shadow-card-hover hover:border-primary/20 transition-all group block space-y-3">
+                        {cardContent}
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* ── Org cards ─────────────────────────────────────────────── */}
+              {view === 'organisations' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {orgs.map((o: any) => (
+                    <Link key={o.id} href={`/org/${o.slug}`}
+                      className="card hover:shadow-card-hover hover:border-primary/20 transition-all group block">
+                      {/* Header */}
+                      <div className="flex items-start gap-3 mb-4">
+                        <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow-sm"
+                          style={{ backgroundColor: o.logoColor ?? '#6C47FF' }}>
+                          {initials(o.name ?? '')}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <p className="font-semibold text-text-primary text-sm group-hover:text-primary transition-colors leading-tight truncate">
+                              {o.name}
+                            </p>
+                            {o.verified && (
+                              <span className="badge-verified flex-shrink-0">
+                                <IconShieldCheck size={9} /> Vérifié
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            {o.type && (
+                              <span className="text-[11px] font-semibold text-primary bg-primary-light px-2 py-0.5 rounded-full">
+                                {o.type}
+                              </span>
+                            )}
+                            {o.sector && (
+                              <span className="text-xs text-text-tertiary truncate">{o.sector}</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-text-tertiary flex items-center gap-1 mt-1">
+                            <IconMapPin size={10} />
+                            {[o.city, o.country].filter(Boolean).join(', ') || '—'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Footer */}
+                      <div className="flex items-center justify-between pt-3 border-t border-border-subtle">
+                        <span className="text-xs text-text-tertiary flex items-center gap-1">
+                          <IconBriefcase size={11} />
+                          {o.type ?? 'Organisation'}
+                        </span>
+                        <div className="w-7 h-7 flex items-center justify-center rounded-lg bg-border-subtle group-hover:bg-primary-light transition-colors">
+                          <IconArrowUpRight size={13} className="text-text-tertiary group-hover:text-primary transition-colors" />
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
       </main>
       <BottomNav />
+
+      {modalSlug && (
+        <ProfileModal slug={modalSlug} onClose={() => setModalSlug(null)} />
+      )}
     </div>
   )
 }
