@@ -146,19 +146,28 @@ export default function OrgDashboardPage() {
                 ))}
               </div>
 
-              {pending.length > 0 && (
+              {verifications.length > 0 && (
                 <div className="card">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="font-semibold text-text-primary">Vérifications récentes</h2>
-                    <Link href="/org/verifications" className="text-sm text-primary">Tout traiter →</Link>
+                    <Link href="/org/verifications" className="text-sm text-primary">Tout voir →</Link>
                   </div>
-                  {pending.slice(0, 3).map((v: any) => (
+                  {verifications.slice(0, 5).map((v: any) => (
                     <div key={v.id} className="flex items-center gap-3 py-3 border-b border-[#F3F4F6] last:border-0">
-                      <span className="text-xs bg-[#F3F4F6] text-text-secondary px-2 py-0.5 rounded-full flex-shrink-0">{v.type === 'EXPÉRIENCE' ? 'Expérience' : 'Formation'}</span>
+                      <span className="text-xs bg-[#F3F4F6] text-text-secondary px-2 py-0.5 rounded-full flex-shrink-0">
+                        {v.type === 'EXPÉRIENCE' ? 'Expérience' : 'Formation'}
+                      </span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-text-primary truncate">{v.profile?.fullName ?? '—'}</p>
                         <p className="text-xs text-text-secondary truncate">{v.label}</p>
                       </div>
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                        v.status === 'EN_ATTENTE'
+                          ? 'bg-[#FFFBEB] text-[#D97706]'
+                          : 'bg-[#ECFDF5] text-[#059669]'
+                      }`}>
+                        {v.status === 'EN_ATTENTE' ? 'Non traité' : 'Traité'}
+                      </span>
                     </div>
                   ))}
                 </div>
