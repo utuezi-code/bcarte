@@ -3,9 +3,12 @@
 import { useEffect, useState } from 'react'
 import {
   IconBuilding, IconLoader2, IconSearch, IconX,
-  IconShieldCheck, IconPlus, IconMapPin, IconUsers,
-  IconCircleCheck, IconAlertCircle,
+  IconShieldCheck, IconLink, IconMapPin, IconUsers,
+  IconCircleCheck, IconAlertCircle, IconChevronDown,
 } from '@tabler/icons-react'
+
+type LinkForm = { role: string; department: string; matricule: string; message: string }
+const EMPTY_FORM: LinkForm = { role: '', department: '', matricule: '', message: '' }
 
 export default function DashboardOrgPage() {
   const [myOrgs,    setMyOrgs]    = useState<any[]>([])
@@ -16,6 +19,9 @@ export default function DashboardOrgPage() {
   const [joining,   setJoining]   = useState<string | null>(null)
   const [leaving,   setLeaving]   = useState<string | null>(null)
   const [error,     setError]     = useState('')
+  /* form state: orgId being linked, or null */
+  const [linkingOrg, setLinkingOrg] = useState<any | null>(null)
+  const [form,       setForm]       = useState<LinkForm>(EMPTY_FORM)
 
   useEffect(() => {
     fetch('/api/org/join')
@@ -37,17 +43,24 @@ export default function DashboardOrgPage() {
     return () => clearTimeout(t)
   }, [search])
 
-  const join = async (orgId: string) => {
-    setJoining(orgId); setError('')
+  const join = async () => {
+    if (!linkingOrg) return
+    setJoining(linkingOrg.id); setError('')
     const res  = await fetch('/api/org/join', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ organisationId: orgId }),
+      body: JSON.stringify({
+        organisationId: linkingOrg.id,
+        role:       form.role       || undefined,
+        department: form.department || undefined,
+        matricule:  form.matricule  || undefined,
+        message:    form.message    || undefined,
+      }),
     })
     const data = await res.json()
     if (!res.ok) { setError(data.error ?? 'Erreur'); setJoining(null); return }
     const updated = await fetch('/api/org/join').then(r => r.json()).catch(() => myOrgs)
     setMyOrgs(Array.isArray(updated) ? updated : myOrgs)
-    setSearch(''); setOrgs([]); setJoining(null)
+    setLinkingOrg(null); setForm(EMPTY_FORM); setJoining(null)
   }
 
   const leave = async (orgId: string) => {
@@ -174,32 +187,81 @@ export default function DashboardOrgPage() {
                 <div className="space-y-2 max-h-72 overflow-y-auto -mx-1 px-1">
                   {orgs.map((o: any) => {
                     const alreadyMember = myOrgs.some((m: any) => m.organisation?.id === o.id)
+                    const isOpen = linkingOrg?.id === o.id
                     return (
-                      <div key={o.id}
-                        className="flex items-center gap-3 p-3.5 rounded-xl border border-border hover:border-primary/30 hover:bg-bg-light transition-all">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-xs flex-shrink-0 shadow-sm"
-                          style={{ backgroundColor: o.logoColor ?? '#6C47FF' }}>
-                          {o.name?.slice(0, 2).toUpperCase()}
+                      <div key={o.id} className={`rounded-xl border transition-all ${isOpen ? 'border-primary/40 bg-primary-light/10' : 'border-border hover:border-primary/30 hover:bg-bg-light'}`}>
+                        {/* Header row */}
+                        <div className="flex items-center gap-3 p-3.5">
+                          <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center text-white font-bold text-xs flex-shrink-0 shadow-sm"
+                            style={{ backgroundColor: o.logoUrl ? '#F3F4F6' : (o.logoColor ?? '#6C47FF') }}>
+                            {o.logoUrl
+                              ? <img src={o.logoUrl} alt={o.name} className="w-full h-full object-contain" />
+                              : o.name?.slice(0, 2).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-text-primary truncate">{o.name}</p>
+                            <p className="text-xs text-text-tertiary flex items-center gap-1 mt-0.5">
+                              <IconMapPin size={10} />
+                              {[o.type, o.city, o.country].filter(Boolean).join(' · ')}
+                            </p>
+                          </div>
+                          {alreadyMember ? (
+                            <span className="text-xs text-primary font-semibold bg-primary-light px-3 py-1 rounded-full flex-shrink-0">
+                              Lié
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => { setLinkingOrg(isOpen ? null : o); setForm(EMPTY_FORM); setError('') }}
+                              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-[8px] flex-shrink-0 transition-all ${
+                                isOpen ? 'bg-border-subtle text-text-secondary' : 'btn-primary'
+                              }`}>
+                              {isOpen
+                                ? <><IconChevronDown size={11} className="rotate-180" /> Annuler</>
+                                : <><IconLink size={11} /> Lier</>}
+                            </button>
+                          )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-text-primary truncate">{o.name}</p>
-                          <p className="text-xs text-text-tertiary flex items-center gap-1 mt-0.5">
-                            <IconMapPin size={10} />
-                            {[o.type, o.city, o.country].filter(Boolean).join(' · ')}
-                          </p>
-                        </div>
-                        {alreadyMember ? (
-                          <span className="text-xs text-primary font-semibold bg-primary-light px-3 py-1 rounded-full flex-shrink-0">
-                            Membre
-                          </span>
-                        ) : (
-                          <button onClick={() => join(o.id)} disabled={joining === o.id}
-                            className="btn-primary text-xs px-3 py-1.5 gap-1 flex-shrink-0">
-                            {joining === o.id
-                              ? <IconLoader2 size={11} className="animate-spin" />
-                              : <IconPlus size={11} />}
-                            Rejoindre
-                          </button>
+
+                        {/* Expanded form */}
+                        {isOpen && (
+                          <div className="px-4 pb-4 space-y-3 border-t border-primary/10 pt-3">
+                            <p className="text-xs text-text-secondary font-medium">
+                              Renseignez vos informations pour que <span className="font-bold text-text-primary">{o.name}</span> puisse vous identifier.
+                            </p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div>
+                                <label className="label">Poste / Fonction</label>
+                                <input className="input" placeholder="Ex : Ingénieur logiciel"
+                                  value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))} />
+                              </div>
+                              <div>
+                                <label className="label">Département / Service</label>
+                                <input className="input" placeholder="Ex : R&D, Finance…"
+                                  value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value }))} />
+                              </div>
+                              <div>
+                                <label className="label">Matricule / ID employé <span className="text-text-tertiary font-normal">(optionnel)</span></label>
+                                <input className="input" placeholder="Ex : EMP-00142"
+                                  value={form.matricule} onChange={e => setForm(f => ({ ...f, matricule: e.target.value }))} />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="label">Message à l'organisation <span className="text-text-tertiary font-normal">(optionnel)</span></label>
+                              <textarea className="input resize-none min-h-[64px]"
+                                placeholder="Précisez votre demande si nécessaire…"
+                                value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} />
+                            </div>
+                            {error && (
+                              <div className="flex items-center gap-2 text-xs text-danger bg-red-50 px-3 py-2 rounded-xl border border-danger/15">
+                                <IconAlertCircle size={13} className="flex-shrink-0" /> {error}
+                              </div>
+                            )}
+                            <button onClick={join} disabled={!!joining || !form.role}
+                              className="btn-primary w-full justify-center">
+                              {joining ? <IconLoader2 size={14} className="animate-spin" /> : <IconLink size={14} />}
+                              Envoyer la demande de liaison
+                            </button>
+                          </div>
                         )}
                       </div>
                     )
