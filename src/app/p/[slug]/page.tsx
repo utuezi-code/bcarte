@@ -311,8 +311,8 @@ export default function PublicProfilePage() {
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Expériences</p>
               <div className="space-y-5">
                 {expList.map((exp: any) => {
-                  const isVerified = profile.verifications?.some(
-                    (v: any) => v.organisationId === exp.organisationId && v.status === 'CONFIRMEE'
+                  const verifExp = profile.verifications?.find(
+                    (v: any) => v.refId === exp.id && v.status === 'CONFIRMEE'
                   )
                   return (
                     <div key={exp.id} className="flex gap-3.5">
@@ -324,9 +324,10 @@ export default function PublicProfilePage() {
                       <div className="flex-1 min-w-0 pt-0.5">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-[13px] font-bold text-gray-900 leading-snug">{exp.title}</p>
-                          {isVerified && (
+                          {verifExp && (
                             <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                              <IconShieldCheck size={9} /> Vérifié
+                              <IconShieldCheck size={9} />
+                              Vérifié{verifExp.organisation?.name ? ` par ${verifExp.organisation.name}` : ''}
                             </span>
                           )}
                         </div>
@@ -354,13 +355,24 @@ export default function PublicProfilePage() {
               <div className="space-y-5">
                 {eduList.map((edu: any) => {
                   const orgName = edu.organisation?.name ?? edu.school ?? ''
+                  const verifEdu = profile.verifications?.find(
+                    (v: any) => v.refId === edu.id && v.status === 'CONFIRMEE'
+                  )
                   return (
                     <div key={edu.id} className="flex gap-3.5">
                       <div className="w-9 h-9 rounded-xl flex items-center justify-center text-[11px] font-black flex-shrink-0 mt-0.5 bg-gray-100 text-gray-400">
                         {initials(orgName)}
                       </div>
                       <div className="flex-1 min-w-0 pt-0.5">
-                        <p className="text-[13px] font-bold text-gray-900 leading-snug">{edu.degree}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-[13px] font-bold text-gray-900 leading-snug">{edu.degree}</p>
+                          {verifEdu && (
+                            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                              <IconShieldCheck size={9} />
+                              Vérifié{verifEdu.organisation?.name ? ` par ${verifEdu.organisation.name}` : ''}
+                            </span>
+                          )}
+                        </div>
                         {edu.field && <p className="text-[12px] font-semibold mt-0.5" style={{ color }}>{edu.field}</p>}
                         <p className="text-[12px] text-gray-500 mt-0.5 font-medium">{orgName}</p>
                         <p className="text-[11px] text-gray-400 mt-0.5">

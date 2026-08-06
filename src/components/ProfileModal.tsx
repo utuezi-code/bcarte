@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import {
   IconX, IconMapPin, IconPhone, IconBrandLinkedin, IconMail,
   IconBriefcase, IconSchool, IconCode, IconDownload, IconLoader2,
-  IconCalendar, IconCircleCheck,
+  IconCalendar, IconCircleCheck, IconShieldCheck,
 } from '@tabler/icons-react'
 
 const AVATAR_COLORS = ['#6C47FF', '#059669', '#C9A84C', '#2563EB', '#DC2626', '#7C3AED', '#0891B2', '#D97706']
@@ -171,25 +171,38 @@ export default function ProfileModal({ slug, onClose }: Props) {
                     <IconBriefcase size={12} /> Expériences
                   </p>
                   <div className="space-y-3">
-                    {profile.experiences.map((e: any) => (
-                      <div key={e.id} className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-[#F0EDFF] flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <IconBriefcase size={13} style={{ color: '#6C47FF' }} />
+                    {profile.experiences.map((e: any) => {
+                      const verifExp = profile.verifications?.find(
+                        (v: any) => v.refId === e.id && v.status === 'CONFIRMEE'
+                      )
+                      return (
+                        <div key={e.id} className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-[#F0EDFF] flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <IconBriefcase size={13} style={{ color: '#6C47FF' }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-sm font-semibold text-text-primary leading-tight">{e.title}</p>
+                              {verifExp && (
+                                <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full flex-shrink-0">
+                                  <IconShieldCheck size={9} />
+                                  {verifExp.organisation?.name ? `Vérifié par ${verifExp.organisation.name}` : 'Vérifié'}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-text-secondary mt-0.5">{e.company}{e.city ? ` · ${e.city}` : ''}</p>
+                            {(e.startDate || e.endDate || e.isCurrent) && (
+                              <p className="text-xs text-text-tertiary mt-0.5 flex items-center gap-1">
+                                <IconCalendar size={10} />
+                                {e.startDate?.slice(0, 7) ?? ''}
+                                {' — '}
+                                {e.isCurrent ? 'Présent' : (e.endDate?.slice(0, 7) ?? '')}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-text-primary leading-tight">{e.title}</p>
-                          <p className="text-xs text-text-secondary mt-0.5">{e.company}{e.city ? ` · ${e.city}` : ''}</p>
-                          {(e.startDate || e.endDate || e.isCurrent) && (
-                            <p className="text-xs text-text-tertiary mt-0.5 flex items-center gap-1">
-                              <IconCalendar size={10} />
-                              {e.startDate?.slice(0, 7) ?? ''}
-                              {' — '}
-                              {e.isCurrent ? 'Présent' : (e.endDate?.slice(0, 7) ?? '')}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               )}
@@ -201,23 +214,36 @@ export default function ProfileModal({ slug, onClose }: Props) {
                     <IconSchool size={12} /> Formations
                   </p>
                   <div className="space-y-3">
-                    {profile.educations.map((e: any) => (
-                      <div key={e.id} className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-[#ECFDF5] flex items-center justify-center flex-shrink-0 mt-0.5">
-                          <IconSchool size={13} style={{ color: '#059669' }} />
+                    {profile.educations.map((e: any) => {
+                      const verifEdu = profile.verifications?.find(
+                        (v: any) => v.refId === e.id && v.status === 'CONFIRMEE'
+                      )
+                      return (
+                        <div key={e.id} className="flex items-start gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-[#ECFDF5] flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <IconSchool size={13} style={{ color: '#059669' }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-sm font-semibold text-text-primary leading-tight">{e.degree}{e.field ? ` · ${e.field}` : ''}</p>
+                              {verifEdu && (
+                                <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full flex-shrink-0">
+                                  <IconShieldCheck size={9} />
+                                  {verifEdu.organisation?.name ? `Vérifié par ${verifEdu.organisation.name}` : 'Vérifié'}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-text-secondary mt-0.5">{e.organisation?.name ?? ''}</p>
+                            {(e.startYear || e.endYear || e.isCurrent) && (
+                              <p className="text-xs text-text-tertiary mt-0.5 flex items-center gap-1">
+                                <IconCalendar size={10} />
+                                {e.startYear ?? ''} – {e.isCurrent ? 'Présent' : (e.endYear ?? '')}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-text-primary leading-tight">{e.degree}{e.field ? ` · ${e.field}` : ''}</p>
-                          <p className="text-xs text-text-secondary mt-0.5">{e.organisation?.name ?? ''}</p>
-                          {(e.startYear || e.endYear || e.isCurrent) && (
-                            <p className="text-xs text-text-tertiary mt-0.5 flex items-center gap-1">
-                              <IconCalendar size={10} />
-                              {e.startYear ?? ''} – {e.isCurrent ? 'Présent' : (e.endYear ?? '')}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               )}
