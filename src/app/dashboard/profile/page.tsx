@@ -6,7 +6,7 @@ import {
   IconPlus, IconX, IconCircleCheck, IconClock, IconCheck,
   IconLoader2, IconBriefcase, IconSchool, IconTrash,
   IconMapPin, IconArrowUpRight, IconCopy, IconShare, IconCamera,
-  IconShieldCheck,
+  IconShieldCheck, IconExternalLink,
 } from '@tabler/icons-react'
 import Image from 'next/image'
 import { COUNTRIES } from '@/lib/constants'
@@ -582,7 +582,8 @@ export default function ProfilePage() {
               )}
 
               {(profile?.experiences ?? []).map((exp: any) => {
-                const verifStatus = verifications.find(v => v.refId === exp.id)?.status ?? null
+                const verif = verifications.find(v => v.refId === exp.id) ?? null
+                const verifStatus = verif?.status ?? null
                 const st = verifStatus ? STATUS[verifStatus as keyof typeof STATUS] : null
                 const start = exp.startDate
                   ? new Date(exp.startDate).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' }) : null
@@ -606,9 +607,17 @@ export default function ProfilePage() {
                         </p>
                       )}
                       {st ? (
-                        <span className={`mt-2 inline-flex items-center gap-1 ${st.cls}`}>
-                          <st.Icon size={9} /> {st.label}
-                        </span>
+                        <div className="mt-2 flex items-center gap-2 flex-wrap">
+                          <span className={`inline-flex items-center gap-1 ${st.cls}`}>
+                            <st.Icon size={9} /> {st.label}
+                          </span>
+                          {verifStatus === 'CONFIRMEE' && verif?.certId && (
+                            <a href={`/cert/${verif.certId}`} target="_blank" rel="noopener noreferrer"
+                              className="text-[10px] font-semibold text-[#6C47FF] hover:underline flex items-center gap-1">
+                              <IconExternalLink size={10} /> Certificat
+                            </a>
+                          )}
+                        </div>
                       ) : (
                         <button
                           onClick={() => setVerifTarget({ type: 'EXPÉRIENCE', refId: exp.id, label: `${exp.title} — ${exp.company}` })}
@@ -704,7 +713,8 @@ export default function ProfilePage() {
               )}
 
               {(profile?.educations ?? []).map((edu: any) => {
-                const verifStatus = verifications.find(v => v.refId === edu.id)?.status ?? null
+                const verif = verifications.find(v => v.refId === edu.id) ?? null
+                const verifStatus = verif?.status ?? null
                 const st = verifStatus ? STATUS[verifStatus as keyof typeof STATUS] : null
                 return (
                   <div key={edu.id}
@@ -722,9 +732,17 @@ export default function ProfilePage() {
                         {edu.isCurrent ? ' — Présent' : edu.endYear ? ` — ${edu.endYear}` : ''}
                       </p>
                       {st ? (
-                        <span className={`mt-2 inline-flex items-center gap-1 ${st.cls}`}>
-                          <st.Icon size={9} /> {st.label}
-                        </span>
+                        <div className="mt-2 flex items-center gap-2 flex-wrap">
+                          <span className={`inline-flex items-center gap-1 ${st.cls}`}>
+                            <st.Icon size={9} /> {st.label}
+                          </span>
+                          {verifStatus === 'CONFIRMEE' && verif?.certId && (
+                            <a href={`/cert/${verif.certId}`} target="_blank" rel="noopener noreferrer"
+                              className="text-[10px] font-semibold text-[#6C47FF] hover:underline flex items-center gap-1">
+                              <IconExternalLink size={10} /> Certificat
+                            </a>
+                          )}
+                        </div>
                       ) : (
                         <button
                           onClick={() => setVerifTarget({ type: 'FORMATION', refId: edu.id, label: `${edu.degree} — ${edu.organisation?.name ?? ''}` })}

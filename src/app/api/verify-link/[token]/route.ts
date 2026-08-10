@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 import { getSession } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase-server'
+import { generateCertId } from '@/lib/cert-id'
 
 export const dynamic = 'force-dynamic'
 
@@ -70,10 +71,12 @@ export async function POST(req: NextRequest, { params }: { params: { token: stri
     return NextResponse.json({ ok: true, confirmed: 0, orgName: org.name })
   }
 
-  await supabaseAdmin
-    .from('verifications')
-    .update({ status: 'CONFIRMEE', updatedAt: now })
-    .in('id', pending.map((v: any) => v.id))
+  const updates = pending.map((v: any) =>
+    supabaseAdmin.from('verifications')
+      .update({ status: 'CONFIRMEE', updatedAt: now, certId: generateCertId(), certIssuedAt: now })
+      .eq('id', v.id)
+  )
+  await Promise.all(updates)
 
   return NextResponse.json({ ok: true, confirmed: pending.length, orgName: org.name })
 }
