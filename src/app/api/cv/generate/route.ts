@@ -1,20 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
 import { getSession } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase-server'
 
 export const dynamic = 'force-dynamic'
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+// Configure via Vercel env vars:
+//   OLLAMA_BASE_URL  = https://your-ollama-server.com  (no trailing slash)
+//   OLLAMA_MODEL     = llama3, mistral, etc.
+const OLLAMA_BASE  = process.env.OLLAMA_BASE_URL
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL ?? 'llama3'
 
 export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
+  if (!OLLAMA_BASE) {
+    return NextResponse.json(
+      { error: 'Serveur IA non configuré. Ajoute OLLAMA_BASE_URL dans les variables d\'environnement.' },
+      { status: 503 },
+    )
+  }
+
   const { offerText, lang } = await req.json()
   if (!lang) return NextResponse.json({ error: 'lang requis' }, { status: 400 })
 
-  // Fetch profile with experiences and educations
   const { data: profile } = await supabaseAdmin
     .from('profiles')
     .select('*')
@@ -36,7 +45,7 @@ export async function POST(req: NextRequest) {
 
   const isEn = lang === 'en'
 
-  const profileSummary = [
+  const profileBlock = [
     `Nom : ${profile.fullName ?? ''}`,
     `Titre : ${profile.title ?? ''}`,
     `Localisation : ${[profile.city, profile.country].filter(Boolean).join(', ')}`,
@@ -58,25 +67,40 @@ export async function POST(req: NextRequest) {
   const hasOffer = offerText?.trim().length > 0
 
   const systemPrompt = isEn
-    ? `You are a professional CV writer. Generate a clean, structured CV in English. Use plain text with section headers in UPPERCASE. Never invent experience or skills not in the profile. Output only the CV content.`
-    : `Tu es un rédacteur de CV professionnel. Génère un CV clair et structuré en français. Utilise du texte brut avec les titres de section en MAJUSCULES. N'invente jamais d'expérience ou de compétences absentes du profil. Retourne uniquement le contenu du CV.`
+    ? 'You are a professional CV writer. Output only the CV content in plain text with UPPERCASE section headers. Never invent facts.'
+    : 'Tu es un rédacteur de CV professionnel. Retourne uniquement le contenu du CV en texte brut avec les titres en MAJUSCULES. Ne fabrique aucune information.'
 
   const userPrompt = hasOffer
     ? (isEn
-        ? `Here is the candidate's profile:\n\n${profileSummary}\n\n---\n\nHere is the job offer:\n\n${offerText}\n\n---\n\nGenerate a CV tailored to this job offer. Highlight the most relevant skills and experiences. Adjust the profile summary to match the offer's keywords. Keep all facts true to the profile.`
-        : `Voici le profil du candidat :\n\n${profileSummary}\n\n---\n\nVoici l'offre d'emploi :\n\n${offerText}\n\n---\n\nGénère un CV adapté à cette offre. Mets en valeur les compétences et expériences les plus pertinentes. Ajuste le profil pour correspondre aux mots-clés de l'offre. Reste fidèle aux faits du profil.`)
+        ? `Profile:\n${profileBlock}\n\nJob offer:\n${offerText}\n\nWrite a CV tailored to this job offer. Highlight relevant skills and experiences. Adjust the summary to match the offer keywords. Stay true to the profile.`
+        : `Profil :\n${profileBlock}\n\nOffre d'emploi :\n${offerText}\n\nRédige un CV adapté à cette offre. Mets en valeur les compétences et expériences pertinentes. Adapte le profil aux mots-clés de l'offre. Reste fidèle aux informations du profil.`)
     : (isEn
-        ? `Here is the candidate's profile:\n\n${profileSummary}\n\n---\n\nGenerate a professional CV from this profile. Format it cleanly with UPPERCASE section headers.`
-        : `Voici le profil du candidat :\n\n${profileSummary}\n\n---\n\nGénère un CV professionnel à partir de ce profil. Formate-le proprement avec des titres de section en MAJUSCULES.`)
+        ? `Profile:\n${profileBlock}\n\nWrite a clean professional CV from this profile.`
+        : `Profil :\n${profileBlock}\n\nRédige un CV professionnel et propre à partir de ce profil.`)
 
-  const message = await client.messages.create({
-    model: 'claude-sonnet-5',
-    max_tokens: 1200,
-    messages: [{ role: 'user', content: userPrompt }],
-    system: systemPrompt,
+  // Ollama OpenAI-compatible endpoint
+  const response = await fetch(`${OLLAMA_BASE}/v1/chat/completions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: OLLAMA_MODEL,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: userPrompt },
+      ],
+      stream: false,
+      temperature: 0.4,
+    }),
   })
 
-  const cvText = message.content[0].type === 'text' ? message.content[0].text : ''
+  if (!response.ok) {
+    const err = await response.text()
+    console.error('[cv/generate] Ollama error:', err)
+    return NextResponse.json({ error: 'Erreur du serveur IA' }, { status: 502 })
+  }
+
+  const json = await response.json()
+  const cvText: string = json.choices?.[0]?.message?.content ?? ''
 
   return NextResponse.json({ cv: cvText })
 }

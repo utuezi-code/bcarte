@@ -10,7 +10,6 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.116.0",
     "@prisma/client": "^7.8.0",
     "@supabase/supabase-js": "^2.108.2",
     "@tabler/icons-react": "^3.0.0",
