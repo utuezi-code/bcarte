@@ -35,12 +35,7 @@ export default function AdminPage() {
   const [inviteError, setInviteError] = useState('')
   const [orgFilter, setOrgFilter] = useState('pending')
 
-  /* Check admin session */
-  useEffect(() => {
-    fetch('/api/admin/stats').then(r => {
-      if (r.status === 401) router.replace('/admin/login')
-    })
-  }, [router])
+  // Auth is handled server-side in layout.tsx — no client check needed
 
   /* Load stats */
   const loadStats = useCallback(async () => {
