@@ -139,7 +139,6 @@ export default function DashboardPage() {
         <div className="grid grid-cols-2 gap-3">
           {[
             { href: '/dashboard/profile', icon: IconUser,       label: 'Mon profil',    desc: 'Expériences & compétences',  color: '#6C47FF', bg: '#F0EDFF' },
-            { href: '/dashboard/cv',      icon: IconFileText,   label: 'Générer un CV', desc: 'CV optimisé depuis votre profil', color: '#D97706', bg: '#FFFBEB' },
             { href: '/dashboard/nfc',     icon: IconCreditCard, label: 'Carte NFC',     desc: 'Votre carte de visite digitale',  color: '#059669', bg: '#ECFDF5' },
             { href: '/explore',           icon: IconCompass,    label: 'Explorer',      desc: 'Profils & organisations',     color: '#6B7280', bg: '#F3F4F6' },
           ].map(a => (
