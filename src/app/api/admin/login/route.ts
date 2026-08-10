@@ -26,7 +26,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Email ou mot de passe incorrect' }, { status: 401 })
   }
 
-  await createAdminSession(admin.id, admin.email, admin.name)
+  try {
+    await createAdminSession(admin.id, admin.email, admin.name)
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    return NextResponse.json({ error: 'Session creation failed', detail: msg }, { status: 500 })
+  }
 
   return NextResponse.json({ ok: true, name: admin.name })
 }

@@ -16,10 +16,12 @@ export async function createAdminSession(adminId: string, email: string, name: s
   const token  = randomBytes(48).toString('hex')
   const expiry = new Date(Date.now() + SESSION_HOURS * 60 * 60 * 1000).toISOString()
 
-  await supabaseAdmin
+  const { error: updateError } = await supabaseAdmin
     .from('admins')
     .update({ sessionToken: token, sessionExpiry: expiry, lastLoginAt: new Date().toISOString() })
     .eq('id', adminId)
+
+  if (updateError) throw new Error(`DB session update failed: ${updateError.message}`)
 
   const cookieStore = await cookies()
   cookieStore.set(ADMIN_COOKIE, token, {
