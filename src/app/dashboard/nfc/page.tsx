@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import {
-  IconCreditCard, IconCheck, IconMapPin, IconUser, IconLink,
-  IconPalette, IconDownload, IconQrcode, IconPlus, IconX, IconMail,
+  IconCreditCard, IconCheck, IconMapPin, IconDownload, IconQrcode,
+  IconPlus, IconX, IconPalette, IconBriefcase, IconSchool,
+  IconChevronLeft, IconChevronRight,
 } from '@tabler/icons-react'
 import QRCode from 'react-qr-code'
 
@@ -52,18 +53,63 @@ function getStyle(selectedId: PaletteId | null, customColor: string) {
   return { gradient: `linear-gradient(135deg, ${p.from} 0%, ${p.to} 100%)`, accent: p.accent }
 }
 
+function orgInitials(name: string) {
+  return name.split(/\s+/).filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?'
+}
+function orgColor(name: string) {
+  const COLORS = ['#6C47FF', '#059669', '#2563EB', '#D97706', '#DC2626', '#0891B2', '#7C3AED']
+  let h = 0
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h)
+  return COLORS[Math.abs(h) % COLORS.length]
+}
+function formatPeriod(start: string | number, end: string | number | null, current: boolean) {
+  if (!start) return ''
+  const s = String(start).slice(0, 4)
+  if (current) return `${s} – présent`
+  if (!end) return s
+  return `${s} – ${String(end).slice(0, 4)}`
+}
+
+/* ── Types ─────────────────────────────────────────────────── */
+interface Experience {
+  id: string; title: string; company: string; city?: string
+  startDate: string; endDate?: string; isCurrent: boolean
+}
+interface Education {
+  id: string; degree: string; field?: string; startYear: string | number; endYear?: string | number; isCurrent: boolean
+  organisation?: { name: string; slug: string; logoUrl?: string }
+}
+
+type HighlightItem =
+  | { type: 'experience'; data: Experience }
+  | { type: 'education';  data: Education  }
+
+type CardSlot = {
+  itemId: string | null
+  itemType: 'experience' | 'education' | null
+  paletteId: PaletteId | null
+  customColor: string
+  customLines: string[]
+}
+
+const DEFAULT_SLOT: CardSlot = {
+  itemId: null, itemType: null,
+  paletteId: 'violet', customColor: '#6C47FF', customLines: [],
+}
+
 const PRICE = '29 000 FCFA'
 
-/* ── Carte ─────────────────────────────────────────────────── */
+/* ── NFCCard ────────────────────────────────────────────────── */
 function NFCCard({
-  name, title, email, phone, customLines, gradient, accent, profileUrl, cardRef,
+  name, highlight, gradient, accent, profileUrl, customLines, cardRef,
 }: {
-  name: string; title: string; email: string; phone: string
-  customLines: string[]
+  name: string
+  highlight: HighlightItem | null
   gradient: string; accent: string; profileUrl: string
+  customLines: string[]
   cardRef?: React.RefObject<HTMLDivElement>
 }) {
-  const ref       = useRef<HTMLDivElement>(null)
+  const ref = useRef<HTMLDivElement>(null)
   const [rot, setRot]     = useState({ x: 0, y: 0 })
   const [shine, setShine] = useState({ x: 50, y: 50 })
   const [on, setOn]       = useState(false)
@@ -78,10 +124,26 @@ function NFCCard({
   }
   const leave = () => { setRot({ x: 0, y: 0 }); setShine({ x: 50, y: 50 }); setOn(false) }
 
-  // visible contact lines (non-empty)
-  const contacts = [
-    email, phone, ...customLines,
-  ].filter(Boolean)
+  // Derive display values from highlight
+  let orgName = ''
+  let orgLogoUrl = ''
+  let role = ''
+  let period = ''
+
+  if (highlight?.type === 'experience') {
+    const d = highlight.data
+    orgName = d.company
+    role    = d.title
+    period  = formatPeriod(d.startDate, d.endDate ?? null, d.isCurrent)
+  } else if (highlight?.type === 'education') {
+    const d = highlight.data
+    orgName = d.organisation?.name ?? ''
+    orgLogoUrl = d.organisation?.logoUrl ?? ''
+    role    = [d.degree, d.field].filter(Boolean).join(' · ')
+    period  = formatPeriod(d.startYear, d.endYear ?? null, d.isCurrent)
+  }
+
+  const contacts = [...customLines].filter(Boolean)
 
   return (
     <div style={{ perspective: '1200px' }} ref={cardRef}>
@@ -124,62 +186,106 @@ function NFCCard({
         <div style={{
           position: 'relative', zIndex: 1, height: '100%',
           display: 'flex', flexDirection: 'column',
-          padding: '1.1rem 1.3rem',
+          padding: '1rem 1.15rem',
+          boxSizing: 'border-box',
         }}>
 
-          {/* ── Top bar ── */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          {/* ── Top bar: bcarte brand + org logo ── */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+            {/* bcarte chip */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <div style={{
-                width: 22, height: 22, borderRadius: 6,
-                background: 'rgba(255,255,255,0.18)',
-                border: '1px solid rgba(255,255,255,0.25)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 20, height: 20, borderRadius: 5,
+                background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.25)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}>
-                <IconCreditCard size={11} color="white" />
+                <IconCreditCard size={10} color="white" />
               </div>
-              <span style={{ fontWeight: 900, fontSize: 11, color: 'white', opacity: 0.9, letterSpacing: '-0.01em' }}>bcarte</span>
+              <span style={{ fontWeight: 900, fontSize: 10, color: 'white', opacity: 0.85, letterSpacing: '-0.01em' }}>bcarte</span>
             </div>
-            {/* chip */}
-            <div style={{
-              width: 32, height: 24, borderRadius: 5,
-              background: `linear-gradient(135deg, ${accent}99, ${accent}44)`,
-              border: `1px solid ${accent}55`,
-              boxShadow: `0 2px 8px ${accent}33`,
-            }} />
+
+            {/* Org logo — prominent */}
+            {orgName && (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                {orgLogoUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={orgLogoUrl}
+                    alt={orgName}
+                    style={{
+                      width: 52, height: 52, borderRadius: 12, objectFit: 'cover',
+                      background: 'rgba(255,255,255,0.97)',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+                      border: '1.5px solid rgba(255,255,255,0.4)',
+                    }}
+                  />
+                ) : (
+                  <div style={{
+                    width: 52, height: 52, borderRadius: 12, flexShrink: 0,
+                    background: orgColor(orgName),
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+                    border: '1.5px solid rgba(255,255,255,0.25)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'white', fontWeight: 800, fontSize: 18, letterSpacing: '-0.03em',
+                  }}>
+                    {orgInitials(orgName)}
+                  </div>
+                )}
+                <span style={{
+                  color: 'rgba(255,255,255,0.75)', fontSize: 8, fontWeight: 600,
+                  maxWidth: 64, textAlign: 'center', lineHeight: 1.2,
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>{orgName}</span>
+              </div>
+            )}
+
+            {/* NFC chip (shown when no org) */}
+            {!orgName && (
+              <div style={{
+                width: 32, height: 24, borderRadius: 5,
+                background: `linear-gradient(135deg, ${accent}99, ${accent}44)`,
+                border: `1px solid ${accent}55`,
+                boxShadow: `0 2px 8px ${accent}33`,
+              }} />
+            )}
           </div>
 
           {/* ── Identity ── */}
-          <div style={{ marginTop: '0.7rem', flex: 1 }}>
+          <div style={{ marginTop: '0.55rem', flex: 1, minHeight: 0 }}>
             <p style={{
-              color: 'white', fontWeight: 800, fontSize: 17,
+              color: 'white', fontWeight: 800, fontSize: 16,
               lineHeight: 1.2, letterSpacing: '-0.025em',
               textShadow: '0 1px 8px rgba(0,0,0,0.25)',
-            }}>{name}</p>
-            <p style={{
-              color: `${accent}`, fontSize: 10, fontWeight: 700,
-              marginTop: 3, letterSpacing: '0.04em', textTransform: 'uppercase',
-              opacity: 0.9,
-            }}>{title}</p>
+            }}>{name || 'Votre Nom'}</p>
+            {role && (
+              <p style={{
+                color: accent, fontSize: 9.5, fontWeight: 700,
+                marginTop: 3, letterSpacing: '0.03em', textTransform: 'uppercase', opacity: 0.9,
+              }}>{role}</p>
+            )}
+            {period && (
+              <p style={{
+                color: 'rgba(255,255,255,0.5)', fontSize: 8.5, fontWeight: 500, marginTop: 2,
+              }}>{period}</p>
+            )}
           </div>
 
           {/* ── Bottom: contacts + QR ── */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }}>
-
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 }}>
             {/* contacts */}
-            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
               {contacts.slice(0, 4).map((line, i) => (
                 <p key={i} style={{
-                  color: 'rgba(255,255,255,0.6)', fontSize: 9,
+                  color: 'rgba(255,255,255,0.6)', fontSize: 8.5,
                   fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                 }}>{line}</p>
               ))}
             </div>
 
-            {/* QR code — large */}
+            {/* QR code */}
             <div style={{
               background: 'rgba(255,255,255,0.97)',
-              borderRadius: 10, padding: 6,
+              borderRadius: 10, padding: 5,
               flexShrink: 0,
               boxShadow: '0 6px 24px rgba(0,0,0,0.3)',
               transform: 'translateZ(12px)',
@@ -202,50 +308,72 @@ function NFCCard({
 
 /* ── Page ──────────────────────────────────────────────────── */
 export default function NFCPage() {
-  const [selectedId,   setSelectedId]   = useState<PaletteId | null>('violet')
-  const [customColor,  setCustomColor]  = useState('#6C47FF')
-  const [address,      setAddress]      = useState('')
-  const [showOrder,    setShowOrder]    = useState(false)
-  const [ordered,      setOrdered]      = useState(false)
-  const [profile,      setProfile]      = useState<any>(null)
-  const [origin,       setOrigin]       = useState('')
-  const [downloading,  setDownloading]  = useState(false)
-  const [customLines,  setCustomLines]  = useState<string[]>([])
-  const [newLine,      setNewLine]      = useState('')
-  const cardRef = useRef<HTMLDivElement>(null)
+  const [activeSlot, setActiveSlot]   = useState(0)
+  const [slots, setSlots]             = useState<CardSlot[]>([DEFAULT_SLOT, DEFAULT_SLOT, DEFAULT_SLOT])
+  const [profile,   setProfile]       = useState<any>(null)
+  const [origin,    setOrigin]        = useState('')
+  const [downloading, setDownloading] = useState(false)
+  const [newLine, setNewLine]         = useState('')
+  const [showOrder, setShowOrder]     = useState(false)
+  const [ordered, setOrdered]         = useState(false)
+  const [address, setAddress]         = useState('')
+  const cardRefs = [
+    useRef<HTMLDivElement>(null),
+    useRef<HTMLDivElement>(null),
+    useRef<HTMLDivElement>(null),
+  ]
 
   useEffect(() => {
     setOrigin(window.location.origin)
     fetch('/api/profile').then(r => r.ok ? r.json() : null).then(d => { if (d) setProfile(d) })
   }, [])
 
-  const name       = profile?.fullName  ?? 'Votre Nom'
-  const title      = profile?.title     ?? 'Votre titre'
-  const email      = profile?.emailPro  ?? profile?.email ?? ''
-  const phone      = profile?.phone     ?? ''
-  const slug       = profile?.slug      ?? ''
-  const profileUrl = slug ? `${origin}/p/${slug}` : `${origin}`
-  const { gradient, accent } = getStyle(selectedId, customColor)
+  const slot = slots[activeSlot]
+  const updateSlot = (patch: Partial<CardSlot>) => {
+    setSlots(prev => prev.map((s, i) => i === activeSlot ? { ...s, ...patch } : s))
+  }
+
+  const name       = profile?.fullName ?? 'Votre Nom'
+  const slug       = profile?.slug ?? ''
+  const profileUrl = slug ? `${origin}/p/${slug}` : origin
+  const { gradient, accent } = getStyle(slot.paletteId, slot.customColor)
+
+  const experiences: Experience[] = profile?.experiences ?? []
+  const educations:  Education[]  = profile?.educations  ?? []
+
+  // Resolve the highlighted item for current slot
+  const highlight: HighlightItem | null = (() => {
+    if (!slot.itemId || !slot.itemType) return null
+    if (slot.itemType === 'experience') {
+      const d = experiences.find(e => e.id === slot.itemId)
+      return d ? { type: 'experience', data: d } : null
+    }
+    if (slot.itemType === 'education') {
+      const d = educations.find(e => e.id === slot.itemId)
+      return d ? { type: 'education', data: d } : null
+    }
+    return null
+  })()
 
   const addLine = () => {
     const v = newLine.trim()
-    if (!v || customLines.length >= 4) return
-    setCustomLines(prev => [...prev, v])
+    if (!v || slot.customLines.length >= 4) return
+    updateSlot({ customLines: [...slot.customLines, v] })
     setNewLine('')
   }
-
-  const removeLine = (i: number) => setCustomLines(prev => prev.filter((_, idx) => idx !== i))
+  const removeLine = (i: number) => updateSlot({ customLines: slot.customLines.filter((_, idx) => idx !== i) })
 
   const handleDownload = async () => {
-    if (!cardRef.current) return
+    const ref = cardRefs[activeSlot]
+    if (!ref.current) return
     setDownloading(true)
     try {
       const html2canvas = (await import('html2canvas')).default
-      const canvas = await html2canvas(cardRef.current, {
+      const canvas = await html2canvas(ref.current, {
         scale: 3, useCORS: true, backgroundColor: null, logging: false,
       })
       const link = document.createElement('a')
-      link.download = `bcarte-${slug || 'carte'}.jpeg`
+      link.download = `bcarte-${activeSlot + 1}-${slug || 'carte'}.jpeg`
       link.href = canvas.toDataURL('image/jpeg', 0.95)
       link.click()
     } finally {
@@ -263,8 +391,8 @@ export default function NFCPage() {
           <h2 className="text-xl font-bold text-text-primary">Commande confirmée !</h2>
           <p className="text-sm text-text-secondary">Livraison sous <strong>7–10 jours</strong>.</p>
         </div>
-        <NFCCard name={name} title={title} email={email} phone={phone} customLines={customLines}
-          gradient={gradient} accent={accent} profileUrl={profileUrl} />
+        <NFCCard name={name} highlight={highlight} gradient={gradient} accent={accent}
+          profileUrl={profileUrl} customLines={slot.customLines} />
         <div className="card space-y-2.5">
           {[{ label: 'Prix', value: PRICE }, { label: 'Adresse', value: address || '—' }].map(r => (
             <div key={r.label} className="flex justify-between text-sm">
@@ -284,23 +412,42 @@ export default function NFCPage() {
     <div className="space-y-5">
       <div>
         <h1 className="page-title">Carte NFC</h1>
-        <p className="page-subtitle">Carte de visite connectée avec QR code vers votre profil</p>
+        <p className="page-subtitle">3 cartes indépendantes, chacune liée à une expérience ou formation</p>
+      </div>
+
+      {/* ── Slot tabs ── */}
+      <div className="flex gap-2">
+        {[0, 1, 2].map(i => (
+          <button key={i} onClick={() => setActiveSlot(i)}
+            className={`flex-1 py-2.5 rounded-[10px] text-sm font-semibold transition-all border-2 ${
+              activeSlot === i
+                ? 'bg-primary text-white border-primary shadow-sm'
+                : 'border-border text-text-secondary hover:border-primary/40 hover:bg-bg-light'
+            }`}>
+            Carte {i + 1}
+            {slots[i].itemId && (
+              <span className={`ml-1.5 inline-block w-1.5 h-1.5 rounded-full align-middle ${
+                activeSlot === i ? 'bg-white/70' : 'bg-primary'
+              }`} />
+            )}
+          </button>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">
 
-        {/* ── Gauche — carte ── */}
+        {/* ── Left — card preview ── */}
         <div className="lg:sticky lg:top-6 space-y-3">
           <NFCCard
-            name={name} title={title} email={email} phone={phone}
-            customLines={customLines} gradient={gradient} accent={accent}
-            profileUrl={profileUrl} cardRef={cardRef}
+            name={name} highlight={highlight} gradient={gradient} accent={accent}
+            profileUrl={profileUrl} customLines={slot.customLines}
+            cardRef={cardRefs[activeSlot]}
           />
           <p className="text-center text-xs text-text-tertiary">
-            Survolez pour l&apos;effet 3D · Mise à jour en temps réel
+            Survolez pour l&apos;effet 3D · Carte {activeSlot + 1}
           </p>
 
-          {/* QR info + download */}
+          {/* QR + download */}
           <div className="card space-y-3">
             <div className="flex items-center gap-2">
               <IconQrcode size={14} className="text-primary" />
@@ -312,11 +459,8 @@ export default function NFCPage() {
                 : <span className="text-amber-600">Configure un slug dans ton profil pour activer le QR code</span>
               }
             </p>
-            <button
-              onClick={handleDownload}
-              disabled={downloading}
-              className="btn-primary w-full justify-center gap-2 text-sm"
-            >
+            <button onClick={handleDownload} disabled={downloading}
+              className="btn-primary w-full justify-center gap-2 text-sm">
               {downloading
                 ? <><span className="animate-spin inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full" /> Export…</>
                 : <><IconDownload size={14} /> Télécharger en JPEG</>
@@ -325,38 +469,111 @@ export default function NFCPage() {
           </div>
         </div>
 
-        {/* ── Droite — contrôles ── */}
+        {/* ── Right — controls ── */}
         <div className="space-y-4">
 
-          {/* Infos du profil */}
+          {/* Selector: experience or education */}
           <div className="card space-y-3">
-            <h2 className="font-semibold text-sm text-text-primary">Informations affichées</h2>
-            <div className="space-y-2">
-              {[
-                { icon: IconUser,  label: name  || '—', sub: 'Nom' },
-                { icon: IconCreditCard, label: title || '—', sub: 'Poste' },
-                { icon: IconMail,  label: email || '—', sub: 'Email' },
-                { icon: IconLink,  label: slug ? `/p/${slug}` : 'Profil non configuré', sub: 'URL' },
-              ].map((row, i) => (
-                <div key={i} className="flex items-center gap-2.5 text-sm">
-                  <row.icon size={13} className="text-text-tertiary flex-shrink-0" />
-                  <span className="text-text-secondary truncate flex-1">{row.label}</span>
-                  <span className="text-[10px] text-text-tertiary">{row.sub}</span>
-                </div>
-              ))}
-            </div>
+            <h2 className="font-semibold text-sm text-text-primary">Expérience ou formation à mettre en avant</h2>
+            <p className="text-xs text-text-tertiary">Choisissez ce que vous souhaitez afficher sur cette carte</p>
+
+            {/* Experiences */}
+            {experiences.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest flex items-center gap-1.5">
+                  <IconBriefcase size={10} /> Expériences
+                </p>
+                {experiences.map(exp => {
+                  const isSelected = slot.itemId === exp.id && slot.itemType === 'experience'
+                  return (
+                    <button key={exp.id}
+                      onClick={() => updateSlot({ itemId: exp.id, itemType: 'experience' })}
+                      className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-[9px] border-2 transition-all ${
+                        isSelected
+                          ? 'border-primary bg-primary-light'
+                          : 'border-border hover:border-primary/40 hover:bg-bg-light'
+                      }`}>
+                      <div className="w-9 h-9 rounded-[8px] flex items-center justify-center flex-shrink-0 text-white text-xs font-bold"
+                        style={{ background: orgColor(exp.company) }}>
+                        {orgInitials(exp.company)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-semibold truncate ${isSelected ? 'text-primary' : 'text-text-primary'}`}>
+                          {exp.title}
+                        </p>
+                        <p className="text-xs text-text-tertiary truncate">{exp.company}</p>
+                      </div>
+                      {isSelected && <IconCheck size={14} className="text-primary flex-shrink-0" />}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Educations */}
+            {educations.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest flex items-center gap-1.5">
+                  <IconSchool size={10} /> Formations
+                </p>
+                {educations.map(edu => {
+                  const isSelected = slot.itemId === edu.id && slot.itemType === 'education'
+                  const orgName = edu.organisation?.name ?? 'Formation'
+                  const logoUrl = edu.organisation?.logoUrl
+                  return (
+                    <button key={edu.id}
+                      onClick={() => updateSlot({ itemId: edu.id, itemType: 'education' })}
+                      className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-[9px] border-2 transition-all ${
+                        isSelected
+                          ? 'border-primary bg-primary-light'
+                          : 'border-border hover:border-primary/40 hover:bg-bg-light'
+                      }`}>
+                      {logoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={logoUrl} alt={orgName}
+                          className="w-9 h-9 rounded-[8px] object-cover flex-shrink-0 border border-border" />
+                      ) : (
+                        <div className="w-9 h-9 rounded-[8px] flex items-center justify-center flex-shrink-0 text-white text-xs font-bold"
+                          style={{ background: orgColor(orgName) }}>
+                          {orgInitials(orgName)}
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-semibold truncate ${isSelected ? 'text-primary' : 'text-text-primary'}`}>
+                          {edu.degree}{edu.field ? ` · ${edu.field}` : ''}
+                        </p>
+                        <p className="text-xs text-text-tertiary truncate">{orgName}</p>
+                      </div>
+                      {isSelected && <IconCheck size={14} className="text-primary flex-shrink-0" />}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {experiences.length === 0 && educations.length === 0 && (
+              <p className="text-sm text-text-tertiary text-center py-4">
+                Ajoutez des expériences ou formations dans votre profil
+              </p>
+            )}
+
+            {slot.itemId && (
+              <button onClick={() => updateSlot({ itemId: null, itemType: null })}
+                className="text-xs text-text-tertiary hover:text-red-500 transition-colors flex items-center gap-1">
+                <IconX size={11} /> Effacer la sélection
+              </button>
+            )}
           </div>
 
-          {/* Informations personnalisées */}
+          {/* Custom info lines */}
           <div className="card space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-sm text-text-primary">Infos personnalisées</h2>
-              <span className="text-[10px] text-text-tertiary">{customLines.length}/4</span>
+              <span className="text-[10px] text-text-tertiary">{slot.customLines.length}/4</span>
             </div>
-            <p className="text-xs text-text-tertiary">Ajoutez ce que vous voulez : LinkedIn, site web, entreprise…</p>
+            <p className="text-xs text-text-tertiary">LinkedIn, site web, email, téléphone…</p>
 
-            {/* existing lines */}
-            {customLines.map((line, i) => (
+            {slot.customLines.map((line, i) => (
               <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-[8px] bg-bg-light border border-border text-sm">
                 <span className="flex-1 text-text-secondary truncate">{line}</span>
                 <button onClick={() => removeLine(i)} className="text-text-tertiary hover:text-red-500 transition-colors flex-shrink-0">
@@ -365,8 +582,7 @@ export default function NFCPage() {
               </div>
             ))}
 
-            {/* add new line */}
-            {customLines.length < 4 && (
+            {slot.customLines.length < 4 && (
               <div className="flex gap-2">
                 <input
                   className="input flex-1 text-sm"
@@ -376,42 +592,38 @@ export default function NFCPage() {
                   onKeyDown={e => e.key === 'Enter' && addLine()}
                   maxLength={40}
                 />
-                <button
-                  onClick={addLine}
-                  disabled={!newLine.trim()}
-                  className="btn-primary px-3 disabled:opacity-40"
-                >
+                <button onClick={addLine} disabled={!newLine.trim()} className="btn-primary px-3 disabled:opacity-40">
                   <IconPlus size={15} />
                 </button>
               </div>
             )}
           </div>
 
-          {/* Couleur */}
+          {/* Color */}
           <div className="card space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-sm text-text-primary">Couleur</h2>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-text-tertiary">Personnalisée</span>
                 <label className="relative cursor-pointer">
-                  <input type="color" value={customColor}
-                    onChange={e => { setCustomColor(e.target.value); setSelectedId(null) }}
+                  <input type="color" value={slot.customColor}
+                    onChange={e => updateSlot({ customColor: e.target.value, paletteId: null })}
                     className="opacity-0 absolute inset-0 w-full h-full cursor-pointer" />
                   <div className="w-7 h-7 rounded-lg border-2 transition-all flex items-center justify-center"
                     style={{
-                      background: selectedId === null ? customColor : '#F3F4F6',
-                      borderColor: selectedId === null ? customColor : '#E5E7EB',
+                      background: slot.paletteId === null ? slot.customColor : '#F3F4F6',
+                      borderColor: slot.paletteId === null ? slot.customColor : '#E5E7EB',
                     }}>
-                    {selectedId !== null && <IconPalette size={13} className="text-text-tertiary" />}
+                    {slot.paletteId !== null && <IconPalette size={13} className="text-text-tertiary" />}
                   </div>
                 </label>
               </div>
             </div>
             <div className="grid grid-cols-5 gap-2">
               {PALETTE.map(p => {
-                const isSelected = selectedId === p.id
+                const isSelected = slot.paletteId === p.id
                 return (
-                  <button key={p.id} onClick={() => setSelectedId(p.id)} title={p.id}
+                  <button key={p.id} onClick={() => updateSlot({ paletteId: p.id })} title={p.id}
                     style={{
                       background: `linear-gradient(135deg, ${p.from} 0%, ${p.to} 100%)`,
                       borderRadius: 10, aspectRatio: '1',
@@ -428,7 +640,7 @@ export default function NFCPage() {
             </div>
           </div>
 
-          {/* Commander */}
+          {/* Order */}
           {!showOrder ? (
             <button onClick={() => setShowOrder(true)} className="btn-primary w-full justify-center py-3 text-sm">
               Commander la carte physique — {PRICE}
