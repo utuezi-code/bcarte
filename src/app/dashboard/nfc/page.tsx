@@ -1,10 +1,13 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { IconCreditCard, IconCheck, IconMapPin, IconUser, IconLink, IconPalette, IconDownload, IconQrcode } from '@tabler/icons-react'
+import {
+  IconCreditCard, IconCheck, IconMapPin, IconUser, IconLink,
+  IconPalette, IconDownload, IconQrcode, IconPlus, IconX, IconMail,
+} from '@tabler/icons-react'
 import QRCode from 'react-qr-code'
 
-/* ── Palette de couleurs ───────────────────────────────────── */
+/* ── Palette ───────────────────────────────────────────────── */
 const PALETTE = [
   { id: 'violet',   from: '#2D1B8E', to: '#6C47FF', accent: '#C4B5FD' },
   { id: 'indigo',   from: '#1E3A8A', to: '#6366F1', accent: '#A5B4FC' },
@@ -38,18 +41,11 @@ function rgbToHex(r: number, g: number, b: number) {
   const clamp = (v: number) => Math.round(Math.max(0, Math.min(255, v)))
   return '#' + [r, g, b].map(v => clamp(v).toString(16).padStart(2, '0')).join('')
 }
-function darken(hex: string, factor = 0.45) {
-  const { r, g, b } = hexToRgb(hex)
-  return rgbToHex(r * factor, g * factor, b * factor)
-}
-function lighten(hex: string, factor = 1.35) {
-  const { r, g, b } = hexToRgb(hex)
-  return rgbToHex(r * factor, g * factor, b * factor)
-}
+function darken(hex: string, f = 0.45) { const { r, g, b } = hexToRgb(hex); return rgbToHex(r * f, g * f, b * f) }
+function lighten(hex: string, f = 1.35) { const { r, g, b } = hexToRgb(hex); return rgbToHex(r * f, g * f, b * f) }
 function customGradient(hex: string) {
   return `linear-gradient(135deg, ${darken(hex, 0.4)} 0%, ${hex} 55%, ${lighten(hex, 1.25)} 100%)`
 }
-
 function getStyle(selectedId: PaletteId | null, customColor: string) {
   if (!selectedId) return { gradient: customGradient(customColor), accent: lighten(customColor, 1.5) }
   const p = PALETTE.find(x => x.id === selectedId)!
@@ -58,93 +54,144 @@ function getStyle(selectedId: PaletteId | null, customColor: string) {
 
 const PRICE = '29 000 FCFA'
 
-/* ── Carte 3D ──────────────────────────────────────────────── */
-function NFCCard3D({
-  name, title, phone, gradient, accent, profileUrl, cardRef, flat,
+/* ── Carte ─────────────────────────────────────────────────── */
+function NFCCard({
+  name, title, email, phone, customLines, gradient, accent, profileUrl, cardRef,
 }: {
-  name: string; title: string; phone: string
+  name: string; title: string; email: string; phone: string
+  customLines: string[]
   gradient: string; accent: string; profileUrl: string
   cardRef?: React.RefObject<HTMLDivElement>
-  flat?: boolean
 }) {
-  const ref = useRef<HTMLDivElement>(null)
+  const ref       = useRef<HTMLDivElement>(null)
   const [rot, setRot]     = useState({ x: 0, y: 0 })
   const [shine, setShine] = useState({ x: 50, y: 50 })
   const [on, setOn]       = useState(false)
 
   const move = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (flat) return
     const r = ref.current?.getBoundingClientRect()
     if (!r) return
     const px = (e.clientX - r.left) / r.width
     const py = (e.clientY - r.top)  / r.height
-    setRot({ x: (py - 0.5) * -24, y: (px - 0.5) * 24 })
+    setRot({ x: (py - 0.5) * -22, y: (px - 0.5) * 22 })
     setShine({ x: px * 100, y: py * 100 })
   }
   const leave = () => { setRot({ x: 0, y: 0 }); setShine({ x: 50, y: 50 }); setOn(false) }
 
+  // visible contact lines (non-empty)
+  const contacts = [
+    email, phone, ...customLines,
+  ].filter(Boolean)
+
   return (
-    <div style={{ perspective: flat ? 'none' : '1200px' }} ref={cardRef}>
+    <div style={{ perspective: '1200px' }} ref={cardRef}>
       <div
         ref={ref}
         onMouseMove={move}
-        onMouseEnter={() => !flat && setOn(true)}
+        onMouseEnter={() => setOn(true)}
         onMouseLeave={leave}
         style={{
           width: '100%', aspectRatio: '1.586',
-          background: gradient, borderRadius: 20,
-          transform: flat ? 'none' : `rotateX(${rot.x}deg) rotateY(${rot.y}deg) scale(${on ? 1.03 : 1})`,
+          background: gradient, borderRadius: 22,
+          transform: `rotateX(${rot.x}deg) rotateY(${rot.y}deg) scale(${on ? 1.03 : 1})`,
           transition: on ? 'transform 0.07s linear' : 'transform 0.55s cubic-bezier(0.23,1,0.32,1)',
           transformStyle: 'preserve-3d',
-          boxShadow: flat ? 'none' : (on
-            ? '0 50px 100px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.1)'
-            : '0 20px 60px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.07)'),
+          boxShadow: on
+            ? '0 50px 100px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1)'
+            : '0 24px 64px rgba(0,0,0,0.32), 0 0 0 1px rgba(255,255,255,0.07)',
           position: 'relative', overflow: 'hidden',
-          cursor: flat ? 'default' : 'pointer', userSelect: 'none',
+          cursor: 'pointer', userSelect: 'none',
         }}
       >
+        {/* shine */}
         <div style={{
           position: 'absolute', inset: 0, pointerEvents: 'none',
-          background: `radial-gradient(circle at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.2) 0%, transparent 60%)`,
+          background: `radial-gradient(circle at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.22) 0%, transparent 60%)`,
           opacity: on ? 1 : 0.45, transition: on ? 'none' : 'opacity 0.55s',
         }} />
+        {/* glass overlay */}
         <div style={{
           position: 'absolute', inset: 0, pointerEvents: 'none',
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.02) 60%, transparent 100%)',
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.02) 60%, transparent 100%)',
         }} />
+        {/* top highlight line */}
         <div style={{
-          position: 'absolute', top: 0, left: '10%', right: '10%', height: 1, pointerEvents: 'none',
-          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)',
+          position: 'absolute', top: 0, left: '8%', right: '8%', height: 1, pointerEvents: 'none',
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent)',
         }} />
+
+        {/* content */}
         <div style={{
           position: 'relative', zIndex: 1, height: '100%',
           display: 'flex', flexDirection: 'column',
-          padding: '1.25rem 1.4rem', color: 'white',
+          padding: '1.1rem 1.3rem',
         }}>
+
+          {/* ── Top bar ── */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <IconCreditCard size={14} style={{ opacity: 0.85 }} />
-              <span style={{ fontWeight: 900, fontSize: 12, letterSpacing: '-0.01em', opacity: 0.9 }}>bcarte</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <div style={{
+                width: 22, height: 22, borderRadius: 6,
+                background: 'rgba(255,255,255,0.18)',
+                border: '1px solid rgba(255,255,255,0.25)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <IconCreditCard size={11} color="white" />
+              </div>
+              <span style={{ fontWeight: 900, fontSize: 11, color: 'white', opacity: 0.9, letterSpacing: '-0.01em' }}>bcarte</span>
             </div>
+            {/* chip */}
             <div style={{
-              width: 30, height: 22, borderRadius: 4,
-              background: `linear-gradient(135deg, ${accent}88, ${accent}33)`,
-              border: `1px solid ${accent}44`,
+              width: 32, height: 24, borderRadius: 5,
+              background: `linear-gradient(135deg, ${accent}99, ${accent}44)`,
+              border: `1px solid ${accent}55`,
+              boxShadow: `0 2px 8px ${accent}33`,
             }} />
           </div>
-          <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontWeight: 800, fontSize: 16, lineHeight: 1.2, letterSpacing: '-0.02em' }}>{name}</p>
-              <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, marginTop: 4 }}>{title}</p>
-              {phone && <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, marginTop: 8 }}>{phone}</p>}
+
+          {/* ── Identity ── */}
+          <div style={{ marginTop: '0.7rem', flex: 1 }}>
+            <p style={{
+              color: 'white', fontWeight: 800, fontSize: 17,
+              lineHeight: 1.2, letterSpacing: '-0.025em',
+              textShadow: '0 1px 8px rgba(0,0,0,0.25)',
+            }}>{name}</p>
+            <p style={{
+              color: `${accent}`, fontSize: 10, fontWeight: 700,
+              marginTop: 3, letterSpacing: '0.04em', textTransform: 'uppercase',
+              opacity: 0.9,
+            }}>{title}</p>
+          </div>
+
+          {/* ── Bottom: contacts + QR ── */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }}>
+
+            {/* contacts */}
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {contacts.slice(0, 4).map((line, i) => (
+                <p key={i} style={{
+                  color: 'rgba(255,255,255,0.6)', fontSize: 9,
+                  fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                }}>{line}</p>
+              ))}
             </div>
+
+            {/* QR code — large */}
             <div style={{
-              background: 'rgba(255,255,255,0.97)', borderRadius: 8, padding: 5,
-              flexShrink: 0, boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
-              transform: flat ? 'none' : 'translateZ(10px)',
+              background: 'rgba(255,255,255,0.97)',
+              borderRadius: 10, padding: 6,
+              flexShrink: 0,
+              boxShadow: '0 6px 24px rgba(0,0,0,0.3)',
+              transform: 'translateZ(12px)',
             }}>
-              <QRCode value={profileUrl} size={60}
-                fgColor="#0C0A18" bgColor="transparent" level="M" style={{ display: 'block' }} />
+              <QRCode
+                value={profileUrl || 'https://bcarte.app'}
+                size={78}
+                fgColor="#0C0A18"
+                bgColor="transparent"
+                level="M"
+                style={{ display: 'block' }}
+              />
             </div>
           </div>
         </div>
@@ -155,14 +202,16 @@ function NFCCard3D({
 
 /* ── Page ──────────────────────────────────────────────────── */
 export default function NFCPage() {
-  const [selectedId,  setSelectedId]  = useState<PaletteId | null>('violet')
-  const [customColor, setCustomColor] = useState('#6C47FF')
-  const [address,     setAddress]     = useState('')
-  const [showOrder,   setShowOrder]   = useState(false)
-  const [ordered,     setOrdered]     = useState(false)
-  const [profile,     setProfile]     = useState<any>(null)
-  const [origin,      setOrigin]      = useState('')
-  const [downloading, setDownloading] = useState(false)
+  const [selectedId,   setSelectedId]   = useState<PaletteId | null>('violet')
+  const [customColor,  setCustomColor]  = useState('#6C47FF')
+  const [address,      setAddress]      = useState('')
+  const [showOrder,    setShowOrder]    = useState(false)
+  const [ordered,      setOrdered]      = useState(false)
+  const [profile,      setProfile]      = useState<any>(null)
+  const [origin,       setOrigin]       = useState('')
+  const [downloading,  setDownloading]  = useState(false)
+  const [customLines,  setCustomLines]  = useState<string[]>([])
+  const [newLine,      setNewLine]      = useState('')
   const cardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -170,14 +219,22 @@ export default function NFCPage() {
     fetch('/api/profile').then(r => r.ok ? r.json() : null).then(d => { if (d) setProfile(d) })
   }, [])
 
-  const name       = profile?.fullName ?? 'Votre Nom'
-  const title      = profile?.title    ?? 'Votre titre'
-  const phone      = profile?.phone    ?? ''
-  const slug       = profile?.slug     ?? ''
+  const name       = profile?.fullName  ?? 'Votre Nom'
+  const title      = profile?.title     ?? 'Votre titre'
+  const email      = profile?.emailPro  ?? profile?.email ?? ''
+  const phone      = profile?.phone     ?? ''
+  const slug       = profile?.slug      ?? ''
   const profileUrl = slug ? `${origin}/p/${slug}` : `${origin}`
   const { gradient, accent } = getStyle(selectedId, customColor)
 
-  const handleCustomColor = (color: string) => { setCustomColor(color); setSelectedId(null) }
+  const addLine = () => {
+    const v = newLine.trim()
+    if (!v || customLines.length >= 4) return
+    setCustomLines(prev => [...prev, v])
+    setNewLine('')
+  }
+
+  const removeLine = (i: number) => setCustomLines(prev => prev.filter((_, idx) => idx !== i))
 
   const handleDownload = async () => {
     if (!cardRef.current) return
@@ -185,10 +242,7 @@ export default function NFCPage() {
     try {
       const html2canvas = (await import('html2canvas')).default
       const canvas = await html2canvas(cardRef.current, {
-        scale: 3,
-        useCORS: true,
-        backgroundColor: null,
-        logging: false,
+        scale: 3, useCORS: true, backgroundColor: null, logging: false,
       })
       const link = document.createElement('a')
       link.download = `bcarte-${slug || 'carte'}.jpeg`
@@ -209,12 +263,10 @@ export default function NFCPage() {
           <h2 className="text-xl font-bold text-text-primary">Commande confirmée !</h2>
           <p className="text-sm text-text-secondary">Livraison sous <strong>7–10 jours</strong>.</p>
         </div>
-        <NFCCard3D name={name} title={title} phone={phone} gradient={gradient} accent={accent} profileUrl={profileUrl} />
+        <NFCCard name={name} title={title} email={email} phone={phone} customLines={customLines}
+          gradient={gradient} accent={accent} profileUrl={profileUrl} />
         <div className="card space-y-2.5">
-          {[
-            { label: 'Prix',    value: PRICE },
-            { label: 'Adresse', value: address || '—' },
-          ].map(r => (
+          {[{ label: 'Prix', value: PRICE }, { label: 'Adresse', value: address || '—' }].map(r => (
             <div key={r.label} className="flex justify-between text-sm">
               <span className="text-text-secondary">{r.label}</span>
               <span className="font-medium text-text-primary">{r.value}</span>
@@ -235,20 +287,20 @@ export default function NFCPage() {
         <p className="page-subtitle">Carte de visite connectée avec QR code vers votre profil</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">
 
-        {/* Gauche — carte sticky */}
+        {/* ── Gauche — carte ── */}
         <div className="lg:sticky lg:top-6 space-y-3">
-          <NFCCard3D
-            name={name} title={title} phone={phone}
-            gradient={gradient} accent={accent} profileUrl={profileUrl}
-            cardRef={cardRef}
+          <NFCCard
+            name={name} title={title} email={email} phone={phone}
+            customLines={customLines} gradient={gradient} accent={accent}
+            profileUrl={profileUrl} cardRef={cardRef}
           />
           <p className="text-center text-xs text-text-tertiary">
-            Survolez la carte pour l&apos;effet 3D · Mise à jour en temps réel
+            Survolez pour l&apos;effet 3D · Mise à jour en temps réel
           </p>
 
-          {/* QR code info + téléchargement */}
+          {/* QR info + download */}
           <div className="card space-y-3">
             <div className="flex items-center gap-2">
               <IconQrcode size={14} className="text-primary" />
@@ -256,7 +308,7 @@ export default function NFCPage() {
             </div>
             <p className="text-xs text-text-secondary break-all">
               {slug
-                ? <>Pointe vers <span className="font-mono text-primary">{profileUrl}</span></>
+                ? <><span className="text-text-tertiary">Lien : </span><span className="font-mono text-primary">{profileUrl}</span></>
                 : <span className="text-amber-600">Configure un slug dans ton profil pour activer le QR code</span>
               }
             </p>
@@ -266,67 +318,100 @@ export default function NFCPage() {
               className="btn-primary w-full justify-center gap-2 text-sm"
             >
               {downloading
-                ? <><span className="animate-spin inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full" /> Export en cours…</>
+                ? <><span className="animate-spin inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full" /> Export…</>
                 : <><IconDownload size={14} /> Télécharger en JPEG</>
               }
             </button>
           </div>
         </div>
 
-        {/* Droite — contrôles */}
+        {/* ── Droite — contrôles ── */}
         <div className="space-y-4">
 
-          {/* Infos */}
+          {/* Infos du profil */}
           <div className="card space-y-3">
-            <h2 className="font-semibold text-sm text-text-primary">Vos informations</h2>
+            <h2 className="font-semibold text-sm text-text-primary">Informations affichées</h2>
             <div className="space-y-2">
               {[
-                { icon: IconUser,       label: name  || '—' },
-                { icon: IconCreditCard, label: title || '—' },
-                { icon: IconLink,       label: slug ? `/p/${slug}` : 'Profil non configuré' },
+                { icon: IconUser,  label: name  || '—', sub: 'Nom' },
+                { icon: IconCreditCard, label: title || '—', sub: 'Poste' },
+                { icon: IconMail,  label: email || '—', sub: 'Email' },
+                { icon: IconLink,  label: slug ? `/p/${slug}` : 'Profil non configuré', sub: 'URL' },
               ].map((row, i) => (
                 <div key={i} className="flex items-center gap-2.5 text-sm">
                   <row.icon size={13} className="text-text-tertiary flex-shrink-0" />
-                  <span className="text-text-secondary truncate">{row.label}</span>
+                  <span className="text-text-secondary truncate flex-1">{row.label}</span>
+                  <span className="text-[10px] text-text-tertiary">{row.sub}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Palette */}
+          {/* Informations personnalisées */}
+          <div className="card space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-sm text-text-primary">Infos personnalisées</h2>
+              <span className="text-[10px] text-text-tertiary">{customLines.length}/4</span>
+            </div>
+            <p className="text-xs text-text-tertiary">Ajoutez ce que vous voulez : LinkedIn, site web, entreprise…</p>
+
+            {/* existing lines */}
+            {customLines.map((line, i) => (
+              <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-[8px] bg-bg-light border border-border text-sm">
+                <span className="flex-1 text-text-secondary truncate">{line}</span>
+                <button onClick={() => removeLine(i)} className="text-text-tertiary hover:text-red-500 transition-colors flex-shrink-0">
+                  <IconX size={13} />
+                </button>
+              </div>
+            ))}
+
+            {/* add new line */}
+            {customLines.length < 4 && (
+              <div className="flex gap-2">
+                <input
+                  className="input flex-1 text-sm"
+                  placeholder="ex: linkedin.com/in/moctar"
+                  value={newLine}
+                  onChange={e => setNewLine(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addLine()}
+                  maxLength={40}
+                />
+                <button
+                  onClick={addLine}
+                  disabled={!newLine.trim()}
+                  className="btn-primary px-3 disabled:opacity-40"
+                >
+                  <IconPlus size={15} />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Couleur */}
           <div className="card space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-sm text-text-primary">Couleur</h2>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-text-tertiary">Personnalisée</span>
                 <label className="relative cursor-pointer">
-                  <input
-                    type="color"
-                    value={customColor}
-                    onChange={e => handleCustomColor(e.target.value)}
-                    className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
-                  />
-                  <div
-                    className="w-7 h-7 rounded-lg border-2 transition-all flex items-center justify-center"
+                  <input type="color" value={customColor}
+                    onChange={e => { setCustomColor(e.target.value); setSelectedId(null) }}
+                    className="opacity-0 absolute inset-0 w-full h-full cursor-pointer" />
+                  <div className="w-7 h-7 rounded-lg border-2 transition-all flex items-center justify-center"
                     style={{
                       background: selectedId === null ? customColor : '#F3F4F6',
                       borderColor: selectedId === null ? customColor : '#E5E7EB',
-                    }}
-                  >
+                    }}>
                     {selectedId !== null && <IconPalette size={13} className="text-text-tertiary" />}
                   </div>
                 </label>
               </div>
             </div>
-
             <div className="grid grid-cols-5 gap-2">
               {PALETTE.map(p => {
                 const isSelected = selectedId === p.id
                 return (
-                  <button
-                    key={p.id}
-                    onClick={() => setSelectedId(p.id)}
-                    title={p.id}
+                  <button key={p.id} onClick={() => setSelectedId(p.id)} title={p.id}
                     style={{
                       background: `linear-gradient(135deg, ${p.from} 0%, ${p.to} 100%)`,
                       borderRadius: 10, aspectRatio: '1',
@@ -337,21 +422,13 @@ export default function NFCPage() {
                       transition: 'all 0.15s ease',
                       transform: isSelected ? 'scale(1.1)' : 'scale(1)',
                       cursor: 'pointer',
-                    }}
-                  />
+                    }} />
                 )
               })}
             </div>
-
-            <div className="flex items-center gap-2 pt-1">
-              <div className="w-5 h-5 rounded-md flex-shrink-0" style={{ background: gradient }} />
-              <span className="text-xs text-text-secondary">
-                {selectedId ? PALETTE.find(p => p.id === selectedId)?.id : `Couleur personnalisée ${customColor}`}
-              </span>
-            </div>
           </div>
 
-          {/* Commander la carte physique */}
+          {/* Commander */}
           {!showOrder ? (
             <button onClick={() => setShowOrder(true)} className="btn-primary w-full justify-center py-3 text-sm">
               Commander la carte physique — {PRICE}
@@ -363,29 +440,19 @@ export default function NFCPage() {
                 <label className="label">Adresse complète</label>
                 <div className="relative">
                   <IconMapPin size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none" />
-                  <input
-                    className="input pl-9"
-                    placeholder="Sacré-Cœur 3, Villa 25, Dakar"
-                    value={address}
-                    onChange={e => setAddress(e.target.value)}
-                  />
+                  <input className="input pl-9" placeholder="Sacré-Cœur 3, Villa 25, Dakar"
+                    value={address} onChange={e => setAddress(e.target.value)} />
                 </div>
               </div>
               <div className="flex gap-2">
-                <button onClick={() => setShowOrder(false)} className="btn-secondary flex-1 justify-center text-sm">
-                  Annuler
-                </button>
-                <button
-                  onClick={() => setOrdered(true)}
-                  disabled={!address.trim()}
-                  className="btn-primary flex-1 justify-center text-sm disabled:opacity-50"
-                >
+                <button onClick={() => setShowOrder(false)} className="btn-secondary flex-1 justify-center text-sm">Annuler</button>
+                <button onClick={() => setOrdered(true)} disabled={!address.trim()}
+                  className="btn-primary flex-1 justify-center text-sm disabled:opacity-50">
                   <IconCheck size={14} /> Confirmer
                 </button>
               </div>
             </div>
           )}
-
         </div>
       </div>
     </div>
