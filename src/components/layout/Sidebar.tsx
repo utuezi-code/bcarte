@@ -15,7 +15,6 @@ const PRO_NAV = [
   { href: '/dashboard',         label: 'Accueil',       icon: IconLayoutDashboard, exact: true },
   { href: '/dashboard/profile', label: 'Mon profil',    icon: IconUser },
   { href: '/dashboard/org',     label: 'Organisation',  icon: IconBuilding },
-  { href: '/dashboard/cv',      label: 'Générer CV',    icon: IconFileText },
   { href: '/dashboard/nfc',     label: 'Carte NFC',     icon: IconCreditCard },
   { href: '/explore',           label: 'Explorer',      icon: IconCompass },
 ]
