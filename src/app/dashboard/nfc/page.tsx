@@ -114,10 +114,17 @@ function NFCCard({ name, title, email, phone, company, companyLogoUrl, gradient,
               <div style={{ display:'flex',flexDirection:'column',alignItems:'center',gap:3 }}>
                 {companyLogoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={companyLogoUrl} alt={company} style={{
-                    width:52,height:52,borderRadius:13,objectFit:'cover',
+                  <div style={{
+                    width:58,height:58,borderRadius:13,
                     background:'white',boxShadow:'0 4px 16px rgba(0,0,0,0.35)',
-                    border:'2px solid rgba(255,255,255,0.55)' }} />
+                    border:'2px solid rgba(255,255,255,0.55)',
+                    display:'flex',alignItems:'center',justifyContent:'center',
+                    padding:5,
+                  }}>
+                    <img src={companyLogoUrl} alt={company} style={{
+                      width:'100%',height:'100%',objectFit:'contain',display:'block',
+                    }} />
+                  </div>
                 ) : (
                   <div style={{ width:52,height:52,borderRadius:13,background:nameColor(company),
                     boxShadow:'0 4px 16px rgba(0,0,0,0.35)',border:'2px solid rgba(255,255,255,0.2)',
@@ -411,7 +418,9 @@ export default function NFCPage() {
               {uploadedLogo ? (
                 <div className="flex items-center gap-4">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={uploadedLogo} alt="Logo" className="w-16 h-16 rounded-xl object-cover border border-border" />
+                  <div className="w-16 h-16 rounded-xl border border-border bg-white flex items-center justify-center p-1.5">
+                    <img src={uploadedLogo} alt="Logo" className="w-full h-full object-contain" />
+                  </div>
                   <div className="flex-1 space-y-1">
                     <p className="text-sm font-medium text-text-primary">Logo chargé</p>
                     <p className="text-xs text-text-tertiary">Il apparaît en haut à droite de la carte</p>
