@@ -8,6 +8,7 @@ import {
   IconLoader2, IconCheck, IconPhone, IconShare,
   IconDownload, IconArrowUpRight, IconChevronDown, IconChevronUp,
 } from '@tabler/icons-react'
+import TrustScore from '@/components/TrustScore'
 
 function initials(name: string) {
   return name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?'
@@ -70,7 +71,6 @@ export default function PublicProfilePage() {
     else { navigator.clipboard.writeText(window.location.href); setCopied(true); setTimeout(() => setCopied(false), 2500) }
   }
 
-  const verifiedCount = profile?.verifications?.filter((v: any) => v.status === 'CONFIRMEE').length ?? 0
   const color  = profile ? accentColor(profile.fullName ?? '') : '#6C47FF'
   const rgb    = hexToRgb(color)
 
@@ -179,14 +179,7 @@ export default function PublicProfilePage() {
                 {[profile.city, profile.country].filter(Boolean).join(', ')}
               </span>
             )}
-            {verifiedCount > 0 && (
-              <span
-                className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-[3px] rounded-full"
-                style={{ background: `rgba(${rgb}, 0.1)`, color }}>
-                <IconShieldCheck size={11} />
-                {verifiedCount} vérifié{verifiedCount > 1 ? 's' : ''}
-              </span>
-            )}
+            <TrustScore verifications={profile.verifications ?? []} size="sm" showLabel />
           </div>
 
           {/* ── Action buttons ── */}

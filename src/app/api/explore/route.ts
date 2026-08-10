@@ -39,7 +39,11 @@ export async function GET(req: NextRequest) {
 
     const { data, error } = await query.limit(100)
     if (error) console.error('explore profiles (org) error:', error.message)
-    return NextResponse.json(data ?? [])
+
+    const profiles = data ?? []
+    const profileIds = profiles.map((p: any) => p.id)
+    const verifCounts = await getVerifCounts(profileIds)
+    return NextResponse.json(profiles.map((p: any) => ({ ...p, verifiedCount: verifCounts[p.id] ?? 0 })))
   }
 
   /* ── PROFILES for professional users: colleagues in shared orgs ───────── */
@@ -79,5 +83,23 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await query.limit(50)
   if (error) console.error('explore profiles (pro) error:', error.message)
-  return NextResponse.json(data ?? [])
+
+  const profiles = data ?? []
+  const profileIds = profiles.map((p: any) => p.id)
+  const verifCounts = await getVerifCounts(profileIds)
+  return NextResponse.json(profiles.map((p: any) => ({ ...p, verifiedCount: verifCounts[p.id] ?? 0 })))
+}
+
+async function getVerifCounts(profileIds: string[]): Promise<Record<string, number>> {
+  if (profileIds.length === 0) return {}
+  const { data } = await supabaseAdmin
+    .from('verifications')
+    .select('profileId')
+    .in('profileId', profileIds)
+    .eq('status', 'CONFIRMEE')
+  const counts: Record<string, number> = {}
+  for (const row of data ?? []) {
+    counts[row.profileId] = (counts[row.profileId] ?? 0) + 1
+  }
+  return counts
 }
