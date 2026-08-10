@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react'
 import {
   IconX, IconMapPin, IconPhone, IconBrandLinkedin, IconMail,
   IconBriefcase, IconSchool, IconCode, IconDownload, IconLoader2,
-  IconCalendar, IconCircleCheck, IconShieldCheck,
+  IconCalendar, IconShieldCheck,
 } from '@tabler/icons-react'
+import TrustScore from '@/components/TrustScore'
 
 const AVATAR_COLORS = ['#6C47FF', '#059669', '#C9A84C', '#2563EB', '#DC2626', '#7C3AED', '#0891B2', '#D97706']
 function avatarColor(name: string) {
@@ -128,10 +129,9 @@ export default function ProfileModal({ slug, onClose }: Props) {
                   </p>
                 )}
                 {/* verified badges */}
-                {profile.verifications?.some((v: any) => v.status === 'CONFIRMEE') && (
-                  <div className="flex items-center gap-1 mt-2">
-                    <IconCircleCheck size={12} className="text-green-300" />
-                    <span className="text-green-300 text-[11px] font-medium">Profil vérifié</span>
+                {(profile.verifications ?? []).length > 0 && (
+                  <div className="mt-2">
+                    <TrustScore verifications={profile.verifications ?? []} size="sm" showLabel />
                   </div>
                 )}
               </div>

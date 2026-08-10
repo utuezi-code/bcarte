@@ -200,6 +200,14 @@ export default function ExplorePage() {
                           </div>
                         )}
 
+                        {/* Verified badge */}
+                        {(p.verifiedCount ?? 0) > 0 && (
+                          <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full w-fit">
+                            <IconShieldCheck size={10} />
+                            {p.verifiedCount} vérifié{p.verifiedCount > 1 ? 's' : ''}
+                          </span>
+                        )}
+
                         {/* CTA */}
                         <div className="pt-1 border-t border-border-subtle">
                           <span className="text-[11px] font-semibold text-primary flex items-center gap-1">

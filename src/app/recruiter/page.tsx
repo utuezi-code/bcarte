@@ -124,7 +124,6 @@ export default function RecruiterPage() {
                     {profiles.map((p: any) => {
                       const color  = avatarColor(p.fullName ?? '')
                       const skills: string[] = p.skills ?? []
-                      const verified = (p.verificationCount ?? 0) > 0
 
                       return (
                         <button key={p.id}
@@ -144,9 +143,6 @@ export default function RecruiterPage() {
                                 <p className="font-semibold text-text-primary text-sm truncate group-hover:text-primary transition-colors">
                                   {p.fullName}
                                 </p>
-                                {verified && (
-                                  <IconShieldCheck size={12} className="text-success flex-shrink-0" />
-                                )}
                               </div>
                               <p className="text-xs text-text-secondary mt-0.5 truncate">{p.title || '—'}</p>
                               <p className="text-xs text-text-tertiary mt-0.5 flex items-center gap-1">
@@ -171,6 +167,14 @@ export default function RecruiterPage() {
                                 </span>
                               )}
                             </div>
+                          )}
+
+                          {/* Verified badge */}
+                          {(p.verifiedCount ?? 0) > 0 && (
+                            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full w-fit">
+                              <IconShieldCheck size={10} />
+                              {p.verifiedCount} vérifié{p.verifiedCount > 1 ? 's' : ''}
+                            </span>
                           )}
 
                           {/* CTA */}

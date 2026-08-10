@@ -19,5 +19,21 @@ export async function GET(req: NextRequest) {
   }
 
   const { data } = await query.limit(50)
-  return NextResponse.json(data ?? [])
+  const profiles = data ?? []
+
+  /* attach verifiedCount per profile */
+  const profileIds = profiles.map((p: any) => p.id)
+  let verifCounts: Record<string, number> = {}
+  if (profileIds.length > 0) {
+    const { data: verifRows } = await supabaseAdmin
+      .from('verifications')
+      .select('profileId')
+      .in('profileId', profileIds)
+      .eq('status', 'CONFIRMEE')
+    for (const row of verifRows ?? []) {
+      verifCounts[row.profileId] = (verifCounts[row.profileId] ?? 0) + 1
+    }
+  }
+
+  return NextResponse.json(profiles.map((p: any) => ({ ...p, verifiedCount: verifCounts[p.id] ?? 0 })))
 }
