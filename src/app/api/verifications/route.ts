@@ -44,16 +44,6 @@ export async function POST(req: NextRequest) {
 
   if (!profile) return NextResponse.json({ error: 'Profil introuvable' }, { status: 404 })
 
-  /* auto-confirm if already a team member of this org */
-  const { data: membership } = await supabaseAdmin
-    .from('team_members')
-    .select('id')
-    .eq('profileId', profile.id)
-    .eq('organisationId', organisationId)
-    .maybeSingle()
-
-  const autoStatus = membership ? 'CONFIRMEE' : 'EN_ATTENTE'
-
   /* prevent duplicate for the same item (any non-rejected status) */
   if (refId) {
     const { data: existing } = await supabaseAdmin
@@ -79,7 +69,7 @@ export async function POST(req: NextRequest) {
       type,
       label,
       refId: refId ?? null,
-      status: autoStatus,
+      status: 'EN_ATTENTE',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     })

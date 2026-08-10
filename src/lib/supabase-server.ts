@@ -4,9 +4,11 @@ let _client: SupabaseClient | null = null
 
 export function getSupabaseAdmin(): SupabaseClient {
   if (!_client) {
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!serviceKey) throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is required')
     _client = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      serviceKey,
       {
         auth: { persistSession: false },
         global: { fetch: (url, options) => fetch(url, { ...options, cache: 'no-store' }) },

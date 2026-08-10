@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { getOrgAccess } from '@/lib/org-auth'
+import { generateCertId } from '@/lib/cert-id'
 
 export const dynamic = 'force-dynamic'
 

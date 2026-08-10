@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase-server'
 import { getOrgAccess } from '@/lib/org-auth'
+import { generateCertId } from '@/lib/cert-id'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,9 +18,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const access = await getOrgAccess(session.userId)
   if (!access) return NextResponse.json({ error: 'Organisation introuvable' }, { status: 403 })
 
+  const now = new Date().toISOString()
+  const extra = status === 'CONFIRMEE' ? { certId: generateCertId(), certIssuedAt: now } : {}
+
   const { data, error } = await supabaseAdmin
     .from('verifications')
-    .update({ status, updatedAt: new Date().toISOString() })
+    .update({ status, updatedAt: now, ...extra })
     .eq('id', params.id)
     .eq('organisationId', access.orgId)
     .select()
