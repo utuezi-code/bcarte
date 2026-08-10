@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   IconFileText, IconDownload, IconCopy, IconCheck,
   IconChevronRight, IconChevronLeft, IconLoader2,
   IconBriefcase, IconSchool, IconCode, IconMapPin,
+  IconSparkles,
 } from '@tabler/icons-react'
 
 const STEPS = ["Offre d'emploi", 'Options', 'Résultat']
@@ -13,55 +14,68 @@ function initials(name: string) {
   return name?.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?'
 }
 
-function buildCV(profile: any, lang: string) {
-  const isEn = lang === 'en'
-  return `${profile.fullName ?? ''}
-${[profile.title, profile.city, profile.country].filter(Boolean).join(' · ')}
-${[profile.phone, profile.linkedin].filter(Boolean).join(' · ')}
-
-${isEn ? 'PROFILE' : 'PROFIL'}
-${profile.bio ?? (isEn ? 'Professional with solid experience in their field.' : 'Professionnel avec une solide expérience dans son domaine.')}
-
-${isEn ? 'EXPERIENCE' : 'EXPÉRIENCES'}
-${(profile.experiences ?? []).length === 0
-  ? (isEn ? '— No experience recorded' : '— Aucune expérience enregistrée')
-  : profile.experiences.map((e: any) =>
-      `${e.title} — ${e.company}${e.city ? ', ' + e.city : ''}${e.isCurrent ? (isEn ? ' (Current)' : ' (En cours)') : ''}`
-    ).join('\n')}
-
-${isEn ? 'EDUCATION' : 'FORMATIONS'}
-${(profile.educations ?? []).length === 0
-  ? (isEn ? '— No education recorded' : '— Aucune formation enregistrée')
-  : profile.educations.map((e: any) =>
-      `${e.degree}${e.field ? ' · ' + e.field : ''} — ${e.organisation?.name ?? ''} ${e.startYear ?? ''} – ${e.isCurrent ? (isEn ? 'Present' : 'Présent') : e.endYear ?? ''}`
-    ).join('\n')}
-
-${(profile.skills ?? []).length > 0 ? `${isEn ? 'SKILLS' : 'COMPÉTENCES'}\n${profile.skills.join(' · ')}` : ''}`
-}
-
 export default function CVPage() {
-  const [step,       setStep]       = useState(0)
-  const [jobOffer,   setJobOffer]   = useState('')
-  const [lang,       setLang]       = useState('fr')
-  const [copied,     setCopied]     = useState(false)
-  const [profile,    setProfile]    = useState<any>(null)
-  const [generating, setGenerating] = useState(false)
+  const [step,        setStep]        = useState(0)
+  const [jobOffer,    setJobOffer]    = useState('')
+  const [lang,        setLang]        = useState('fr')
+  const [copied,      setCopied]      = useState(false)
+  const [profile,     setProfile]     = useState<any>(null)
+  const [generating,  setGenerating]  = useState(false)
+  const [generatedCV, setGeneratedCV] = useState('')
+  const [genError,    setGenError]    = useState('')
+  const printRef = useRef<HTMLPreElement>(null)
 
   useEffect(() => {
     fetch('/api/profile').then(r => r.ok ? r.json() : null).then(d => { if (d) setProfile(d) })
   }, [])
 
-  const cvText = profile ? buildCV(profile, lang) : ''
-
   const handleCopy = () => {
-    navigator.clipboard.writeText(cvText)
+    navigator.clipboard.writeText(generatedCV)
     setCopied(true)
     setTimeout(() => setCopied(false), 2500)
   }
 
-  const handleGenerate = () => {
+  const handleDownloadPDF = () => {
+    const w = window.open('', '_blank')
+    if (!w) return
+    w.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>CV — ${profile?.fullName ?? ''}</title>
+  <style>
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 13px; line-height: 1.65; color: #1a1a2e; padding: 40px 48px; max-width: 720px; margin: 0 auto; }
+    pre { white-space: pre-wrap; font-family: inherit; font-size: 13px; line-height: 1.65; }
+    @media print { body { padding: 0; } }
+  </style>
+</head>
+<body><pre>${generatedCV.replace(/</g, '&lt;')}</pre>
+<script>window.onload=()=>{window.print();}<\/script>
+</body></html>`)
+    w.document.close()
+  }
+
+  const handleGenerate = async () => {
     setGenerating(true)
-    setTimeout(() => { setGenerating(false); setStep(2) }, 1200)
+    setGenError('')
+    try {
+      const res = await fetch('/api/cv/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ offerText: jobOffer, lang }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setGenError(data.error ?? 'Erreur lors de la génération')
+        return
+      }
+      setGeneratedCV(data.cv ?? '')
+      setStep(2)
+    } catch {
+      setGenError('Erreur réseau, réessayez')
+    } finally {
+      setGenerating(false)
+    }
   }
 
   return (
@@ -70,7 +84,7 @@ export default function CVPage() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div>
         <h1 className="page-title">Générer mon CV</h1>
-        <p className="page-subtitle">CV structuré à partir de votre profil bcarte</p>
+        <p className="page-subtitle">CV adapté à chaque offre grâce à l&apos;IA</p>
       </div>
 
       {/* ── Two-column layout ──────────────────────────────────────────────── */}
@@ -109,21 +123,9 @@ export default function CVPage() {
                 </p>
               </div>
               {[
-                {
-                  Icon: IconBriefcase, color: '#6C47FF', bg: '#F0EDFF',
-                  label: 'Expériences',
-                  value: profile?.experiences?.length ?? 0,
-                },
-                {
-                  Icon: IconSchool, color: '#059669', bg: '#ECFDF5',
-                  label: 'Formations',
-                  value: profile?.educations?.length ?? 0,
-                },
-                {
-                  Icon: IconCode, color: '#D97706', bg: '#FFFBEB',
-                  label: 'Compétences',
-                  value: profile?.skills?.length ?? 0,
-                },
+                { Icon: IconBriefcase, color: '#6C47FF', bg: '#F0EDFF', label: 'Expériences', value: profile?.experiences?.length ?? 0 },
+                { Icon: IconSchool,    color: '#059669', bg: '#ECFDF5', label: 'Formations',  value: profile?.educations?.length ?? 0 },
+                { Icon: IconCode,      color: '#D97706', bg: '#FFFBEB', label: 'Compétences', value: profile?.skills?.length ?? 0 },
               ].map(({ Icon, color, bg, label, value }) => (
                 <div key={label} className="flex items-center gap-3 px-4 py-3">
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -132,13 +134,17 @@ export default function CVPage() {
                   </div>
                   <p className="text-sm text-text-secondary flex-1">{label}</p>
                   <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                    value > 0
-                      ? 'bg-primary-light text-primary'
-                      : 'bg-border-subtle text-text-tertiary'
+                    value > 0 ? 'bg-primary-light text-primary' : 'bg-border-subtle text-text-tertiary'
                   }`}>{value}</span>
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* AI badge */}
+          <div className="flex items-center gap-2 px-3 py-2 rounded-[10px] bg-primary-light border border-primary/15">
+            <IconSparkles size={14} className="text-primary flex-shrink-0" />
+            <p className="text-xs text-primary font-medium">Powered by Claude AI</p>
           </div>
         </div>
 
@@ -176,7 +182,7 @@ export default function CVPage() {
               <div>
                 <p className="font-semibold text-text-primary">Offre d&apos;emploi</p>
                 <p className="text-xs text-text-tertiary mt-0.5">
-                  Collez l&apos;offre pour orienter le CV — ou ignorez cette étape
+                  Collez l&apos;offre pour que l&apos;IA adapte votre CV — ou ignorez cette étape
                 </p>
               </div>
               <textarea
@@ -188,13 +194,11 @@ export default function CVPage() {
               />
               <div className="flex items-center gap-3">
                 {jobOffer && (
-                  <button onClick={() => setJobOffer('')}
-                    className="btn-secondary gap-1.5 text-sm">
+                  <button onClick={() => setJobOffer('')} className="btn-secondary gap-1.5 text-sm">
                     Vider
                   </button>
                 )}
-                <button onClick={() => setStep(1)}
-                  className="btn-primary flex-1 justify-center">
+                <button onClick={() => setStep(1)} className="btn-primary flex-1 justify-center">
                   {jobOffer ? 'Continuer avec cette offre' : 'Passer cette étape'}
                   <IconChevronRight size={15} />
                 </button>
@@ -207,7 +211,7 @@ export default function CVPage() {
             <div className="card space-y-5">
               <div>
                 <p className="font-semibold text-text-primary">Options du CV</p>
-                <p className="text-xs text-text-tertiary mt-0.5">Personnalisez la langue et le format</p>
+                <p className="text-xs text-text-tertiary mt-0.5">Choisissez la langue de génération</p>
               </div>
 
               <div>
@@ -231,15 +235,21 @@ export default function CVPage() {
                 </div>
               </div>
 
+              {genError && (
+                <p className="text-red-600 text-xs font-medium bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  {genError}
+                </p>
+              )}
+
               <div className="flex gap-3 pt-1">
                 <button onClick={() => setStep(0)} className="btn-secondary gap-2">
                   <IconChevronLeft size={15} /> Retour
                 </button>
-                <button onClick={handleGenerate} disabled={generating}
+                <button onClick={handleGenerate} disabled={generating || !profile}
                   className="btn-primary flex-1 justify-center gap-2">
                   {generating
-                    ? <><IconLoader2 size={15} className="animate-spin" /> Génération…</>
-                    : <><IconFileText size={15} /> Générer le CV</>}
+                    ? <><IconLoader2 size={15} className="animate-spin" /> Génération par l&apos;IA…</>
+                    : <><IconSparkles size={15} /> Générer avec l&apos;IA</>}
                 </button>
               </div>
             </div>
@@ -249,21 +259,19 @@ export default function CVPage() {
           {step === 2 && (
             <div className="space-y-3">
               {/* Actions bar */}
-              <div className="card flex items-center justify-between gap-4">
+              <div className="card flex items-center justify-between gap-4 flex-wrap">
                 <div>
                   <p className="font-semibold text-text-primary text-sm">Votre CV est prêt</p>
                   <p className="text-xs text-text-tertiary mt-0.5">
-                    {lang === 'fr' ? 'Français' : 'Anglais'} · Généré depuis votre profil
+                    {lang === 'fr' ? 'Français' : 'Anglais'} · Généré et adapté par l&apos;IA
                   </p>
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
                   <button onClick={handleCopy} className="btn-secondary gap-1.5 px-3 py-2 text-sm">
-                    {copied
-                      ? <IconCheck size={14} className="text-success" />
-                      : <IconCopy size={14} />}
+                    {copied ? <IconCheck size={14} className="text-success" /> : <IconCopy size={14} />}
                     {copied ? 'Copié !' : 'Copier'}
                   </button>
-                  <button className="btn-primary gap-1.5 px-3 py-2 text-sm">
+                  <button onClick={handleDownloadPDF} className="btn-primary gap-1.5 px-3 py-2 text-sm">
                     <IconDownload size={14} /> PDF
                   </button>
                 </div>
@@ -273,24 +281,28 @@ export default function CVPage() {
               <div className="card p-0 overflow-hidden">
                 <div className="px-4 py-2.5 border-b border-border bg-bg-light flex items-center gap-2">
                   <IconFileText size={13} className="text-text-tertiary" />
-                  <span className="text-xs font-medium text-text-tertiary">Aperçu texte</span>
+                  <span className="text-xs font-medium text-text-tertiary">Aperçu</span>
+                  <span className="ml-auto text-[10px] text-text-tertiary flex items-center gap-1">
+                    <IconSparkles size={10} className="text-primary" /> Claude AI
+                  </span>
                 </div>
-                {!profile ? (
-                  <div className="flex justify-center py-14">
-                    <IconLoader2 size={22} className="animate-spin text-primary" />
-                  </div>
-                ) : (
-                  <pre className="p-6 text-xs text-text-secondary font-mono whitespace-pre-wrap leading-relaxed overflow-x-auto">
-                    {cvText}
-                  </pre>
-                )}
+                <pre ref={printRef}
+                  className="p-6 text-xs text-text-secondary font-mono whitespace-pre-wrap leading-relaxed overflow-x-auto">
+                  {generatedCV}
+                </pre>
               </div>
 
-              {/* Reset */}
-              <button onClick={() => { setStep(0); setJobOffer('') }}
-                className="text-sm text-primary font-medium hover:underline">
-                ← Recommencer
-              </button>
+              {/* Regenerate / reset */}
+              <div className="flex items-center gap-4">
+                <button onClick={() => { setStep(1); setGenError('') }}
+                  className="text-sm text-primary font-medium hover:underline flex items-center gap-1">
+                  <IconSparkles size={13} /> Regénérer
+                </button>
+                <button onClick={() => { setStep(0); setJobOffer(''); setGeneratedCV('') }}
+                  className="text-sm text-text-tertiary font-medium hover:underline">
+                  ← Recommencer avec une autre offre
+                </button>
+              </div>
             </div>
           )}
 
