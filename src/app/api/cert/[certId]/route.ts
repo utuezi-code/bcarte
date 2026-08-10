@@ -19,7 +19,6 @@ export async function GET(_: NextRequest, { params }: { params: { certId: string
     return NextResponse.json({ error: 'Certificat introuvable' }, { status: 404 })
   }
 
-  // Fetch the referenced experience or education for more details
   let item = null
   if (data.refId) {
     if (data.type === 'EXPÉRIENCE') {

@@ -1,5 +1,7 @@
+import { randomBytes } from 'crypto'
+
 export function generateCertId(): string {
   const year = new Date().getFullYear()
-  const rand = Math.random().toString(36).slice(2, 8).toUpperCase()
+  const rand = randomBytes(4).toString('hex').toUpperCase()
   return `BCT-${year}-${rand}`
 }

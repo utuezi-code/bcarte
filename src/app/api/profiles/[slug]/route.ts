@@ -4,11 +4,12 @@ import { supabaseAdmin } from '@/lib/supabase-server'
 export const dynamic = 'force-dynamic'
 
 export async function GET(_req: NextRequest, { params }: { params: { slug: string } }) {
-  /* core profile */
+  /* core profile — only public fields, never userId/email */
   const { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles')
-    .select('*')
+    .select('id, slug, fullName, title, bio, city, country, avatarUrl, skills, phone, linkedin, emailPro, isPublic, createdAt')
     .eq('slug', params.slug)
+    .eq('isPublic', true)
     .single()
 
   if (profileError || !profile) {

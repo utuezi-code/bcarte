@@ -10,10 +10,13 @@ export async function POST(req: NextRequest) {
   const file = formData.get('file') as File | null
   if (!file) return NextResponse.json({ error: 'Aucun fichier' }, { status: 400 })
 
-  if (!file.type.startsWith('image/')) return NextResponse.json({ error: 'Format invalide' }, { status: 400 })
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+  const ALLOWED_EXTS  = ['jpg', 'jpeg', 'png', 'webp', 'gif']
+  if (!ALLOWED_TYPES.includes(file.type)) return NextResponse.json({ error: 'Format invalide (jpg, png, webp, gif uniquement)' }, { status: 400 })
   if (file.size > 5 * 1024 * 1024) return NextResponse.json({ error: 'Fichier trop lourd (max 5 Mo)' }, { status: 400 })
 
-  const ext    = file.name.split('.').pop() ?? 'jpg'
+  const rawExt = file.name.split('.').pop()?.toLowerCase() ?? ''
+  const ext    = ALLOWED_EXTS.includes(rawExt) ? rawExt : 'jpg'
   const path   = `avatars/${session.userId}.${ext}`
   const buffer = Buffer.from(await file.arrayBuffer())
 

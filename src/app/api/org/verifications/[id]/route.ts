@@ -19,15 +19,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!access) return NextResponse.json({ error: 'Organisation introuvable' }, { status: 403 })
 
   const now = new Date().toISOString()
-  const updateData: any = { status, updatedAt: now }
-  if (status === 'CONFIRMEE') {
-    updateData.certId = generateCertId()
-    updateData.certIssuedAt = now
-  }
+  const extra = status === 'CONFIRMEE' ? { certId: generateCertId(), certIssuedAt: now } : {}
 
   const { data, error } = await supabaseAdmin
     .from('verifications')
-    .update(updateData)
+    .update({ status, updatedAt: now, ...extra })
     .eq('id', params.id)
     .eq('organisationId', access.orgId)
     .select()

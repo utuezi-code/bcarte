@@ -56,8 +56,17 @@ export async function DELETE(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json(null, { status: 401 })
 
+  const orgId = await getOrgId(session.userId)
+  if (!orgId) return NextResponse.json({ error: 'Org not found' }, { status: 403 })
+
   const { id } = await req.json()
-  await supabaseAdmin.from('job_offers').delete().eq('id', id)
+  const { error } = await supabaseAdmin
+    .from('job_offers')
+    .delete()
+    .eq('id', id)
+    .eq('organisationId', orgId)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   return NextResponse.json({ ok: true })
 }
