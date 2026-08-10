@@ -1,35 +1,33 @@
-import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
+import { randomBytes } from 'crypto'
+import { supabaseAdmin } from '@/lib/supabase-server'
 
-const ADMIN_COOKIE = 'bcarte_admin'
-
-function getAdminSecret() {
-  const s = process.env.ADMIN_JWT_SECRET ?? process.env.JWT_SECRET
-  if (!s) throw new Error('ADMIN_JWT_SECRET or JWT_SECRET environment variable is required')
-  return new TextEncoder().encode(`admin:${s}`)
-}
+const ADMIN_COOKIE  = 'bcarte_admin'
+const SESSION_HOURS = 8
 
 export interface AdminPayload {
   adminId: string
-  email: string
-  name: string
-  role: 'ADMIN'
-  [key: string]: unknown
+  email:   string
+  name:    string
+  role:    'ADMIN'
 }
 
-export async function createAdminSession(payload: AdminPayload) {
-  const token = await new SignJWT(payload)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setExpirationTime('8h')
-    .sign(getAdminSecret())
+export async function createAdminSession(adminId: string, email: string, name: string) {
+  const token  = randomBytes(48).toString('hex')
+  const expiry = new Date(Date.now() + SESSION_HOURS * 60 * 60 * 1000).toISOString()
+
+  await supabaseAdmin
+    .from('admins')
+    .update({ sessionToken: token, sessionExpiry: expiry, lastLoginAt: new Date().toISOString() })
+    .eq('id', adminId)
 
   const cookieStore = await cookies()
   cookieStore.set(ADMIN_COOKIE, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure:   process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 60 * 60 * 8,
-    path: '/',
+    maxAge:   SESSION_HOURS * 60 * 60,
+    path:     '/',
   })
 }
 
@@ -38,15 +36,34 @@ export async function getAdminSession(): Promise<AdminPayload | null> {
     const cookieStore = await cookies()
     const token = cookieStore.get(ADMIN_COOKIE)?.value
     if (!token) return null
-    const { payload } = await jwtVerify(token, getAdminSecret())
-    if (payload.role !== 'ADMIN') return null
-    return payload as unknown as AdminPayload
+
+    const { data } = await supabaseAdmin
+      .from('admins')
+      .select('id, email, name, sessionExpiry')
+      .eq('sessionToken', token)
+      .single()
+
+    if (!data) return null
+    if (!data.sessionExpiry || new Date(data.sessionExpiry) < new Date()) return null
+
+    return { adminId: data.id, email: data.email, name: data.name, role: 'ADMIN' }
   } catch {
     return null
   }
 }
 
 export async function deleteAdminSession() {
-  const cookieStore = await cookies()
-  cookieStore.delete(ADMIN_COOKIE)
+  try {
+    const cookieStore = await cookies()
+    const token = cookieStore.get(ADMIN_COOKIE)?.value
+    if (token) {
+      await supabaseAdmin
+        .from('admins')
+        .update({ sessionToken: null, sessionExpiry: null })
+        .eq('sessionToken', token)
+    }
+    cookieStore.delete(ADMIN_COOKIE)
+  } catch {
+    // ignore
+  }
 }
