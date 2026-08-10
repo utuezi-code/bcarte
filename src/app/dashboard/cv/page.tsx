@@ -36,41 +36,61 @@ export default function CVPage() {
   }
 
   const handleDownloadPDF = () => {
-    const w = window.open('', '_blank')
-    if (!w) return
-    w.document.write(`<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>CV — ${profile?.fullName ?? ''}</title>
-  <style>
-    body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 13px; line-height: 1.65; color: #1a1a2e; padding: 40px 48px; max-width: 720px; margin: 0 auto; }
-    pre { white-space: pre-wrap; font-family: inherit; font-size: 13px; line-height: 1.65; }
-    @media print { body { padding: 0; } }
-  </style>
-</head>
-<body><pre>${generatedCV.replace(/</g, '&lt;')}</pre>
-<script>window.onload=()=>{window.print();}<\/script>
-</body></html>`)
-    w.document.close()
+    const style = document.createElement('style')
+    style.id = '__cv-print-style'
+    style.innerHTML = `
+      @media print {
+        body > *:not(#cv-print-root) { display: none !important; }
+        #cv-print-root {
+          display: block !important;
+          font-family: 'Helvetica Neue', Arial, sans-serif;
+          font-size: 13px; line-height: 1.7; color: #111;
+          white-space: pre-wrap; padding: 0; margin: 0;
+        }
+      }
+    `
+    document.head.appendChild(style)
+
+    const div = document.createElement('div')
+    div.id = 'cv-print-root'
+    div.style.display = 'none'
+    div.textContent = generatedCV
+    document.body.appendChild(div)
+
+    window.print()
+
+    setTimeout(() => {
+      document.head.removeChild(style)
+      document.body.removeChild(div)
+    }, 1000)
   }
 
   const handleGenerate = async () => {
     setGenerating(true)
     setGenError('')
+    setGeneratedCV('')
     try {
       const res = await fetch('/api/cv/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ offerText: jobOffer, lang }),
       })
-      const data = await res.json()
+
       if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
         setGenError(data.error ?? 'Erreur lors de la génération')
         return
       }
-      setGeneratedCV(data.cv ?? '')
+
+      // Stream the response token by token
       setStep(2)
+      const reader = res.body!.getReader()
+      const decoder = new TextDecoder()
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        setGeneratedCV(prev => prev + decoder.decode(value, { stream: true }))
+      }
     } catch {
       setGenError('Erreur réseau, réessayez')
     } finally {
