@@ -1,258 +1,372 @@
 'use client'
 
-import { useState } from 'react'
-import { IconCreditCard, IconCheck, IconChevronRight, IconChevronLeft, IconBrandWhatsapp, IconMail, IconLink } from '@tabler/icons-react'
-import { CURRENT_USER } from '@/lib/mock-data'
+import { useEffect, useRef, useState } from 'react'
+import { IconCreditCard, IconCheck, IconMapPin, IconUser, IconLink, IconPalette } from '@tabler/icons-react'
+import QRCode from 'react-qr-code'
 
-const STEPS = ['Aperçu', 'Design', 'Informations', 'Commander']
+/* ── Palette de couleurs ───────────────────────────────────── */
+const PALETTE = [
+  // Violets & indigo
+  { id: 'violet',   from: '#2D1B8E', to: '#6C47FF', accent: '#C4B5FD' },
+  { id: 'indigo',   from: '#1E3A8A', to: '#6366F1', accent: '#A5B4FC' },
+  { id: 'purple',   from: '#581C87', to: '#9333EA', accent: '#D8B4FE' },
+  // Noirs premium
+  { id: 'obsidian', from: '#050505', to: '#1C1C1C', accent: '#C9A84C' },
+  { id: 'midnight', from: '#0F0E1A', to: '#0F3460', accent: '#60A5FA' },
+  { id: 'charcoal', from: '#111827', to: '#374151', accent: '#9CA3AF' },
+  // Ors & ambre
+  { id: 'gold',     from: '#6B3800', to: '#D4A843', accent: '#FDE68A' },
+  { id: 'amber',    from: '#78350F', to: '#F59E0B', accent: '#FDE68A' },
+  { id: 'bronze',   from: '#6B3A1F', to: '#D4845A', accent: '#FDDCB5' },
+  // Rouges
+  { id: 'crimson',  from: '#7F0000', to: '#DC2626', accent: '#FCA5A5' },
+  { id: 'rose',     from: '#881337', to: '#E11D48', accent: '#FDA4AF' },
+  { id: 'pink',     from: '#831843', to: '#EC4899', accent: '#F9A8D4' },
+  // Verts
+  { id: 'emerald',  from: '#064E3B', to: '#10B981', accent: '#6EE7B7' },
+  { id: 'teal',     from: '#134E4A', to: '#14B8A6', accent: '#5EEAD4' },
+  { id: 'forest',   from: '#14532D', to: '#16A34A', accent: '#86EFAC' },
+  // Bleus
+  { id: 'navy',     from: '#1E3A5F', to: '#2563EB', accent: '#93C5FD' },
+  { id: 'sky',      from: '#075985', to: '#0EA5E9', accent: '#BAE6FD' },
+  { id: 'cyan',     from: '#164E63', to: '#06B6D4', accent: '#67E8F9' },
+  // Oranges
+  { id: 'orange',   from: '#7C2D12', to: '#EA580C', accent: '#FDBA74' },
+  { id: 'sunset',   from: '#92400E', to: '#F97316', accent: '#FED7AA' },
+] as const
 
-type Design = 'violet' | 'or'
+type PaletteId = typeof PALETTE[number]['id']
 
+/* ── Utilitaires couleur ───────────────────────────────────── */
+function hexToRgb(hex: string) {
+  const h = hex.replace('#', '')
+  return {
+    r: parseInt(h.slice(0, 2), 16),
+    g: parseInt(h.slice(2, 4), 16),
+    b: parseInt(h.slice(4, 6), 16),
+  }
+}
+function rgbToHex(r: number, g: number, b: number) {
+  const clamp = (v: number) => Math.round(Math.max(0, Math.min(255, v)))
+  return '#' + [r, g, b].map(v => clamp(v).toString(16).padStart(2, '0')).join('')
+}
+function darken(hex: string, factor = 0.45) {
+  const { r, g, b } = hexToRgb(hex)
+  return rgbToHex(r * factor, g * factor, b * factor)
+}
+function lighten(hex: string, factor = 1.35) {
+  const { r, g, b } = hexToRgb(hex)
+  return rgbToHex(r * factor, g * factor, b * factor)
+}
+function customGradient(hex: string) {
+  return `linear-gradient(135deg, ${darken(hex, 0.4)} 0%, ${hex} 55%, ${lighten(hex, 1.25)} 100%)`
+}
+
+/* ── Obtenir le gradient final ─────────────────────────────── */
+function getStyle(selectedId: PaletteId | null, customColor: string) {
+  if (!selectedId) {
+    return {
+      gradient: customGradient(customColor),
+      accent: lighten(customColor, 1.5),
+    }
+  }
+  const p = PALETTE.find(x => x.id === selectedId)!
+  return {
+    gradient: `linear-gradient(135deg, ${p.from} 0%, ${p.to} 100%)`,
+    accent: p.accent,
+  }
+}
+
+const PRICE = '29 000 FCFA'
+
+/* ── Carte 3D ──────────────────────────────────────────────── */
+function NFCCard3D({
+  name, title, phone, gradient, accent, profileUrl,
+}: {
+  name: string; title: string; phone: string
+  gradient: string; accent: string; profileUrl: string
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [rot, setRot]   = useState({ x: 0, y: 0 })
+  const [shine, setShine] = useState({ x: 50, y: 50 })
+  const [on, setOn]     = useState(false)
+
+  const move = (e: React.MouseEvent<HTMLDivElement>) => {
+    const r = ref.current?.getBoundingClientRect()
+    if (!r) return
+    const px = (e.clientX - r.left) / r.width
+    const py = (e.clientY - r.top)  / r.height
+    setRot({ x: (py - 0.5) * -24, y: (px - 0.5) * 24 })
+    setShine({ x: px * 100, y: py * 100 })
+  }
+  const leave = () => { setRot({ x: 0, y: 0 }); setShine({ x: 50, y: 50 }); setOn(false) }
+
+  return (
+    <div style={{ perspective: '1200px' }}>
+      <div
+        ref={ref}
+        onMouseMove={move}
+        onMouseEnter={() => setOn(true)}
+        onMouseLeave={leave}
+        style={{
+          width: '100%', aspectRatio: '1.586',
+          background: gradient, borderRadius: 20,
+          transform: `rotateX(${rot.x}deg) rotateY(${rot.y}deg) scale(${on ? 1.03 : 1})`,
+          transition: on ? 'transform 0.07s linear' : 'transform 0.55s cubic-bezier(0.23,1,0.32,1)',
+          transformStyle: 'preserve-3d',
+          boxShadow: on
+            ? '0 50px 100px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.1)'
+            : '0 20px 60px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.07)',
+          position: 'relative', overflow: 'hidden',
+          cursor: 'pointer', userSelect: 'none',
+        }}
+      >
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: `radial-gradient(circle at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.2) 0%, transparent 60%)`,
+          opacity: on ? 1 : 0.45, transition: on ? 'none' : 'opacity 0.55s',
+        }} />
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.02) 60%, transparent 100%)',
+        }} />
+        <div style={{
+          position: 'absolute', top: 0, left: '10%', right: '10%', height: 1, pointerEvents: 'none',
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)',
+        }} />
+        <div style={{
+          position: 'relative', zIndex: 1, height: '100%',
+          display: 'flex', flexDirection: 'column',
+          padding: '1.25rem 1.4rem', color: 'white',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <IconCreditCard size={14} style={{ opacity: 0.85 }} />
+              <span style={{ fontWeight: 900, fontSize: 12, letterSpacing: '-0.01em', opacity: 0.9 }}>bcarte</span>
+            </div>
+            <div style={{
+              width: 30, height: 22, borderRadius: 4,
+              background: `linear-gradient(135deg, ${accent}88, ${accent}33)`,
+              border: `1px solid ${accent}44`,
+            }} />
+          </div>
+          <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontWeight: 800, fontSize: 16, lineHeight: 1.2, letterSpacing: '-0.02em' }}>{name}</p>
+              <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 10, marginTop: 4 }}>{title}</p>
+              {phone && <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, marginTop: 8 }}>{phone}</p>}
+            </div>
+            <div style={{
+              background: 'rgba(255,255,255,0.97)', borderRadius: 8, padding: 5,
+              flexShrink: 0, boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
+              transform: 'translateZ(10px)',
+            }}>
+              <QRCode value={profileUrl || 'https://bcarte.app'} size={60}
+                fgColor="#0C0A18" bgColor="transparent" level="M" style={{ display: 'block' }} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── Page ──────────────────────────────────────────────────── */
 export default function NFCPage() {
-  const [step, setStep] = useState(0)
-  const [design, setDesign] = useState<Design>('violet')
-  const [ordered, setOrdered] = useState(false)
+  const [selectedId, setSelectedId] = useState<PaletteId | null>('violet')
+  const [customColor, setCustomColor] = useState('#6C47FF')
+  const [address, setAddress]   = useState('')
+  const [showOrder, setShowOrder] = useState(false)
+  const [ordered, setOrdered]   = useState(false)
+  const [profile, setProfile]   = useState<any>(null)
+  const [origin, setOrigin]     = useState('')
 
-  const handleOrder = () => {
-    setOrdered(true)
+  useEffect(() => {
+    setOrigin(window.location.origin)
+    fetch('/api/profile').then(r => r.ok ? r.json() : null).then(d => { if (d) setProfile(d) })
+  }, [])
+
+  const name       = profile?.fullName ?? 'Votre Nom'
+  const title      = profile?.title    ?? 'Votre titre'
+  const phone      = profile?.phone    ?? ''
+  const slug       = profile?.slug     ?? ''
+  const profileUrl = slug ? `${origin}/p/${slug}` : `${origin}/p/profil`
+  const { gradient, accent } = getStyle(selectedId, customColor)
+
+  const handleCustomColor = (color: string) => {
+    setCustomColor(color)
+    setSelectedId(null)
   }
 
   if (ordered) {
     return (
-      <div className="max-w-md mx-auto text-center py-16 space-y-4">
-        <div className="w-16 h-16 bg-success-light rounded-full flex items-center justify-center mx-auto">
-          <IconCheck size={32} className="text-success" />
+      <div className="max-w-md mx-auto py-16 space-y-6">
+        <div className="text-center space-y-3">
+          <div className="w-14 h-14 bg-success-light rounded-full flex items-center justify-center mx-auto">
+            <IconCheck size={26} className="text-success" />
+          </div>
+          <h2 className="text-xl font-bold text-text-primary">Commande confirmée !</h2>
+          <p className="text-sm text-text-secondary">Livraison sous <strong>7–10 jours</strong>.</p>
         </div>
-        <h2 className="text-xl font-bold text-text-primary">Commande confirmée !</h2>
-        <p className="text-text-secondary">
-          Votre carte NFC est en cours de fabrication. Livraison sous <strong>7–10 jours</strong> à l&apos;adresse indiquée.
-        </p>
-        <div className="card text-left text-sm space-y-2">
-          <div className="flex justify-between">
-            <span className="text-text-secondary">Référence</span>
-            <span className="font-medium text-text-primary">#NFC-2026-0847</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-text-secondary">Design</span>
-            <span className="font-medium text-text-primary capitalize">{design === 'violet' ? 'Violet Premium' : 'Or Premium'}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-text-secondary">Statut</span>
-            <span className="text-[#D97706] font-medium">En fabrication</span>
-          </div>
+        <NFCCard3D name={name} title={title} phone={phone} gradient={gradient} accent={accent} profileUrl={profileUrl} />
+        <div className="card space-y-2.5">
+          {[
+            { label: 'Prix',    value: PRICE },
+            { label: 'Adresse', value: address || '—' },
+          ].map(r => (
+            <div key={r.label} className="flex justify-between text-sm">
+              <span className="text-text-secondary">{r.label}</span>
+              <span className="font-medium text-text-primary">{r.value}</span>
+            </div>
+          ))}
         </div>
-        <button onClick={() => { setOrdered(false); setStep(0) }} className="btn-secondary">
-          Retour
+        <button onClick={() => { setOrdered(false); setShowOrder(false) }} className="btn-secondary w-full justify-center">
+          Nouvelle commande
         </button>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      {/* Header */}
+    <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-text-primary">Carte NFC physique</h1>
-        <p className="text-text-secondary text-sm mt-1">Commandez votre carte de visite connectée à votre profil bcarte</p>
+        <h1 className="page-title">Carte NFC</h1>
+        <p className="page-subtitle">Carte de visite connectée avec QR code vers votre profil</p>
       </div>
 
-      {/* Step indicator */}
-      <div className="flex items-center gap-2">
-        {STEPS.map((label, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-              i < step ? 'bg-success text-white' :
-              i === step ? 'bg-primary text-white' :
-              'bg-[#F3F4F6] text-text-tertiary'
-            }`}>
-              {i < step ? <IconCheck size={14} /> : i + 1}
-            </div>
-            <span className={`text-sm font-medium hidden sm:block ${i === step ? 'text-text-primary' : 'text-text-tertiary'}`}>
-              {label}
-            </span>
-            {i < STEPS.length - 1 && (
-              <div className={`w-6 h-0.5 ${i < step ? 'bg-success' : 'bg-[#E5E7EB]'}`} />
-            )}
-          </div>
-        ))}
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
 
-      {/* Step 0: Preview */}
-      {step === 0 && (
-        <div className="card space-y-6">
-          <h2 className="section-title">Aperçu de votre carte</h2>
-          <div className="flex justify-center">
-            <div className={`w-80 h-48 rounded-2xl shadow-xl flex flex-col justify-between p-6 relative overflow-hidden ${
-              design === 'violet'
-                ? 'bg-gradient-to-br from-[#7C5CBF] to-[#4C3580]'
-                : 'bg-gradient-to-br from-[#C9A84C] to-[#8B6914]'
-            }`}>
-              <div className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-10 bg-white -translate-y-8 translate-x-8" />
-              <div className="absolute bottom-0 left-0 w-24 h-24 rounded-full opacity-10 bg-white translate-y-8 -translate-x-8" />
-              <div>
-                <p className="text-white font-extrabold text-lg tracking-tight">bcarte</p>
-              </div>
-              <div>
-                <p className="text-white font-bold text-lg">{CURRENT_USER.fullName}</p>
-                <p className="text-white/80 text-sm mt-0.5">{CURRENT_USER.title}</p>
-                <p className="text-white/60 text-xs mt-3">bcarte.io/{CURRENT_USER.publicUrlSlug}</p>
-              </div>
-              <div className="absolute bottom-4 right-4">
-                <IconCreditCard size={28} className="text-white/30" />
-              </div>
-            </div>
-          </div>
-          <p className="text-sm text-text-secondary text-center">
-            Votre carte NFC renvoie vers votre profil public. Si vous mettez à jour votre profil, la carte se met à jour automatiquement.
+        {/* Gauche — carte sticky */}
+        <div className="lg:sticky lg:top-6 space-y-3">
+          <NFCCard3D name={name} title={title} phone={phone} gradient={gradient} accent={accent} profileUrl={profileUrl} />
+          <p className="text-center text-xs text-text-tertiary">
+            Survolez la carte pour l&apos;effet 3D · Mise à jour en temps réel
           </p>
-          <div className="flex justify-end">
-            <button className="btn-primary" onClick={() => setStep(1)}>
-              Choisir le design
-              <IconChevronRight size={16} />
-            </button>
-          </div>
         </div>
-      )}
 
-      {/* Step 1: Design */}
-      {step === 1 && (
-        <div className="card space-y-6">
-          <h2 className="section-title">Choisissez votre design</h2>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {([
-              { value: 'violet' as Design, label: 'Violet Premium', gradient: 'from-[#7C5CBF] to-[#4C3580]' },
-              { value: 'or' as Design, label: 'Or Premium', gradient: 'from-[#C9A84C] to-[#8B6914]' },
-            ]).map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setDesign(opt.value)}
-                className={`border-2 rounded-card-lg overflow-hidden transition-all ${
-                  design === opt.value ? 'border-primary ring-2 ring-primary ring-offset-2' : 'border-[#E5E7EB]'
-                }`}
-              >
-                <div className={`bg-gradient-to-br ${opt.gradient} h-28 flex items-end p-4`}>
-                  <div>
-                    <p className="text-white font-bold text-sm">{CURRENT_USER.fullName}</p>
-                    <p className="text-white/70 text-xs">{CURRENT_USER.title}</p>
+        {/* Droite — contrôles */}
+        <div className="space-y-4">
+
+          {/* Infos */}
+          <div className="card space-y-3">
+            <h2 className="font-semibold text-sm text-text-primary">Vos informations</h2>
+            <div className="space-y-2">
+              {[
+                { icon: IconUser,        label: name  || '—' },
+                { icon: IconCreditCard,  label: title || '—' },
+                { icon: IconLink,        label: slug ? `/p/${slug}` : 'Profil non configuré' },
+              ].map((row, i) => (
+                <div key={i} className="flex items-center gap-2.5 text-sm">
+                  <row.icon size={13} className="text-text-tertiary flex-shrink-0" />
+                  <span className="text-text-secondary truncate">{row.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Palette */}
+          <div className="card space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-sm text-text-primary">Couleur</h2>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-text-tertiary">Personnalisée</span>
+                <label className="relative cursor-pointer">
+                  <input
+                    type="color"
+                    value={customColor}
+                    onChange={e => handleCustomColor(e.target.value)}
+                    className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+                  />
+                  <div
+                    className="w-7 h-7 rounded-lg border-2 transition-all flex items-center justify-center"
+                    style={{
+                      background: selectedId === null ? customColor : '#F3F4F6',
+                      borderColor: selectedId === null ? customColor : '#E5E7EB',
+                    }}
+                  >
+                    {selectedId !== null && <IconPalette size={13} className="text-text-tertiary" />}
                   </div>
-                </div>
-                <div className="p-3 flex items-center justify-between">
-                  <span className="text-sm font-semibold text-text-primary">{opt.label}</span>
-                  {design === opt.value && (
-                    <span className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                      <IconCheck size={12} className="text-white" />
-                    </span>
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
-          <div className="flex justify-between">
-            <button className="btn-secondary" onClick={() => setStep(0)}>
-              <IconChevronLeft size={16} />
-              Retour
-            </button>
-            <button className="btn-primary" onClick={() => setStep(2)}>
-              Suivant
-              <IconChevronRight size={16} />
-            </button>
-          </div>
-        </div>
-      )}
+                </label>
+              </div>
+            </div>
 
-      {/* Step 2: vCard info */}
-      {step === 2 && (
-        <div className="card space-y-5">
-          <h2 className="section-title">Informations de la carte</h2>
-          <p className="text-sm text-text-secondary">Ces informations seront encodées dans la puce NFC de votre carte.</p>
-          <div className="space-y-4">
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <label className="label">Nom complet</label>
-                <input className="input" defaultValue={CURRENT_USER.fullName} />
-              </div>
-              <div>
-                <label className="label">Titre</label>
-                <input className="input" defaultValue={CURRENT_USER.title} />
-              </div>
+            {/* Grille de swatches */}
+            <div className="grid grid-cols-5 gap-2">
+              {PALETTE.map(p => {
+                const isSelected = selectedId === p.id
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => setSelectedId(p.id)}
+                    title={p.id}
+                    style={{
+                      background: `linear-gradient(135deg, ${p.from} 0%, ${p.to} 100%)`,
+                      borderRadius: 10,
+                      aspectRatio: '1',
+                      border: isSelected ? '2.5px solid white' : '2.5px solid transparent',
+                      outline: isSelected ? '2.5px solid #6C47FF' : 'none',
+                      outlineOffset: 1,
+                      boxShadow: isSelected ? '0 4px 12px rgba(0,0,0,0.25)' : '0 2px 6px rgba(0,0,0,0.12)',
+                      transition: 'all 0.15s ease',
+                      transform: isSelected ? 'scale(1.1)' : 'scale(1)',
+                      cursor: 'pointer',
+                    }}
+                  />
+                )
+              })}
             </div>
-            <div>
-              <label className="label">WhatsApp</label>
-              <div className="relative">
-                <IconBrandWhatsapp className="absolute left-3 top-1/2 -translate-y-1/2 text-whatsapp" size={16} />
-                <input className="input pl-9" defaultValue={CURRENT_USER.whatsapp} />
-              </div>
-            </div>
-            <div>
-              <label className="label">Email</label>
-              <div className="relative">
-                <IconMail className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" size={16} />
-                <input className="input pl-9" type="email" defaultValue={CURRENT_USER.contactEmail} />
-              </div>
-            </div>
-            <div>
-              <label className="label">URL du profil bcarte</label>
-              <div className="relative">
-                <IconLink className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" size={16} />
-                <input className="input pl-9" defaultValue={`https://bcarte.io/${CURRENT_USER.publicUrlSlug}`} readOnly />
-              </div>
-            </div>
-          </div>
-          <div className="flex justify-between">
-            <button className="btn-secondary" onClick={() => setStep(1)}>
-              <IconChevronLeft size={16} />
-              Retour
-            </button>
-            <button className="btn-primary" onClick={() => setStep(3)}>
-              Récapitulatif
-              <IconChevronRight size={16} />
-            </button>
-          </div>
-        </div>
-      )}
 
-      {/* Step 3: Summary & Order */}
-      {step === 3 && (
-        <div className="card space-y-6">
-          <h2 className="section-title">Récapitulatif</h2>
-          <div className="space-y-3">
-            <div className="flex justify-between text-sm py-2 border-b border-[#E5E7EB]">
-              <span className="text-text-secondary">Carte NFC bcarte</span>
-              <span className="font-medium text-text-primary">1 unité</span>
-            </div>
-            <div className="flex justify-between text-sm py-2 border-b border-[#E5E7EB]">
-              <span className="text-text-secondary">Design</span>
-              <span className="font-medium text-text-primary">{design === 'violet' ? 'Violet Premium' : 'Or Premium'}</span>
-            </div>
-            <div className="flex justify-between text-sm py-2 border-b border-[#E5E7EB]">
-              <span className="text-text-secondary">Délai de livraison</span>
-              <span className="font-medium text-text-primary">7–10 jours ouvrés</span>
-            </div>
-            <div className="flex justify-between text-sm py-2">
-              <span className="text-text-secondary">Mise à jour automatique</span>
-              <span className="text-success font-medium flex items-center gap-1">
-                <IconCheck size={14} />
-                Incluse
+            {/* Indicateur couleur sélectionnée */}
+            <div className="flex items-center gap-2 pt-1">
+              <div
+                className="w-5 h-5 rounded-md flex-shrink-0"
+                style={{ background: gradient }}
+              />
+              <span className="text-xs text-text-secondary">
+                {selectedId
+                  ? PALETTE.find(p => p.id === selectedId)?.id ?? ''
+                  : `Couleur personnalisée ${customColor}`}
               </span>
             </div>
           </div>
-          <div className="bg-primary-light border border-primary-border rounded-card p-4 text-sm text-primary">
-            <p className="font-semibold mb-1">Comment ça fonctionne ?</p>
-            <p>Votre carte NFC est liée à votre profil bcarte. Lorsqu&apos;un contact scanne la carte, il accède directement à votre profil public à jour — même si vos informations changent après la commande.</p>
-          </div>
-          <div className="flex justify-between">
-            <button className="btn-secondary" onClick={() => setStep(2)}>
-              <IconChevronLeft size={16} />
-              Retour
+
+          {/* Commander */}
+          {!showOrder ? (
+            <button onClick={() => setShowOrder(true)} className="btn-primary w-full justify-center py-3 text-sm">
+              Commander — {PRICE}
             </button>
-            <button className="btn-primary px-6" onClick={handleOrder}>
-              <IconCreditCard size={16} />
-              Commander
-            </button>
-          </div>
+          ) : (
+            <div className="card space-y-4">
+              <h2 className="font-semibold text-sm text-text-primary">Livraison</h2>
+              <div>
+                <label className="label">Adresse complète</label>
+                <div className="relative">
+                  <IconMapPin size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none" />
+                  <input
+                    className="input pl-9"
+                    placeholder="Sacré-Cœur 3, Villa 25, Dakar"
+                    value={address}
+                    onChange={e => setAddress(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setShowOrder(false)} className="btn-secondary flex-1 justify-center text-sm">
+                  Annuler
+                </button>
+                <button
+                  onClick={() => setOrdered(true)}
+                  disabled={!address.trim()}
+                  className="btn-primary flex-1 justify-center text-sm disabled:opacity-50"
+                >
+                  <IconCheck size={14} /> Confirmer
+                </button>
+              </div>
+            </div>
+          )}
+
         </div>
-      )}
+      </div>
     </div>
   )
 }

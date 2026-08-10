@@ -1,256 +1,325 @@
 'use client'
 
-import { useState } from 'react'
-import { IconFileText, IconDownload, IconCopy, IconCheck, IconChevronRight, IconChevronLeft, IconSparkles } from '@tabler/icons-react'
-import { CURRENT_USER } from '@/lib/mock-data'
+import { useEffect, useRef, useState } from 'react'
+import {
+  IconFileText, IconDownload, IconCopy, IconCheck,
+  IconChevronRight, IconChevronLeft, IconLoader2,
+  IconBriefcase, IconSchool, IconCode, IconMapPin,
+  IconSparkles,
+} from '@tabler/icons-react'
 
-const STEPS = ['Offre d\'emploi', 'Options', 'Résultat']
+const STEPS = ["Offre d'emploi", 'Options', 'Résultat']
 
-const FAKE_CV = `**Amadou Diallo**
-Ingénieur Logiciel Senior | Dakar, Sénégal
-+221 77 123 4567 · amadou.diallo@email.com · bcarte.io/amadou-diallo
-
----
-
-**PROFIL**
-Ingénieur logiciel avec 7 ans d'expérience en développement full-stack, spécialisé dans les architectures React/Node.js et les systèmes distribués à haute disponibilité. Passionné par l'innovation technologique en Afrique de l'Ouest, avec une solide expertise en PostgreSQL et Docker pour des environnements de production robustes.
-
-**COMPÉTENCES CLÉS**
-• React.js / Next.js — développement d'interfaces complexes et performantes
-• Node.js / Express — API RESTful et microservices
-• TypeScript — développement robuste et maintainable
-• PostgreSQL — modélisation et optimisation des bases de données
-• Docker / CI-CD — déploiement et infrastructure
-
-**EXPÉRIENCES**
-
-Ingénieur Logiciel Senior — Orange Digital Center, Dakar  ✓ Vérifié
-Mars 2022 – Aujourd'hui
-• Conception et développement d'une plateforme e-commerce desservant 50 000+ utilisateurs
-• Réduction de 40% des temps de réponse par l'optimisation des requêtes PostgreSQL
-• Encadrement d'une équipe de 4 développeurs juniors
-
-Développeur Full Stack — Teranga Tech, Dakar  ✓ Vérifié
-Juin 2019 – Février 2022
-• Développement de solutions SaaS pour 12 PME sénégalaises
-• Intégration d'API Orange Money et Wave pour les paiements mobiles
-• Migration d'une architecture monolithique vers des microservices
-
-**FORMATION**
-
-Master en Génie Informatique — École Polytechnique de Thiès  (vérification en cours)
-2015 – 2017
-
-Licence en Informatique — Université Cheikh Anta Diop  ✓ Vérifié
-2012 – 2015
-
-**LANGUES**
-Français (natif) · Anglais (professionnel) · Wolof (natif)`
+function initials(name: string) {
+  return name?.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?'
+}
 
 export default function CVPage() {
-  const [step, setStep] = useState(0)
-  const [jobOffer, setJobOffer] = useState('')
-  const [language, setLanguage] = useState<'fr' | 'en' | 'both'>('fr')
-  const [format, setFormat] = useState<'1page' | '2pages' | 'short'>('1page')
-  const [generating, setGenerating] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [step,        setStep]        = useState(0)
+  const [jobOffer,    setJobOffer]    = useState('')
+  const [lang,        setLang]        = useState('fr')
+  const [copied,      setCopied]      = useState(false)
+  const [profile,     setProfile]     = useState<any>(null)
+  const [generating,  setGenerating]  = useState(false)
+  const [generatedCV, setGeneratedCV] = useState('')
+  const [genError,    setGenError]    = useState('')
+  const printRef = useRef<HTMLPreElement>(null)
 
-  const handleGenerate = () => {
-    setGenerating(true)
-    setTimeout(() => {
-      setGenerating(false)
-      setStep(2)
-    }, 2000)
-  }
+  useEffect(() => {
+    fetch('/api/profile').then(r => r.ok ? r.json() : null).then(d => { if (d) setProfile(d) })
+  }, [])
 
   const handleCopy = () => {
+    navigator.clipboard.writeText(generatedCV)
     setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    setTimeout(() => setCopied(false), 2500)
+  }
+
+  const handleDownloadPDF = () => {
+    const style = document.createElement('style')
+    style.id = '__cv-print-style'
+    style.innerHTML = `
+      @media print {
+        body > *:not(#cv-print-root) { display: none !important; }
+        #cv-print-root {
+          display: block !important;
+          font-family: 'Helvetica Neue', Arial, sans-serif;
+          font-size: 13px; line-height: 1.7; color: #111;
+          white-space: pre-wrap; padding: 0; margin: 0;
+        }
+      }
+    `
+    document.head.appendChild(style)
+
+    const div = document.createElement('div')
+    div.id = 'cv-print-root'
+    div.style.display = 'none'
+    div.textContent = generatedCV
+    document.body.appendChild(div)
+
+    window.print()
+
+    setTimeout(() => {
+      document.head.removeChild(style)
+      document.body.removeChild(div)
+    }, 1000)
+  }
+
+  const handleGenerate = async () => {
+    setGenerating(true)
+    setGenError('')
+    setGeneratedCV('')
+    try {
+      const res = await fetch('/api/cv/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ offerText: jobOffer, lang }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setGenError(data.error ?? 'Erreur lors de la génération')
+        return
+      }
+
+      // Stream the response token by token
+      setStep(2)
+      const reader = res.body!.getReader()
+      const decoder = new TextDecoder()
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        setGeneratedCV(prev => prev + decoder.decode(value, { stream: true }))
+      }
+    } catch {
+      setGenError('Erreur réseau, réessayez')
+    } finally {
+      setGenerating(false)
+    }
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      {/* Header */}
+    <div className="space-y-6">
+
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div>
-        <h1 className="text-2xl font-bold text-text-primary">Générer mon CV par IA</h1>
-        <p className="text-text-secondary text-sm mt-1">Votre CV adapté à l&apos;offre d&apos;emploi en quelques secondes</p>
+        <h1 className="page-title">Générer mon CV</h1>
+        <p className="page-subtitle">CV adapté à chaque offre grâce à l&apos;IA</p>
       </div>
 
-      {/* Step indicator */}
-      <div className="flex items-center gap-2">
-        {STEPS.map((label, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-              i < step ? 'bg-success text-white' :
-              i === step ? 'bg-primary text-white' :
-              'bg-[#F3F4F6] text-text-tertiary'
-            }`}>
-              {i < step ? <IconCheck size={14} /> : i + 1}
+      {/* ── Two-column layout ──────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 items-start">
+
+        {/* ── LEFT — profile snapshot (sticky) ───────────────────────────── */}
+        <div className="lg:sticky lg:top-8 space-y-4">
+          <div className="rounded-[14px] overflow-hidden shadow-card">
+
+            {/* Gradient hero */}
+            <div style={{ background: 'linear-gradient(145deg, #1A0E4E 0%, #3B1FA0 55%, #6C47FF 100%)' }}
+              className="px-6 pt-6 pb-5 flex flex-col items-center text-center gap-3">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl font-black border border-white/20"
+                style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}>
+                {profile ? initials(profile.fullName) : '?'}
+              </div>
+              <div>
+                <p className="text-white font-bold text-base leading-tight">
+                  {profile?.fullName || 'Votre nom'}
+                </p>
+                <p className="text-white/70 text-sm mt-0.5">
+                  {profile?.title || 'Titre non renseigné'}
+                </p>
+                <p className="text-white/45 text-xs mt-1 flex items-center justify-center gap-1">
+                  <IconMapPin size={10} />
+                  {[profile?.city, profile?.country].filter(Boolean).join(', ') || '—'}
+                </p>
+              </div>
             </div>
-            <span className={`text-sm font-medium hidden sm:block ${i === step ? 'text-text-primary' : 'text-text-tertiary'}`}>
-              {label}
-            </span>
-            {i < STEPS.length - 1 && (
-              <div className={`w-8 h-0.5 ${i < step ? 'bg-success' : 'bg-[#E5E7EB]'}`} />
-            )}
+
+            {/* Data included */}
+            <div className="bg-white divide-y divide-border">
+              <div className="px-4 py-2.5">
+                <p className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest">
+                  Données incluses
+                </p>
+              </div>
+              {[
+                { Icon: IconBriefcase, color: '#6C47FF', bg: '#F0EDFF', label: 'Expériences', value: profile?.experiences?.length ?? 0 },
+                { Icon: IconSchool,    color: '#059669', bg: '#ECFDF5', label: 'Formations',  value: profile?.educations?.length ?? 0 },
+                { Icon: IconCode,      color: '#D97706', bg: '#FFFBEB', label: 'Compétences', value: profile?.skills?.length ?? 0 },
+              ].map(({ Icon, color, bg, label, value }) => (
+                <div key={label} className="flex items-center gap-3 px-4 py-3">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ background: bg }}>
+                    <Icon size={13} style={{ color }} />
+                  </div>
+                  <p className="text-sm text-text-secondary flex-1">{label}</p>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                    value > 0 ? 'bg-primary-light text-primary' : 'bg-border-subtle text-text-tertiary'
+                  }`}>{value}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        ))}
-      </div>
 
-      {/* Step 1: Job offer */}
-      {step === 0 && (
-        <div className="card space-y-4">
-          <h2 className="section-title flex items-center gap-2">
-            <IconFileText size={20} className="text-primary" />
-            Offre d&apos;emploi
-          </h2>
-          <p className="text-sm text-text-secondary">
-            Collez le texte complet de l&apos;offre d&apos;emploi. Notre IA adaptera votre profil pour maximiser vos chances.
-          </p>
-          <div>
-            <label htmlFor="jobOffer" className="label">Offre d&apos;emploi</label>
-            <textarea
-              id="jobOffer"
-              className="input resize-none"
-              rows={10}
-              placeholder={`Exemple :
-
-Nous recherchons un Développeur Full Stack Senior pour rejoindre notre équipe à Dakar.
-
-Missions :
-• Développer et maintenir nos applications web
-• Collaborer avec l'équipe produit
-• Participer aux revues de code...
-
-Profil recherché :
-• 5+ ans d'expérience en développement web
-• Maîtrise de React et Node.js
-• Expérience avec PostgreSQL...`}
-              value={jobOffer}
-              onChange={(e) => setJobOffer(e.target.value)}
-            />
-          </div>
-          <div className="flex justify-end">
-            <button
-              className="btn-primary"
-              onClick={() => setStep(1)}
-              disabled={!jobOffer.trim()}
-            >
-              Suivant
-              <IconChevronRight size={16} />
-            </button>
-          </div>
         </div>
-      )}
 
-      {/* Step 2: Options */}
-      {step === 1 && (
-        <div className="card space-y-6">
-          <h2 className="section-title flex items-center gap-2">
-            <IconSparkles size={20} className="text-primary" />
-            Options de génération
-          </h2>
+        {/* ── RIGHT — stepper + content ──────────────────────────────────── */}
+        <div className="min-w-0 space-y-4">
 
-          <div>
-            <p className="label">Langue du CV</p>
-            <div className="grid grid-cols-3 gap-3">
-              {([
-                { value: 'fr', label: 'Français' },
-                { value: 'en', label: 'Anglais' },
-                { value: 'both', label: 'Les deux' },
-              ] as const).map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setLanguage(opt.value)}
-                  className={`py-3 rounded-card border-2 text-sm font-medium transition-all ${
-                    language === opt.value
-                      ? 'border-primary bg-primary-light text-primary'
-                      : 'border-[#E5E7EB] text-text-secondary hover:border-primary-border'
-                  }`}
-                >
-                  {opt.label}
-                </button>
+          {/* Stepper */}
+          <div className="card p-4">
+            <div className="flex items-center">
+              {STEPS.map((s, i) => (
+                <div key={s} className="flex items-center flex-1">
+                  <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 ${
+                      i < step  ? 'bg-primary text-white shadow-sm'
+                      : i === step ? 'bg-primary text-white ring-4 ring-primary/15'
+                      : 'bg-border-subtle text-text-tertiary'
+                    }`}>
+                      {i < step ? <IconCheck size={13} /> : i + 1}
+                    </div>
+                    <span className={`text-[10px] font-semibold whitespace-nowrap ${
+                      i === step ? 'text-primary' : i < step ? 'text-text-secondary' : 'text-text-tertiary'
+                    }`}>{s}</span>
+                  </div>
+                  {i < STEPS.length - 1 && (
+                    <div className={`flex-1 h-px mx-3 mb-4 transition-colors ${i < step ? 'bg-primary' : 'bg-border'}`} />
+                  )}
+                </div>
               ))}
             </div>
           </div>
 
-          <div>
-            <p className="label">Format</p>
-            <div className="grid grid-cols-3 gap-3">
-              {([
-                { value: '1page', label: '1 page', desc: 'Synthétique' },
-                { value: '2pages', label: '2 pages', desc: 'Détaillé' },
-                { value: 'short', label: 'Court', desc: 'Résumé exécutif' },
-              ] as const).map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setFormat(opt.value)}
-                  className={`py-3 px-2 rounded-card border-2 text-sm transition-all ${
-                    format === opt.value
-                      ? 'border-primary bg-primary-light text-primary'
-                      : 'border-[#E5E7EB] text-text-secondary hover:border-primary-border'
-                  }`}
-                >
-                  <p className="font-medium">{opt.label}</p>
-                  <p className="text-xs mt-0.5 opacity-70">{opt.desc}</p>
+          {/* ── Étape 0 — Offre d'emploi ─────────────────────────────────── */}
+          {step === 0 && (
+            <div className="card space-y-4">
+              <div>
+                <p className="font-semibold text-text-primary">Offre d&apos;emploi</p>
+                <p className="text-xs text-text-tertiary mt-0.5">
+                  Collez l&apos;offre pour que l&apos;IA adapte votre CV — ou ignorez cette étape
+                </p>
+              </div>
+              <textarea
+                className="input resize-none text-sm leading-relaxed"
+                rows={8}
+                placeholder="Collez le texte de l'offre d'emploi ici…"
+                value={jobOffer}
+                onChange={e => setJobOffer(e.target.value)}
+              />
+              <div className="flex items-center gap-3">
+                {jobOffer && (
+                  <button onClick={() => setJobOffer('')} className="btn-secondary gap-1.5 text-sm">
+                    Vider
+                  </button>
+                )}
+                <button onClick={() => setStep(1)} className="btn-primary flex-1 justify-center">
+                  {jobOffer ? 'Continuer avec cette offre' : 'Passer cette étape'}
+                  <IconChevronRight size={15} />
                 </button>
-              ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="flex justify-between">
-            <button className="btn-secondary" onClick={() => setStep(0)}>
-              <IconChevronLeft size={16} />
-              Retour
-            </button>
-            <button className="btn-primary" onClick={handleGenerate} disabled={generating}>
-              {generating ? (
-                <>
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Génération en cours...
-                </>
-              ) : (
-                <>
-                  <IconSparkles size={16} />
-                  Générer mon CV
-                </>
+          {/* ── Étape 1 — Options ────────────────────────────────────────── */}
+          {step === 1 && (
+            <div className="card space-y-5">
+              <div>
+                <p className="font-semibold text-text-primary">Options du CV</p>
+                <p className="text-xs text-text-tertiary mt-0.5">Choisissez la langue de génération</p>
+              </div>
+
+              <div>
+                <label className="label">Langue du CV</label>
+                <div className="grid grid-cols-2 gap-3 mt-1">
+                  {[
+                    { value: 'fr', label: 'Français', flag: '🇫🇷' },
+                    { value: 'en', label: 'Anglais',  flag: '🇬🇧' },
+                  ].map(l => (
+                    <button key={l.value} onClick={() => setLang(l.value)}
+                      className={`flex items-center gap-3 p-4 rounded-[10px] border-2 transition-all text-sm font-semibold ${
+                        lang === l.value
+                          ? 'border-primary bg-primary-light text-primary'
+                          : 'border-border text-text-secondary hover:border-primary/40 hover:bg-bg-light'
+                      }`}>
+                      <span className="text-lg">{l.flag}</span>
+                      {l.label}
+                      {lang === l.value && <IconCheck size={14} className="ml-auto" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {genError && (
+                <p className="text-red-600 text-xs font-medium bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  {genError}
+                </p>
               )}
-            </button>
-          </div>
-        </div>
-      )}
 
-      {/* Step 3: Result */}
-      {step === 2 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-success flex items-center gap-1.5">
-              <IconCheck size={16} />
-              Votre CV adapté est prêt. Téléchargez-le ou copiez-le.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <button className="btn-primary">
-              <IconDownload size={16} />
-              Télécharger PDF
-            </button>
-            <button className="btn-secondary" onClick={handleCopy}>
-              {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
-              {copied ? 'Copié !' : 'Copier'}
-            </button>
-            <button className="btn-ghost" onClick={() => setStep(0)}>
-              Recommencer
-            </button>
-          </div>
+              <div className="flex gap-3 pt-1">
+                <button onClick={() => setStep(0)} className="btn-secondary gap-2">
+                  <IconChevronLeft size={15} /> Retour
+                </button>
+                <button onClick={handleGenerate} disabled={generating || !profile}
+                  className="btn-primary flex-1 justify-center gap-2">
+                  {generating
+                    ? <><IconLoader2 size={15} className="animate-spin" /> Génération par l&apos;IA…</>
+                    : <><IconSparkles size={15} /> Générer avec l&apos;IA</>}
+                </button>
+              </div>
+            </div>
+          )}
 
-          {/* CV preview */}
-          <div className="card font-mono text-sm leading-relaxed whitespace-pre-wrap text-text-primary bg-white">
-            {FAKE_CV}
-          </div>
+          {/* ── Étape 2 — Résultat ───────────────────────────────────────── */}
+          {step === 2 && (
+            <div className="space-y-3">
+              {/* Actions bar */}
+              <div className="card flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <p className="font-semibold text-text-primary text-sm">Votre CV est prêt</p>
+                  <p className="text-xs text-text-tertiary mt-0.5">
+                    {lang === 'fr' ? 'Français' : 'Anglais'} · Généré et adapté par l&apos;IA
+                  </p>
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <button onClick={handleCopy} className="btn-secondary gap-1.5 px-3 py-2 text-sm">
+                    {copied ? <IconCheck size={14} className="text-success" /> : <IconCopy size={14} />}
+                    {copied ? 'Copié !' : 'Copier'}
+                  </button>
+                  <button onClick={handleDownloadPDF} className="btn-primary gap-1.5 px-3 py-2 text-sm">
+                    <IconDownload size={14} /> PDF
+                  </button>
+                </div>
+              </div>
+
+              {/* CV preview */}
+              <div className="card p-0 overflow-hidden">
+                <div className="px-4 py-2.5 border-b border-border bg-bg-light flex items-center gap-2">
+                  <IconFileText size={13} className="text-text-tertiary" />
+                  <span className="text-xs font-medium text-text-tertiary">Aperçu</span>
+                </div>
+                <pre ref={printRef}
+                  className="p-6 text-xs text-text-secondary font-mono whitespace-pre-wrap leading-relaxed overflow-x-auto">
+                  {generatedCV}
+                </pre>
+              </div>
+
+              {/* Regenerate / reset */}
+              <div className="flex items-center gap-4">
+                <button onClick={() => { setStep(1); setGenError('') }}
+                  className="text-sm text-primary font-medium hover:underline flex items-center gap-1">
+                  <IconSparkles size={13} /> Regénérer
+                </button>
+                <button onClick={() => { setStep(0); setJobOffer(''); setGeneratedCV('') }}
+                  className="text-sm text-text-tertiary font-medium hover:underline">
+                  ← Recommencer avec une autre offre
+                </button>
+              </div>
+            </div>
+          )}
+
         </div>
-      )}
+      </div>
     </div>
   )
 }
