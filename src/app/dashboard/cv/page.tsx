@@ -141,11 +141,6 @@ export default function CVPage() {
             </div>
           </div>
 
-          {/* AI badge */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-[10px] bg-primary-light border border-primary/15">
-            <IconSparkles size={14} className="text-primary flex-shrink-0" />
-            <p className="text-xs text-primary font-medium">Powered by Claude AI</p>
-          </div>
         </div>
 
         {/* ── RIGHT — stepper + content ──────────────────────────────────── */}
@@ -282,9 +277,6 @@ export default function CVPage() {
                 <div className="px-4 py-2.5 border-b border-border bg-bg-light flex items-center gap-2">
                   <IconFileText size={13} className="text-text-tertiary" />
                   <span className="text-xs font-medium text-text-tertiary">Aperçu</span>
-                  <span className="ml-auto text-[10px] text-text-tertiary flex items-center gap-1">
-                    <IconSparkles size={10} className="text-primary" /> Claude AI
-                  </span>
                 </div>
                 <pre ref={printRef}
                   className="p-6 text-xs text-text-secondary font-mono whitespace-pre-wrap leading-relaxed overflow-x-auto">
