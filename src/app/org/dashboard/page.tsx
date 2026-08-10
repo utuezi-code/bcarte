@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
-  IconCircleCheck, IconX, IconClock, IconUsers, IconBriefcase,
-  IconExternalLink, IconPlus, IconTrash, IconEye, IconLoader2,
+  IconCircleCheck, IconClock, IconUsers, IconBriefcase,
+  IconExternalLink, IconPlus, IconTrash, IconEye, IconLoader2, IconCamera,
 } from '@tabler/icons-react'
 import Sidebar from '@/components/layout/Sidebar'
 import BottomNav from '@/components/layout/BottomNav'
@@ -23,6 +23,9 @@ export default function OrgDashboardPage() {
   const [orgForm, setOrgForm]           = useState<any>({})
   const [savingOrg, setSavingOrg]       = useState(false)
   const [savedOrg, setSavedOrg]         = useState(false)
+  const [saveOrgError, setSaveOrgError] = useState('')
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [logoError, setLogoError]       = useState('')
 
   useEffect(() => {
     Promise.all([
@@ -39,15 +42,6 @@ export default function OrgDashboardPage() {
       setLoading(false)
     })
   }, [])
-
-  const handleVerif = async (id: string, status: string) => {
-    await fetch('/api/org/verifications', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, status }),
-    })
-    setVerifications(verifications.map(v => v.id === id ? { ...v, status } : v))
-  }
 
   const handleAddOffer = async () => {
     const data = await fetch('/api/org/offers', {
@@ -69,14 +63,34 @@ export default function OrgDashboardPage() {
     setOffers(offers.filter(o => o.id !== id))
   }
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingLogo(true)
+    setLogoError('')
+    const fd = new FormData()
+    fd.append('file', file)
+    const res = await fetch('/api/org/upload-logo', { method: 'POST', body: fd })
+    const data = await res.json()
+    if (!res.ok) { setLogoError(data.error ?? 'Erreur upload'); setUploadingLogo(false); return }
+    setOrg((prev: any) => ({ ...prev, logoUrl: data.url }))
+    setUploadingLogo(false)
+  }
+
   const handleSaveOrg = async () => {
     setSavingOrg(true)
-    await fetch('/api/org', {
+    setSaveOrgError('')
+    const res = await fetch('/api/org', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(orgForm),
     })
+    const data = await res.json()
     setSavingOrg(false)
+    if (!res.ok) {
+      setSaveOrgError(data.error ?? 'Erreur lors de la sauvegarde')
+      return
+    }
     setSavedOrg(true)
     setTimeout(() => setSavedOrg(false), 3000)
   }
@@ -100,9 +114,11 @@ export default function OrgDashboardPage() {
           {/* Header org */}
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold text-xl"
-                style={{ backgroundColor: org?.logoColor ?? '#6C47FF' }}>
-                {(org?.name ?? 'O').slice(0, 2).toUpperCase()}
+              <div className="w-14 h-14 rounded-2xl overflow-hidden flex items-center justify-center text-white font-bold text-xl flex-shrink-0"
+                style={{ backgroundColor: org?.logoUrl ? 'transparent' : (org?.logoColor ?? '#6C47FF') }}>
+                {org?.logoUrl
+                  ? <img src={org.logoUrl} alt={org.name} className="w-full h-full object-contain" />
+                  : (org?.name ?? 'O').slice(0, 2).toUpperCase()}
               </div>
               <div>
                 <div className="flex items-center gap-2">
@@ -155,22 +171,28 @@ export default function OrgDashboardPage() {
                 ))}
               </div>
 
-              {pending.length > 0 && (
+              {verifications.length > 0 && (
                 <div className="card">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="font-semibold text-text-primary">Vérifications récentes</h2>
-                    <Link href="/org/verifications" className="text-sm text-primary">Tout traiter →</Link>
+                    <Link href="/org/verifications" className="text-sm text-primary">Tout voir →</Link>
                   </div>
-                  {pending.slice(0, 3).map((v: any) => (
-                    <div key={v.id} className="flex items-center justify-between py-3 border-b border-[#F3F4F6] last:border-0">
-                      <div>
-                        <span className="text-xs bg-[#F3F4F6] text-text-secondary px-2 py-0.5 rounded-full mr-2">{v.type}</span>
-                        <span className="text-sm font-medium text-text-primary">{v.label}</span>
+                  {verifications.slice(0, 5).map((v: any) => (
+                    <div key={v.id} className="flex items-center gap-3 py-3 border-b border-[#F3F4F6] last:border-0">
+                      <span className="text-xs bg-[#F3F4F6] text-text-secondary px-2 py-0.5 rounded-full flex-shrink-0">
+                        {v.type === 'EXPÉRIENCE' ? 'Expérience' : 'Formation'}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-text-primary truncate">{v.profile?.fullName ?? '—'}</p>
+                        <p className="text-xs text-text-secondary truncate">{v.label}</p>
                       </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => handleVerif(v.id, 'CONFIRMEE')} className="text-xs bg-success-light text-success px-3 py-1 rounded-lg font-medium">Confirmer</button>
-                        <button onClick={() => handleVerif(v.id, 'REJETEE')} className="text-xs bg-red-50 text-danger px-3 py-1 rounded-lg font-medium">Rejeter</button>
-                      </div>
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                        v.status === 'EN_ATTENTE'
+                          ? 'bg-[#FFFBEB] text-[#D97706]'
+                          : 'bg-[#ECFDF5] text-[#059669]'
+                      }`}>
+                        {v.status === 'EN_ATTENTE' ? 'Non traité' : 'Traité'}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -272,9 +294,36 @@ export default function OrgDashboardPage() {
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold text-text-primary">Profil de l&apos;organisation</h2>
                 <button onClick={handleSaveOrg} disabled={savingOrg} className="btn-primary px-5 py-2.5 text-sm">
-                  {savedOrg ? 'Enregistré !' : 'Enregistrer'}
+                  {savingOrg ? 'Sauvegarde…' : savedOrg ? 'Enregistré !' : 'Enregistrer'}
                 </button>
               </div>
+              {saveOrgError && (
+                <p className="text-sm text-red-500">{saveOrgError}</p>
+              )}
+
+              {/* Logo upload */}
+              <div>
+                <label className="label">Logo</label>
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden flex items-center justify-center text-white font-bold text-xl flex-shrink-0"
+                    style={{ backgroundColor: org?.logoUrl ? '#F3F4F6' : (org?.logoColor ?? '#6C47FF') }}>
+                    {org?.logoUrl
+                      ? <img src={org.logoUrl} alt={org?.name} className="w-full h-full object-contain" />
+                      : (org?.name ?? 'O').slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <label className={`flex items-center gap-2 h-9 px-4 rounded-[10px] border border-border text-sm font-medium text-text-secondary hover:border-primary hover:text-primary transition-colors cursor-pointer w-fit ${uploadingLogo ? 'opacity-50 pointer-events-none' : ''}`}>
+                      {uploadingLogo
+                        ? <><IconLoader2 size={14} className="animate-spin" /> Envoi…</>
+                        : <><IconCamera size={14} /> {org?.logoUrl ? 'Changer le logo' : 'Ajouter un logo'}</>}
+                      <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={uploadingLogo} />
+                    </label>
+                    <p className="text-[11px] text-text-tertiary">PNG, JPG, SVG — max 5 Mo</p>
+                    {logoError && <p className="text-[11px] text-danger">{logoError}</p>}
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="label">Type d&apos;organisation</label>
                 <select className="input" value={orgForm.type ?? ''} onChange={e => setOrgForm({...orgForm, type: e.target.value})}>

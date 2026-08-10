@@ -6,7 +6,6 @@ import {
   IconSearch, IconX, IconLoader2, IconMapPin,
   IconShieldCheck, IconUsers, IconBriefcase,
   IconArrowUpRight, IconUserCircle, IconBuilding,
-  IconFileText,
 } from '@tabler/icons-react'
 import Sidebar from '@/components/layout/Sidebar'
 import BottomNav from '@/components/layout/BottomNav'
@@ -181,9 +180,7 @@ export default function ExplorePage() {
                               {[p.city, p.country].filter(Boolean).join(', ') || '—'}
                             </p>
                           </div>
-                          {isOrg
-                            ? <IconFileText size={13} className="text-text-tertiary group-hover:text-primary transition-colors flex-shrink-0 mt-0.5" />
-                            : <IconArrowUpRight size={13} className="text-text-tertiary group-hover:text-primary transition-colors flex-shrink-0 mt-0.5" />}
+                          <IconArrowUpRight size={13} className="text-text-tertiary group-hover:text-primary transition-colors flex-shrink-0 mt-0.5" />
                         </div>
 
                         {/* Skills */}
@@ -203,28 +200,29 @@ export default function ExplorePage() {
                           </div>
                         )}
 
-                        {/* Org CTA */}
-                        {isOrg && (
-                          <div className="pt-1 border-t border-border-subtle">
-                            <span className="text-[11px] font-semibold text-primary flex items-center gap-1">
-                              <IconFileText size={11} /> Voir le profil & CV
-                            </span>
-                          </div>
+                        {/* Verified badge */}
+                        {(p.verifiedCount ?? 0) > 0 && (
+                          <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full w-fit">
+                            <IconShieldCheck size={10} />
+                            {p.verifiedCount} vérifié{p.verifiedCount > 1 ? 's' : ''}
+                          </span>
                         )}
+
+                        {/* CTA */}
+                        <div className="pt-1 border-t border-border-subtle">
+                          <span className="text-[11px] font-semibold text-primary flex items-center gap-1">
+                            <IconArrowUpRight size={11} /> Voir le profil{isOrg ? ' & CV' : ''}
+                          </span>
+                        </div>
                       </>
                     )
 
-                    return isOrg ? (
+                    return (
                       <button key={p.id}
                         onClick={() => p.slug && setModalSlug(p.slug)}
                         className="card hover:shadow-card-hover hover:border-primary/20 transition-all group block space-y-3 text-left w-full">
                         {cardContent}
                       </button>
-                    ) : (
-                      <Link key={p.id} href={href}
-                        className="card hover:shadow-card-hover hover:border-primary/20 transition-all group block space-y-3">
-                        {cardContent}
-                      </Link>
                     )
                   })}
                 </div>

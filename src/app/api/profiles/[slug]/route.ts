@@ -33,8 +33,9 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
   /* verifications */
   const { data: verifications } = await supabaseAdmin
     .from('verifications')
-    .select('status, organisationId, organisation:organisations(name, slug)')
+    .select('id, refId, status, organisationId, type, organisation:organisations(name, slug, verified)')
     .eq('profileId', profile.id)
+    .eq('status', 'CONFIRMEE')
 
   return NextResponse.json({
     ...profile,

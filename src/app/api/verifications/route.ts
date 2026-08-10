@@ -19,7 +19,7 @@ export async function GET() {
 
   const { data } = await supabaseAdmin
     .from('verifications')
-    .select('*, organisation:organisations(id, name, logoColor)')
+    .select('*, certId, certIssuedAt, organisation:organisations(id, name, logoColor)')
     .eq('profileId', profile.id)
     .order('createdAt', { ascending: false })
 

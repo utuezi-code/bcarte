@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
 
-  const { organisationId, role } = await req.json()
+  const { organisationId, role, department, matricule, message } = await req.json()
   if (!organisationId) return NextResponse.json({ error: 'Organisation requise' }, { status: 400 })
 
   const { data: profile } = await supabaseAdmin
@@ -56,6 +56,9 @@ export async function POST(req: NextRequest) {
     profileId: profile.id,
     organisationId,
     role: role ?? 'Membre',
+    department: department ?? null,
+    matricule:  matricule  ?? null,
+    message:    message    ?? null,
     joinedAt: new Date().toISOString(),
   })
 
