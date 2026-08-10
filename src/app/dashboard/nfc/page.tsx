@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import {
   IconCreditCard, IconCheck, IconMapPin, IconDownload,
   IconQrcode, IconPalette, IconPencil, IconLoader2,
+  IconPhoto, IconX,
 } from '@tabler/icons-react'
 import QRCode from 'react-qr-code'
 
@@ -186,19 +187,25 @@ export default function NFCPage() {
   const [title,       setTitle]       = useState('')
   const [email,       setEmail]       = useState('')
   const [phone,       setPhone]       = useState('')
-  const [company,     setCompany]     = useState('')
-  const [paletteId,   setPaletteId]   = useState<PaletteId | null>('violet')
-  const [customColor, setCustomColor] = useState('#6C47FF')
-  const [downloading, setDownloading] = useState(false)
-  const [saving,      setSaving]      = useState(false)
-  const [saved,       setSaved]       = useState(false)
-  const [showOrder,   setShowOrder]   = useState(false)
-  const [ordered,     setOrdered]     = useState(false)
-  const [address,     setAddress]     = useState('')
-  const cardRef = useRef<HTMLDivElement>(null)
+  const [company,      setCompany]      = useState('')
+  const [uploadedLogo, setUploadedLogo] = useState('')
+  const [uploading,    setUploading]    = useState(false)
+  const [uploadError,  setUploadError]  = useState('')
+  const [paletteId,    setPaletteId]    = useState<PaletteId | null>('violet')
+  const [customColor,  setCustomColor]  = useState('#6C47FF')
+  const [downloading,  setDownloading]  = useState(false)
+  const [saving,       setSaving]       = useState(false)
+  const [saved,        setSaved]        = useState(false)
+  const [showOrder,    setShowOrder]    = useState(false)
+  const [ordered,      setOrdered]      = useState(false)
+  const [address,      setAddress]      = useState('')
+  const cardRef   = useRef<HTMLDivElement>(null)
+  const logoInput = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setOrigin(window.location.origin)
+    const saved = localStorage.getItem('nfc-logo-url')
+    if (saved) setUploadedLogo(saved)
     fetch('/api/me').then(r => r.ok ? r.json() : null).then(d => { if (d?.email) setMeEmail(d.email) })
     fetch('/api/profile').then(r => r.ok ? r.json() : null).then(d => {
       if (!d) return
@@ -216,9 +223,27 @@ export default function NFCPage() {
     if (meEmail) setEmail(prev => prev || meEmail)
   }, [meEmail])
 
+  const handleLogoUpload = async (file: File) => {
+    setUploading(true); setUploadError('')
+    try {
+      const fd = new FormData(); fd.append('file', file)
+      const res = await fetch('/api/upload-logo', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) { setUploadError(data.error ?? 'Erreur upload'); return }
+      setUploadedLogo(data.url)
+      localStorage.setItem('nfc-logo-url', data.url)
+    } finally { setUploading(false) }
+  }
+
+  const removeLogo = () => {
+    setUploadedLogo('')
+    localStorage.removeItem('nfc-logo-url')
+  }
+
   const slug        = profile?.slug ?? ''
   const profileUrl  = slug ? `${origin}/p/${slug}` : origin
   const linkedLogo  = (profile?.educations ?? []).find((e: any) => e.organisation?.logoUrl)?.organisation?.logoUrl ?? ''
+  const companyLogo = uploadedLogo || linkedLogo
   const { gradient, accent } = getStyle(paletteId, customColor)
 
   const handleSave = async () => {
@@ -262,7 +287,7 @@ export default function NFCPage() {
           <p className="text-sm text-text-secondary">Livraison sous <strong>7–10 jours</strong>.</p>
         </div>
         <NFCCard name={name} title={title} email={email} phone={phone}
-          company={company} companyLogoUrl={linkedLogo}
+          company={company} companyLogoUrl={companyLogo}
           gradient={gradient} accent={accent} profileUrl={profileUrl} />
         <div className="card divide-y divide-border-subtle">
           {[{ label: 'Prix', value: PRICE }, { label: 'Adresse', value: address || '—' }].map(r => (
@@ -292,7 +317,7 @@ export default function NFCPage() {
         <div className="lg:sticky lg:top-6 space-y-5">
           <NFCCard
             name={name || 'Votre Nom'} title={title} email={email} phone={phone}
-            company={company} companyLogoUrl={linkedLogo}
+            company={company} companyLogoUrl={companyLogo}
             gradient={gradient} accent={accent} profileUrl={profileUrl}
             cardRef={cardRef}
           />
@@ -355,6 +380,65 @@ export default function NFCPage() {
                 <Field label="Téléphone" value={phone} onChange={setPhone} placeholder="+221 77 000 00 00" type="tel" />
               </div>
               <Field label="Entreprise / organisation" value={company} onChange={setCompany} placeholder="Nom de l'entreprise" />
+            </div>
+          </div>
+
+          {/* Logo upload */}
+          <div className="rounded-2xl border border-border bg-white overflow-hidden shadow-sm">
+            <div className="px-5 py-4 border-b border-border flex items-center justify-between"
+              style={{ background: 'linear-gradient(135deg,#F8F7FF 0%,#F0EDFF 100%)' }}>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-[9px] bg-primary-light flex items-center justify-center flex-shrink-0">
+                  <IconPhoto size={14} className="text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-text-primary">Logo</p>
+                  <p className="text-[11px] text-text-tertiary">Logo de l&apos;entreprise sur la carte</p>
+                </div>
+              </div>
+              {uploadedLogo && (
+                <button onClick={removeLogo}
+                  className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-semibold transition-colors">
+                  <IconX size={12} /> Supprimer
+                </button>
+              )}
+            </div>
+            <div className="p-4">
+              <input ref={logoInput} type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                className="hidden"
+                onChange={e => { const f = e.target.files?.[0]; if (f) handleLogoUpload(f); e.target.value = '' }} />
+
+              {uploadedLogo ? (
+                <div className="flex items-center gap-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={uploadedLogo} alt="Logo" className="w-16 h-16 rounded-xl object-cover border border-border" />
+                  <div className="flex-1 space-y-1">
+                    <p className="text-sm font-medium text-text-primary">Logo chargé</p>
+                    <p className="text-xs text-text-tertiary">Il apparaît en haut à droite de la carte</p>
+                    <button onClick={() => logoInput.current?.click()}
+                      className="text-xs text-primary font-semibold hover:underline">
+                      Changer →
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => logoInput.current?.click()} disabled={uploading}
+                  className="w-full border-2 border-dashed border-border rounded-xl py-5 flex flex-col items-center gap-2
+                    hover:border-primary hover:bg-primary-light transition-all group">
+                  {uploading ? (
+                    <IconLoader2 size={22} className="text-primary animate-spin" />
+                  ) : (
+                    <IconPhoto size={22} className="text-text-tertiary group-hover:text-primary transition-colors" />
+                  )}
+                  <p className="text-sm font-semibold text-text-secondary group-hover:text-primary transition-colors">
+                    {uploading ? 'Upload en cours…' : 'Cliquez pour choisir un logo'}
+                  </p>
+                  <p className="text-xs text-text-tertiary">JPG, PNG, WebP, SVG · max 3 Mo</p>
+                </button>
+              )}
+              {uploadError && (
+                <p className="mt-2 text-xs text-red-600 font-medium">{uploadError}</p>
+              )}
             </div>
           </div>
 
