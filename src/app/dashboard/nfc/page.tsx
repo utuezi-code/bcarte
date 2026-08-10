@@ -114,63 +114,41 @@ function NFCCard({ name, title, email, phone, company, companyLogoUrl, gradient,
                 {companyLogoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={companyLogoUrl} alt={company} style={{
-                    width:50,height:50,borderRadius:12,objectFit:'cover',
+                    width:52,height:52,borderRadius:13,objectFit:'cover',
                     background:'white',boxShadow:'0 4px 16px rgba(0,0,0,0.35)',
                     border:'2px solid rgba(255,255,255,0.55)' }} />
                 ) : (
-                  <div style={{ width:50,height:50,borderRadius:12,background:nameColor(company),
+                  <div style={{ width:52,height:52,borderRadius:13,background:nameColor(company),
                     boxShadow:'0 4px 16px rgba(0,0,0,0.35)',border:'2px solid rgba(255,255,255,0.2)',
                     display:'flex',alignItems:'center',justifyContent:'center',
-                    color:'white',fontWeight:800,fontSize:17,letterSpacing:'-0.02em' }}>
+                    color:'white',fontWeight:800,fontSize:18,letterSpacing:'-0.02em' }}>
                     {initials(company)}
                   </div>
                 )}
-                <span style={{ color:'rgba(255,255,255,0.7)',fontSize:8,fontWeight:700,
-                  maxWidth:62,textAlign:'center',lineHeight:1.2,
+                <span style={{ color:'rgba(255,255,255,0.75)',fontSize:9,fontWeight:700,
+                  maxWidth:66,textAlign:'center',lineHeight:1.2,
                   overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{company}</span>
               </div>
             )}
           </div>
 
-          {/* Name + title — centre de la carte */}
-          <div style={{ flex:1,display:'flex',flexDirection:'column',justifyContent:'center',gap:5 }}>
-            <p style={{
-              color:'white',fontWeight:900,fontSize:22,lineHeight:1.1,
-              letterSpacing:'-0.035em',
-              textShadow:'0 2px 16px rgba(0,0,0,0.3)',
-            }}>{name || 'Votre Nom'}</p>
+          {/* Name + title */}
+          <div style={{ flex:1,marginTop:'0.6rem' }}>
+            <p style={{ color:'white',fontWeight:800,fontSize:21,lineHeight:1.15,
+              letterSpacing:'-0.03em',textShadow:'0 2px 10px rgba(0,0,0,0.2)' }}>
+              {name || 'Votre Nom'}
+            </p>
             {title && (
-              <div style={{ display:'inline-flex',alignItems:'center' }}>
-                <span style={{
-                  background:'rgba(255,255,255,0.15)',
-                  border:'1px solid rgba(255,255,255,0.22)',
-                  borderRadius:6,
-                  padding:'3px 8px',
-                  color:'white',fontSize:9.5,fontWeight:700,
-                  letterSpacing:'0.06em',textTransform:'uppercase',
-                }}>{title}</span>
-              </div>
+              <p style={{ color:accent,fontSize:11,fontWeight:700,
+                marginTop:5,letterSpacing:'0.06em',textTransform:'uppercase' }}>{title}</p>
             )}
           </div>
-
-          {/* Separator */}
-          <div style={{
-            height:1,
-            background:'linear-gradient(90deg,rgba(255,255,255,0.25),rgba(255,255,255,0.08) 70%,transparent)',
-            marginBottom:10,
-          }} />
 
           {/* Bottom: contacts + QR */}
           <div style={{ display:'flex',alignItems:'flex-end',justifyContent:'space-between',gap:10 }}>
             <div style={{ display:'flex',flexDirection:'column',gap:5 }}>
-              {email && (
-                <p style={{ color:'rgba(255,255,255,0.88)',fontSize:9.5,fontWeight:600,
-                  letterSpacing:'0.01em' }}>{email}</p>
-              )}
-              {phone && (
-                <p style={{ color:'rgba(255,255,255,0.88)',fontSize:9.5,fontWeight:600,
-                  letterSpacing:'0.01em' }}>{phone}</p>
-              )}
+              {email && <p style={{ color:'rgba(255,255,255,0.85)',fontSize:11,fontWeight:600 }}>{email}</p>}
+              {phone && <p style={{ color:'rgba(255,255,255,0.85)',fontSize:11,fontWeight:600 }}>{phone}</p>}
             </div>
             <div style={{ background:'white',borderRadius:10,padding:5,flexShrink:0,
               boxShadow:'0 8px 24px rgba(0,0,0,0.3)' }}>
