@@ -114,17 +114,10 @@ function NFCCard({ name, title, email, phone, company, companyLogoUrl, gradient,
               <div style={{ display:'flex',flexDirection:'column',alignItems:'center',gap:3 }}>
                 {companyLogoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <div style={{
-                    width:58,height:58,borderRadius:13,
-                    background:'white',boxShadow:'0 4px 16px rgba(0,0,0,0.35)',
-                    border:'2px solid rgba(255,255,255,0.55)',
-                    display:'flex',alignItems:'center',justifyContent:'center',
-                    padding:5,
-                  }}>
-                    <img src={companyLogoUrl} alt={company} style={{
-                      width:'100%',height:'100%',objectFit:'contain',display:'block',
-                    }} />
-                  </div>
+                  <img src={companyLogoUrl} alt={company} style={{
+                    width:60,height:60,objectFit:'contain',display:'block',
+                    filter:'drop-shadow(0 2px 10px rgba(0,0,0,0.5)) brightness(1.08)',
+                  }} />
                 ) : (
                   <div style={{ width:52,height:52,borderRadius:13,background:nameColor(company),
                     boxShadow:'0 4px 16px rgba(0,0,0,0.35)',border:'2px solid rgba(255,255,255,0.2)',
