@@ -27,6 +27,29 @@ enum OrgType {
   INSTITUTION
 }
 
+// ─── Admin (separate from user system) ───────────────────────────────────────
+
+model Admin {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime  @default(now())
+  lastLoginAt  DateTime?
+
+  @@map("admins")
+}
+
+model Invitation {
+  id     String    @id @default(cuid())
+  email  String    @unique
+  sentAt DateTime  @default(now())
+  usedAt DateTime?
+  token  String    @unique @default(cuid())
+
+  @@map("invitations")
+}
+
 // ─── Core ─────────────────────────────────────────────────────────────────────
 
 model User {
@@ -57,6 +80,7 @@ model Profile {
   avatarUrl String?
   emailPro  String?
   isPublic  Boolean  @default(true)
+  suspended Boolean  @default(false)
   skills    String[] @default([])
 
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
