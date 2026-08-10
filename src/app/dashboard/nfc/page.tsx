@@ -1,50 +1,38 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { IconCreditCard, IconCheck, IconMapPin, IconUser, IconLink, IconPalette } from '@tabler/icons-react'
+import { IconCreditCard, IconCheck, IconMapPin, IconUser, IconLink, IconPalette, IconDownload, IconQrcode } from '@tabler/icons-react'
 import QRCode from 'react-qr-code'
 
 /* ── Palette de couleurs ───────────────────────────────────── */
 const PALETTE = [
-  // Violets & indigo
   { id: 'violet',   from: '#2D1B8E', to: '#6C47FF', accent: '#C4B5FD' },
   { id: 'indigo',   from: '#1E3A8A', to: '#6366F1', accent: '#A5B4FC' },
   { id: 'purple',   from: '#581C87', to: '#9333EA', accent: '#D8B4FE' },
-  // Noirs premium
   { id: 'obsidian', from: '#050505', to: '#1C1C1C', accent: '#C9A84C' },
   { id: 'midnight', from: '#0F0E1A', to: '#0F3460', accent: '#60A5FA' },
   { id: 'charcoal', from: '#111827', to: '#374151', accent: '#9CA3AF' },
-  // Ors & ambre
   { id: 'gold',     from: '#6B3800', to: '#D4A843', accent: '#FDE68A' },
   { id: 'amber',    from: '#78350F', to: '#F59E0B', accent: '#FDE68A' },
   { id: 'bronze',   from: '#6B3A1F', to: '#D4845A', accent: '#FDDCB5' },
-  // Rouges
   { id: 'crimson',  from: '#7F0000', to: '#DC2626', accent: '#FCA5A5' },
   { id: 'rose',     from: '#881337', to: '#E11D48', accent: '#FDA4AF' },
   { id: 'pink',     from: '#831843', to: '#EC4899', accent: '#F9A8D4' },
-  // Verts
   { id: 'emerald',  from: '#064E3B', to: '#10B981', accent: '#6EE7B7' },
   { id: 'teal',     from: '#134E4A', to: '#14B8A6', accent: '#5EEAD4' },
   { id: 'forest',   from: '#14532D', to: '#16A34A', accent: '#86EFAC' },
-  // Bleus
   { id: 'navy',     from: '#1E3A5F', to: '#2563EB', accent: '#93C5FD' },
   { id: 'sky',      from: '#075985', to: '#0EA5E9', accent: '#BAE6FD' },
   { id: 'cyan',     from: '#164E63', to: '#06B6D4', accent: '#67E8F9' },
-  // Oranges
   { id: 'orange',   from: '#7C2D12', to: '#EA580C', accent: '#FDBA74' },
   { id: 'sunset',   from: '#92400E', to: '#F97316', accent: '#FED7AA' },
 ] as const
 
 type PaletteId = typeof PALETTE[number]['id']
 
-/* ── Utilitaires couleur ───────────────────────────────────── */
 function hexToRgb(hex: string) {
   const h = hex.replace('#', '')
-  return {
-    r: parseInt(h.slice(0, 2), 16),
-    g: parseInt(h.slice(2, 4), 16),
-    b: parseInt(h.slice(4, 6), 16),
-  }
+  return { r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16) }
 }
 function rgbToHex(r: number, g: number, b: number) {
   const clamp = (v: number) => Math.round(Math.max(0, Math.min(255, v)))
@@ -62,36 +50,30 @@ function customGradient(hex: string) {
   return `linear-gradient(135deg, ${darken(hex, 0.4)} 0%, ${hex} 55%, ${lighten(hex, 1.25)} 100%)`
 }
 
-/* ── Obtenir le gradient final ─────────────────────────────── */
 function getStyle(selectedId: PaletteId | null, customColor: string) {
-  if (!selectedId) {
-    return {
-      gradient: customGradient(customColor),
-      accent: lighten(customColor, 1.5),
-    }
-  }
+  if (!selectedId) return { gradient: customGradient(customColor), accent: lighten(customColor, 1.5) }
   const p = PALETTE.find(x => x.id === selectedId)!
-  return {
-    gradient: `linear-gradient(135deg, ${p.from} 0%, ${p.to} 100%)`,
-    accent: p.accent,
-  }
+  return { gradient: `linear-gradient(135deg, ${p.from} 0%, ${p.to} 100%)`, accent: p.accent }
 }
 
 const PRICE = '29 000 FCFA'
 
 /* ── Carte 3D ──────────────────────────────────────────────── */
 function NFCCard3D({
-  name, title, phone, gradient, accent, profileUrl,
+  name, title, phone, gradient, accent, profileUrl, cardRef, flat,
 }: {
   name: string; title: string; phone: string
   gradient: string; accent: string; profileUrl: string
+  cardRef?: React.RefObject<HTMLDivElement>
+  flat?: boolean
 }) {
   const ref = useRef<HTMLDivElement>(null)
-  const [rot, setRot]   = useState({ x: 0, y: 0 })
+  const [rot, setRot]     = useState({ x: 0, y: 0 })
   const [shine, setShine] = useState({ x: 50, y: 50 })
-  const [on, setOn]     = useState(false)
+  const [on, setOn]       = useState(false)
 
   const move = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (flat) return
     const r = ref.current?.getBoundingClientRect()
     if (!r) return
     const px = (e.clientX - r.left) / r.width
@@ -102,23 +84,23 @@ function NFCCard3D({
   const leave = () => { setRot({ x: 0, y: 0 }); setShine({ x: 50, y: 50 }); setOn(false) }
 
   return (
-    <div style={{ perspective: '1200px' }}>
+    <div style={{ perspective: flat ? 'none' : '1200px' }} ref={cardRef}>
       <div
         ref={ref}
         onMouseMove={move}
-        onMouseEnter={() => setOn(true)}
+        onMouseEnter={() => !flat && setOn(true)}
         onMouseLeave={leave}
         style={{
           width: '100%', aspectRatio: '1.586',
           background: gradient, borderRadius: 20,
-          transform: `rotateX(${rot.x}deg) rotateY(${rot.y}deg) scale(${on ? 1.03 : 1})`,
+          transform: flat ? 'none' : `rotateX(${rot.x}deg) rotateY(${rot.y}deg) scale(${on ? 1.03 : 1})`,
           transition: on ? 'transform 0.07s linear' : 'transform 0.55s cubic-bezier(0.23,1,0.32,1)',
           transformStyle: 'preserve-3d',
-          boxShadow: on
+          boxShadow: flat ? 'none' : (on
             ? '0 50px 100px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.1)'
-            : '0 20px 60px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.07)',
+            : '0 20px 60px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.07)'),
           position: 'relative', overflow: 'hidden',
-          cursor: 'pointer', userSelect: 'none',
+          cursor: flat ? 'default' : 'pointer', userSelect: 'none',
         }}
       >
         <div style={{
@@ -159,9 +141,9 @@ function NFCCard3D({
             <div style={{
               background: 'rgba(255,255,255,0.97)', borderRadius: 8, padding: 5,
               flexShrink: 0, boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
-              transform: 'translateZ(10px)',
+              transform: flat ? 'none' : 'translateZ(10px)',
             }}>
-              <QRCode value={profileUrl || 'https://bcarte.app'} size={60}
+              <QRCode value={profileUrl} size={60}
                 fgColor="#0C0A18" bgColor="transparent" level="M" style={{ display: 'block' }} />
             </div>
           </div>
@@ -173,13 +155,15 @@ function NFCCard3D({
 
 /* ── Page ──────────────────────────────────────────────────── */
 export default function NFCPage() {
-  const [selectedId, setSelectedId] = useState<PaletteId | null>('violet')
+  const [selectedId,  setSelectedId]  = useState<PaletteId | null>('violet')
   const [customColor, setCustomColor] = useState('#6C47FF')
-  const [address, setAddress]   = useState('')
-  const [showOrder, setShowOrder] = useState(false)
-  const [ordered, setOrdered]   = useState(false)
-  const [profile, setProfile]   = useState<any>(null)
-  const [origin, setOrigin]     = useState('')
+  const [address,     setAddress]     = useState('')
+  const [showOrder,   setShowOrder]   = useState(false)
+  const [ordered,     setOrdered]     = useState(false)
+  const [profile,     setProfile]     = useState<any>(null)
+  const [origin,      setOrigin]      = useState('')
+  const [downloading, setDownloading] = useState(false)
+  const cardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setOrigin(window.location.origin)
@@ -190,12 +174,29 @@ export default function NFCPage() {
   const title      = profile?.title    ?? 'Votre titre'
   const phone      = profile?.phone    ?? ''
   const slug       = profile?.slug     ?? ''
-  const profileUrl = slug ? `${origin}/p/${slug}` : `${origin}/p/profil`
+  const profileUrl = slug ? `${origin}/p/${slug}` : `${origin}`
   const { gradient, accent } = getStyle(selectedId, customColor)
 
-  const handleCustomColor = (color: string) => {
-    setCustomColor(color)
-    setSelectedId(null)
+  const handleCustomColor = (color: string) => { setCustomColor(color); setSelectedId(null) }
+
+  const handleDownload = async () => {
+    if (!cardRef.current) return
+    setDownloading(true)
+    try {
+      const html2canvas = (await import('html2canvas')).default
+      const canvas = await html2canvas(cardRef.current, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: null,
+        logging: false,
+      })
+      const link = document.createElement('a')
+      link.download = `bcarte-${slug || 'carte'}.jpeg`
+      link.href = canvas.toDataURL('image/jpeg', 0.95)
+      link.click()
+    } finally {
+      setDownloading(false)
+    }
   }
 
   if (ordered) {
@@ -238,10 +239,38 @@ export default function NFCPage() {
 
         {/* Gauche — carte sticky */}
         <div className="lg:sticky lg:top-6 space-y-3">
-          <NFCCard3D name={name} title={title} phone={phone} gradient={gradient} accent={accent} profileUrl={profileUrl} />
+          <NFCCard3D
+            name={name} title={title} phone={phone}
+            gradient={gradient} accent={accent} profileUrl={profileUrl}
+            cardRef={cardRef}
+          />
           <p className="text-center text-xs text-text-tertiary">
             Survolez la carte pour l&apos;effet 3D · Mise à jour en temps réel
           </p>
+
+          {/* QR code info + téléchargement */}
+          <div className="card space-y-3">
+            <div className="flex items-center gap-2">
+              <IconQrcode size={14} className="text-primary" />
+              <p className="text-sm font-semibold text-text-primary">QR Code</p>
+            </div>
+            <p className="text-xs text-text-secondary break-all">
+              {slug
+                ? <>Pointe vers <span className="font-mono text-primary">{profileUrl}</span></>
+                : <span className="text-amber-600">Configure un slug dans ton profil pour activer le QR code</span>
+              }
+            </p>
+            <button
+              onClick={handleDownload}
+              disabled={downloading}
+              className="btn-primary w-full justify-center gap-2 text-sm"
+            >
+              {downloading
+                ? <><span className="animate-spin inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full" /> Export en cours…</>
+                : <><IconDownload size={14} /> Télécharger en JPEG</>
+              }
+            </button>
+          </div>
         </div>
 
         {/* Droite — contrôles */}
@@ -252,9 +281,9 @@ export default function NFCPage() {
             <h2 className="font-semibold text-sm text-text-primary">Vos informations</h2>
             <div className="space-y-2">
               {[
-                { icon: IconUser,        label: name  || '—' },
-                { icon: IconCreditCard,  label: title || '—' },
-                { icon: IconLink,        label: slug ? `/p/${slug}` : 'Profil non configuré' },
+                { icon: IconUser,       label: name  || '—' },
+                { icon: IconCreditCard, label: title || '—' },
+                { icon: IconLink,       label: slug ? `/p/${slug}` : 'Profil non configuré' },
               ].map((row, i) => (
                 <div key={i} className="flex items-center gap-2.5 text-sm">
                   <row.icon size={13} className="text-text-tertiary flex-shrink-0" />
@@ -290,7 +319,6 @@ export default function NFCPage() {
               </div>
             </div>
 
-            {/* Grille de swatches */}
             <div className="grid grid-cols-5 gap-2">
               {PALETTE.map(p => {
                 const isSelected = selectedId === p.id
@@ -301,8 +329,7 @@ export default function NFCPage() {
                     title={p.id}
                     style={{
                       background: `linear-gradient(135deg, ${p.from} 0%, ${p.to} 100%)`,
-                      borderRadius: 10,
-                      aspectRatio: '1',
+                      borderRadius: 10, aspectRatio: '1',
                       border: isSelected ? '2.5px solid white' : '2.5px solid transparent',
                       outline: isSelected ? '2.5px solid #6C47FF' : 'none',
                       outlineOffset: 1,
@@ -316,24 +343,18 @@ export default function NFCPage() {
               })}
             </div>
 
-            {/* Indicateur couleur sélectionnée */}
             <div className="flex items-center gap-2 pt-1">
-              <div
-                className="w-5 h-5 rounded-md flex-shrink-0"
-                style={{ background: gradient }}
-              />
+              <div className="w-5 h-5 rounded-md flex-shrink-0" style={{ background: gradient }} />
               <span className="text-xs text-text-secondary">
-                {selectedId
-                  ? PALETTE.find(p => p.id === selectedId)?.id ?? ''
-                  : `Couleur personnalisée ${customColor}`}
+                {selectedId ? PALETTE.find(p => p.id === selectedId)?.id : `Couleur personnalisée ${customColor}`}
               </span>
             </div>
           </div>
 
-          {/* Commander */}
+          {/* Commander la carte physique */}
           {!showOrder ? (
             <button onClick={() => setShowOrder(true)} className="btn-primary w-full justify-center py-3 text-sm">
-              Commander — {PRICE}
+              Commander la carte physique — {PRICE}
             </button>
           ) : (
             <div className="card space-y-4">
