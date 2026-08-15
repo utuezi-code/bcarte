@@ -110,38 +110,43 @@ function NFCCard({ name, title, email, phone, company, companyLogoUrl, gradient,
               <span style={{ fontWeight:900,fontSize:9,color:'rgba(255,255,255,0.65)',letterSpacing:'0.03em' }}>bcarte</span>
             </div>
 
-            {company && (
-              <div style={{ display:'flex',flexDirection:'column',alignItems:'center',gap:3 }}>
+            {/* Company logo — glass container, no text */}
+            {(companyLogoUrl || company) && (
+              <div style={{
+                width:62,height:62,borderRadius:16,flexShrink:0,
+                background:'rgba(255,255,255,0.12)',
+                backdropFilter:'blur(12px)',
+                border:'1.5px solid rgba(255,255,255,0.28)',
+                boxShadow:'0 8px 24px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.35)',
+                display:'flex',alignItems:'center',justifyContent:'center',
+                overflow:'hidden',
+              }}>
                 {companyLogoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={companyLogoUrl} alt={company} style={{
-                    width:60,height:60,objectFit:'contain',display:'block',
-                    filter:'drop-shadow(0 2px 10px rgba(0,0,0,0.5)) brightness(1.08)',
+                    width:44,height:44,objectFit:'contain',display:'block',
+                    filter:'drop-shadow(0 2px 8px rgba(0,0,0,0.35))',
                   }} />
                 ) : (
-                  <div style={{ width:52,height:52,borderRadius:13,background:nameColor(company),
-                    boxShadow:'0 4px 16px rgba(0,0,0,0.35)',border:'2px solid rgba(255,255,255,0.2)',
-                    display:'flex',alignItems:'center',justifyContent:'center',
-                    color:'white',fontWeight:800,fontSize:18,letterSpacing:'-0.02em' }}>
-                    {initials(company)}
-                  </div>
+                  <span style={{
+                    color:'white',fontWeight:900,fontSize:20,letterSpacing:'-0.04em',
+                    textShadow:'0 2px 8px rgba(0,0,0,0.3)',
+                  }}>{initials(company)}</span>
                 )}
-                <span style={{ color:'rgba(255,255,255,0.75)',fontSize:9,fontWeight:700,
-                  maxWidth:66,textAlign:'center',lineHeight:1.2,
-                  overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>{company}</span>
               </div>
             )}
           </div>
 
           {/* Name + title */}
-          <div style={{ flex:1,marginTop:'0.6rem' }}>
-            <p style={{ color:'white',fontWeight:800,fontSize:21,lineHeight:1.15,
-              letterSpacing:'-0.03em',textShadow:'0 2px 10px rgba(0,0,0,0.2)' }}>
+          <div style={{ flex:1,marginTop:'0.55rem' }}>
+            <p style={{ color:'white',fontWeight:800,fontSize:22,lineHeight:1.12,
+              letterSpacing:'-0.035em',textShadow:'0 2px 12px rgba(0,0,0,0.25)' }}>
               {name || 'Votre Nom'}
             </p>
             {title && (
-              <p style={{ color:accent,fontSize:11,fontWeight:700,
-                marginTop:5,letterSpacing:'0.06em',textTransform:'uppercase' }}>{title}</p>
+              <p style={{ color:accent,fontSize:10.5,fontWeight:700,
+                marginTop:6,letterSpacing:'0.08em',textTransform:'uppercase',
+                textShadow:'0 1px 6px rgba(0,0,0,0.2)' }}>{title}</p>
             )}
           </div>
 
