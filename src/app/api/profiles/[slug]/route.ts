@@ -9,7 +9,7 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
     .from('profiles')
     .select('id, slug, fullName, title, bio, city, country, avatarUrl, skills, phone, linkedin, emailPro, isPublic, createdAt')
     .eq('slug', params.slug)
-    .eq('isPublic', true)
+    .neq('isPublic', false)
     .single()
 
   if (profileError || !profile) {
