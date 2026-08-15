@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import {
   IconCreditCard, IconCheck, IconMapPin, IconDownload,
   IconQrcode, IconPalette, IconPencil, IconLoader2,
-  IconPhoto, IconX,
+  IconPhoto, IconX, IconBuildingSkyscraper,
 } from '@tabler/icons-react'
 import QRCode from 'react-qr-code'
 
@@ -163,15 +163,52 @@ function NFCCard({ name, title, email, phone, company, companyLogoUrl, gradient,
   )
 }
 
-/* ── Field ──────────────────────────────────────────────────── */
-function Field({ label, value, onChange, placeholder, type = 'text' }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string
+/* ── Section wrapper ────────────────────────────────────────── */
+function Section({ icon, title, subtitle, action, children }: {
+  icon: React.ReactNode
+  title: string
+  subtitle?: string
+  action?: React.ReactNode
+  children: React.ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="rounded-2xl border border-border bg-surface overflow-hidden">
+      <div className="px-5 py-3.5 border-b border-border flex items-center justify-between gap-3"
+        style={{ background: 'linear-gradient(135deg,#FAFAFA 0%,#F5F3FF 100%)' }}>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-[9px] bg-primary-light flex items-center justify-center flex-shrink-0">
+            {icon}
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-text-primary">{title}</p>
+            {subtitle && <p className="text-[11px] text-text-tertiary mt-0.5">{subtitle}</p>}
+          </div>
+        </div>
+        {action}
+      </div>
+      <div className="p-5">{children}</div>
+    </div>
+  )
+}
+
+/* ── Field ──────────────────────────────────────────────────── */
+function Field({ label, value, onChange, placeholder, type = 'text', icon }: {
+  label: string; value: string; onChange: (v: string) => void
+  placeholder?: string; type?: string; icon?: React.ReactNode
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
       <label className="text-[10px] font-bold text-text-tertiary uppercase tracking-widest">{label}</label>
-      <input type={type} value={value} onChange={e => onChange(e.target.value)}
-        placeholder={placeholder} className="input text-sm h-10" />
+      <div className="relative">
+        {icon && (
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none">
+            {icon}
+          </div>
+        )}
+        <input type={type} value={value} onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={`input text-sm h-10 ${icon ? 'pl-9' : ''}`} />
+      </div>
     </div>
   )
 }
@@ -180,13 +217,13 @@ function Field({ label, value, onChange, placeholder, type = 'text' }: {
 const PRICE = '29 000 FCFA'
 
 export default function NFCPage() {
-  const [profile,     setProfile]     = useState<any>(null)
-  const [meEmail,     setMeEmail]     = useState('')
-  const [origin,      setOrigin]      = useState('')
-  const [name,        setName]        = useState('')
-  const [title,       setTitle]       = useState('')
-  const [email,       setEmail]       = useState('')
-  const [phone,       setPhone]       = useState('')
+  const [profile,      setProfile]      = useState<any>(null)
+  const [meEmail,      setMeEmail]      = useState('')
+  const [origin,       setOrigin]       = useState('')
+  const [name,         setName]         = useState('')
+  const [title,        setTitle]        = useState('')
+  const [email,        setEmail]        = useState('')
+  const [phone,        setPhone]        = useState('')
   const [company,      setCompany]      = useState('')
   const [uploadedLogo, setUploadedLogo] = useState('')
   const [uploading,    setUploading]    = useState(false)
@@ -204,8 +241,8 @@ export default function NFCPage() {
 
   useEffect(() => {
     setOrigin(window.location.origin)
-    const saved = localStorage.getItem('nfc-logo-url')
-    if (saved) setUploadedLogo(saved)
+    const savedLogo = localStorage.getItem('nfc-logo-url')
+    if (savedLogo) setUploadedLogo(savedLogo)
     fetch('/api/me').then(r => r.ok ? r.json() : null).then(d => { if (d?.email) setMeEmail(d.email) })
     fetch('/api/profile').then(r => r.ok ? r.json() : null).then(d => {
       if (!d) return
@@ -280,7 +317,8 @@ export default function NFCPage() {
     return (
       <div className="max-w-md mx-auto py-16 space-y-6">
         <div className="text-center space-y-3">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto bg-[#ECFDF5]">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto"
+            style={{ background: 'linear-gradient(135deg,#ECFDF5,#D1FAE5)' }}>
             <IconCheck size={28} className="text-[#059669]" />
           </div>
           <h2 className="text-2xl font-bold text-text-primary">Commande confirmée !</h2>
@@ -306,42 +344,47 @@ export default function NFCPage() {
 
   return (
     <div className="space-y-6">
+      {/* Page header */}
       <div>
         <h1 className="page-title">Carte NFC</h1>
-        <p className="page-subtitle">Personnalisez et téléchargez votre carte de visite digitale</p>
+        <p className="page-subtitle">Personnalisez et commandez votre carte de visite digitale</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-start">
 
         {/* ── Left — card preview ── */}
-        <div className="lg:sticky lg:top-6 space-y-5">
-          <NFCCard
-            name={name || 'Votre Nom'} title={title} email={email} phone={phone}
-            company={company} companyLogoUrl={companyLogo}
-            gradient={gradient} accent={accent} profileUrl={profileUrl}
-            cardRef={cardRef}
-          />
+        <div className="lg:sticky lg:top-6 space-y-4">
+          {/* Card scene */}
+          <div className="rounded-3xl overflow-hidden p-6 sm:p-10"
+            style={{ background: 'linear-gradient(160deg,#0F0B2E 0%,#1A1040 40%,#0A1628 100%)' }}>
+            <NFCCard
+              name={name || 'Votre Nom'} title={title} email={email} phone={phone}
+              company={company} companyLogoUrl={companyLogo}
+              gradient={gradient} accent={accent} profileUrl={profileUrl}
+              cardRef={cardRef}
+            />
+          </div>
 
-          <div className="rounded-2xl overflow-hidden border border-border"
-            style={{ background: 'linear-gradient(145deg,#FAFAFA 0%,#F3F4F6 100%)' }}>
-            <div className="px-5 py-4 border-b border-border flex items-center gap-3">
-              <div className="w-8 h-8 rounded-[9px] bg-primary-light flex items-center justify-center flex-shrink-0">
-                <IconQrcode size={14} className="text-primary" />
+          {/* QR + download */}
+          <div className="rounded-2xl border border-border bg-surface overflow-hidden">
+            <div className="px-5 py-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-primary-light flex items-center justify-center flex-shrink-0">
+                  <IconQrcode size={16} className="text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-text-primary">Lien du profil</p>
+                  {slug
+                    ? <p className="text-[11px] font-mono text-primary truncate max-w-[200px]">{profileUrl}</p>
+                    : <p className="text-[11px] text-amber-500">Configurez un slug dans votre profil</p>
+                  }
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-text-primary">QR Code du profil</p>
-                {slug
-                  ? <p className="text-[11px] font-mono text-primary truncate mt-0.5">{profileUrl}</p>
-                  : <p className="text-[11px] text-amber-600 mt-0.5">Configurez un slug dans votre profil</p>
-                }
-              </div>
-            </div>
-            <div className="p-4">
               <button onClick={handleDownload} disabled={downloading}
-                className="btn-primary w-full justify-center gap-2.5 py-3">
+                className="btn-primary gap-2 py-2 px-4 text-sm flex-shrink-0">
                 {downloading
-                  ? <><IconLoader2 size={15} className="animate-spin" /> Export en cours…</>
-                  : <><IconDownload size={15} /> Télécharger en JPEG</>
+                  ? <><IconLoader2 size={14} className="animate-spin" /> Export…</>
+                  : <><IconDownload size={14} /> Télécharger</>
                 }
               </button>
             </div>
@@ -349,114 +392,100 @@ export default function NFCPage() {
         </div>
 
         {/* ── Right — controls ── */}
-        <div className="space-y-5">
+        <div className="space-y-4">
 
           {/* Editable fields */}
-          <div className="rounded-2xl border border-border bg-white overflow-hidden shadow-sm">
-            <div className="px-5 py-4 border-b border-border flex items-center justify-between"
-              style={{ background: 'linear-gradient(135deg,#F8F7FF 0%,#F0EDFF 100%)' }}>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-[9px] bg-primary-light flex items-center justify-center flex-shrink-0">
-                  <IconPencil size={14} className="text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-text-primary">Informations</p>
-                  <p className="text-[11px] text-text-tertiary">Modifiées ici et dans votre profil</p>
-                </div>
-              </div>
+          <Section
+            icon={<IconPencil size={15} className="text-primary" />}
+            title="Informations de la carte"
+            subtitle="Ces données s'affichent sur votre carte"
+            action={
               <button onClick={handleSave} disabled={saving}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
                   saved ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-primary text-white hover:bg-primary-hover'
                 }`}>
-                {saving ? <IconLoader2 size={12} className="animate-spin" /> : saved ? <IconCheck size={12} /> : null}
+                {saving ? <IconLoader2 size={12} className="animate-spin" />
+                  : saved ? <IconCheck size={12} /> : null}
                 {saving ? 'Enregistrement…' : saved ? 'Enregistré !' : 'Enregistrer'}
               </button>
-            </div>
-            <div className="px-5 py-4 space-y-3">
-              <Field label="Nom complet"            value={name}    onChange={setName}    placeholder="Mamadou Moctar Traore" />
-              <Field label="Fonction / titre"        value={title}   onChange={setTitle}   placeholder="Architecte numérique" />
+            }>
+            <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Email"     value={email} onChange={setEmail} placeholder="email@pro.com" type="email" />
-                <Field label="Téléphone" value={phone} onChange={setPhone} placeholder="+221 77 000 00 00" type="tel" />
+                <div className="col-span-2">
+                  <Field label="Nom complet" value={name} onChange={setName} placeholder="Mamadou Moctar Traore" />
+                </div>
+                <div className="col-span-2">
+                  <Field label="Fonction / titre" value={title} onChange={setTitle} placeholder="Architecte numérique" />
+                </div>
+                <Field label="Email pro" value={email} onChange={setEmail} placeholder="email@pro.com" type="email" />
+                <Field label="Téléphone" value={phone} onChange={setPhone} placeholder="+221 77 …" type="tel" />
+                <div className="col-span-2">
+                  <Field label="Entreprise" value={company} onChange={setCompany}
+                    placeholder="Nom de l'entreprise"
+                    icon={<IconBuildingSkyscraper size={14} />} />
+                </div>
               </div>
-              <Field label="Entreprise / organisation" value={company} onChange={setCompany} placeholder="Nom de l'entreprise" />
             </div>
-          </div>
+          </Section>
 
           {/* Logo upload */}
-          <div className="rounded-2xl border border-border bg-white overflow-hidden shadow-sm">
-            <div className="px-5 py-4 border-b border-border flex items-center justify-between"
-              style={{ background: 'linear-gradient(135deg,#F8F7FF 0%,#F0EDFF 100%)' }}>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-[9px] bg-primary-light flex items-center justify-center flex-shrink-0">
-                  <IconPhoto size={14} className="text-primary" />
+          <Section
+            icon={<IconPhoto size={15} className="text-primary" />}
+            title="Logo entreprise"
+            subtitle="Affiché en haut à droite de la carte"
+            action={uploadedLogo ? (
+              <button onClick={removeLogo}
+                className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600 font-semibold transition-colors">
+                <IconX size={12} /> Retirer
+              </button>
+            ) : undefined}>
+            <input ref={logoInput} type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml"
+              className="hidden"
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleLogoUpload(f); e.target.value = '' }} />
+
+            {uploadedLogo ? (
+              <div className="flex items-center gap-4 p-3 rounded-xl bg-surface-secondary border border-border">
+                <div className="w-14 h-14 rounded-xl border border-border bg-white flex items-center justify-center p-1.5 flex-shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={uploadedLogo} alt="Logo" className="w-full h-full object-contain" />
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-text-primary">Logo</p>
-                  <p className="text-[11px] text-text-tertiary">Logo de l&apos;entreprise sur la carte</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-text-primary">Logo chargé</p>
+                  <p className="text-xs text-text-tertiary mt-0.5">Visible en haut à droite de la carte</p>
+                  <button onClick={() => logoInput.current?.click()}
+                    className="mt-1 text-xs text-primary font-semibold hover:underline">
+                    Changer →
+                  </button>
                 </div>
               </div>
-              {uploadedLogo && (
-                <button onClick={removeLogo}
-                  className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-semibold transition-colors">
-                  <IconX size={12} /> Supprimer
-                </button>
-              )}
-            </div>
-            <div className="p-4">
-              <input ref={logoInput} type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml"
-                className="hidden"
-                onChange={e => { const f = e.target.files?.[0]; if (f) handleLogoUpload(f); e.target.value = '' }} />
-
-              {uploadedLogo ? (
-                <div className="flex items-center gap-4">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <div className="w-16 h-16 rounded-xl border border-border bg-white flex items-center justify-center p-1.5">
-                    <img src={uploadedLogo} alt="Logo" className="w-full h-full object-contain" />
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium text-text-primary">Logo chargé</p>
-                    <p className="text-xs text-text-tertiary">Il apparaît en haut à droite de la carte</p>
-                    <button onClick={() => logoInput.current?.click()}
-                      className="text-xs text-primary font-semibold hover:underline">
-                      Changer →
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button onClick={() => logoInput.current?.click()} disabled={uploading}
-                  className="w-full border-2 border-dashed border-border rounded-xl py-5 flex flex-col items-center gap-2
-                    hover:border-primary hover:bg-primary-light transition-all group">
-                  {uploading ? (
-                    <IconLoader2 size={22} className="text-primary animate-spin" />
-                  ) : (
-                    <IconPhoto size={22} className="text-text-tertiary group-hover:text-primary transition-colors" />
-                  )}
+            ) : (
+              <button onClick={() => logoInput.current?.click()} disabled={uploading}
+                className="w-full border-2 border-dashed border-border rounded-xl py-6 flex flex-col items-center gap-2.5
+                  hover:border-primary hover:bg-primary-light transition-all group">
+                {uploading
+                  ? <IconLoader2 size={24} className="text-primary animate-spin" />
+                  : <div className="w-10 h-10 rounded-xl bg-surface-secondary border border-border flex items-center justify-center
+                      group-hover:bg-primary-light group-hover:border-primary transition-all">
+                      <IconPhoto size={18} className="text-text-tertiary group-hover:text-primary transition-colors" />
+                    </div>
+                }
+                <div className="text-center">
                   <p className="text-sm font-semibold text-text-secondary group-hover:text-primary transition-colors">
                     {uploading ? 'Upload en cours…' : 'Cliquez pour choisir un logo'}
                   </p>
-                  <p className="text-xs text-text-tertiary">JPG, PNG, WebP, SVG · max 3 Mo</p>
-                </button>
-              )}
-              {uploadError && (
-                <p className="mt-2 text-xs text-red-600 font-medium">{uploadError}</p>
-              )}
-            </div>
-          </div>
+                  <p className="text-xs text-text-tertiary mt-0.5">JPG, PNG, WebP, SVG · max 3 Mo</p>
+                </div>
+              </button>
+            )}
+            {uploadError && <p className="mt-2 text-xs text-red-600 font-medium">{uploadError}</p>}
+          </Section>
 
           {/* Color picker */}
-          <div className="rounded-2xl border border-border bg-white overflow-hidden shadow-sm">
-            <div className="px-5 py-4 border-b border-border flex items-center justify-between"
-              style={{ background: 'linear-gradient(135deg,#F8F7FF 0%,#F0EDFF 100%)' }}>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-[9px] bg-primary-light flex items-center justify-center flex-shrink-0">
-                  <IconPalette size={14} className="text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-text-primary">Couleur</p>
-                  <p className="text-[11px] text-text-tertiary">Thème de votre carte</p>
-                </div>
-              </div>
+          <Section
+            icon={<IconPalette size={15} className="text-primary" />}
+            title="Couleur de la carte"
+            subtitle="Choisissez un thème ou une couleur personnalisée"
+            action={
               <label className="relative cursor-pointer">
                 <input type="color" value={customColor}
                   onChange={e => { setCustomColor(e.target.value); setPaletteId(null) }}
@@ -472,59 +501,59 @@ export default function NFCPage() {
                   Perso.
                 </div>
               </label>
+            }>
+            <div className="grid grid-cols-6 gap-2.5">
+              {PALETTE.map(p => {
+                const sel = paletteId === p.id
+                return (
+                  <button key={p.id} onClick={() => setPaletteId(p.id)} title={p.id}
+                    className="relative aspect-square rounded-xl transition-all duration-150"
+                    style={{
+                      background: `linear-gradient(145deg,${p.from} 0%,${p.to} 100%)`,
+                      boxShadow: sel ? '0 6px 16px rgba(0,0,0,0.28)' : '0 2px 6px rgba(0,0,0,0.08)',
+                      transform: sel ? 'scale(1.12)' : 'scale(1)',
+                      outline: sel ? '2.5px solid #6C47FF' : 'none', outlineOffset: 2,
+                    }}>
+                    {sel && <span className="absolute inset-0 flex items-center justify-center">
+                      <IconCheck size={12} color="white" strokeWidth={3} />
+                    </span>}
+                  </button>
+                )
+              })}
             </div>
-            <div className="p-4">
-              <div className="grid grid-cols-6 gap-2.5">
-                {PALETTE.map(p => {
-                  const sel = paletteId === p.id
-                  return (
-                    <button key={p.id} onClick={() => setPaletteId(p.id)} title={p.id}
-                      className="relative aspect-square rounded-xl transition-all duration-150"
-                      style={{
-                        background: `linear-gradient(145deg,${p.from} 0%,${p.to} 100%)`,
-                        boxShadow: sel ? '0 6px 16px rgba(0,0,0,0.28)' : '0 2px 6px rgba(0,0,0,0.1)',
-                        transform: sel ? 'scale(1.12)' : 'scale(1)',
-                        outline: sel ? '2.5px solid #6C47FF' : 'none', outlineOffset: 2,
-                      }}>
-                      {sel && <span className="absolute inset-0 flex items-center justify-center">
-                        <IconCheck size={12} color="white" strokeWidth={3} />
-                      </span>}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
+          </Section>
 
-          {/* Order */}
+          {/* Order section */}
           {!showOrder ? (
             <div className="rounded-2xl overflow-hidden"
-              style={{ background: 'linear-gradient(135deg,#1A0E4E 0%,#3B1FA0 50%,#6C47FF 100%)' }}>
-              <div className="p-5">
+              style={{ background: 'linear-gradient(135deg,#12094A 0%,#2A1580 50%,#5E3FD8 100%)' }}>
+              <div className="p-5 space-y-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="font-bold text-white text-base">Commander la carte physique</p>
-                    <p className="text-white/60 text-xs mt-1">Carte NFC premium, livrée sous 7–10 jours</p>
+                    <p className="font-bold text-white text-base leading-tight">Commander la carte physique</p>
+                    <p className="text-white/55 text-xs mt-1.5">Carte NFC premium · Livraison 7–10 jours</p>
                   </div>
-                  <span className="text-white font-black text-lg flex-shrink-0">{PRICE}</span>
+                  <div className="text-right flex-shrink-0">
+                    <span className="text-white font-black text-xl">{PRICE}</span>
+                  </div>
                 </div>
                 <button onClick={() => setShowOrder(true)}
-                  className="mt-4 w-full py-2.5 rounded-xl font-bold text-sm text-white transition-all"
-                  style={{ background:'rgba(255,255,255,0.18)', border:'1px solid rgba(255,255,255,0.25)' }}
-                  onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.28)')}
-                  onMouseOut={e  => (e.currentTarget.style.background = 'rgba(255,255,255,0.18)')}>
-                  Commander →
+                  className="w-full py-3 rounded-xl font-bold text-sm text-white transition-all"
+                  style={{ background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.22)' }}
+                  onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.25)')}
+                  onMouseOut={e  => (e.currentTarget.style.background = 'rgba(255,255,255,0.15)')}>
+                  Commander ma carte →
                 </button>
               </div>
             </div>
           ) : (
-            <div className="card space-y-4">
+            <div className="rounded-2xl border border-border bg-surface p-5 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-[9px] bg-primary-light flex items-center justify-center flex-shrink-0">
-                  <IconMapPin size={14} className="text-primary" />
+                <div className="w-9 h-9 rounded-xl bg-primary-light flex items-center justify-center flex-shrink-0">
+                  <IconMapPin size={16} className="text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-text-primary">Adresse de livraison</p>
+                  <p className="text-sm font-semibold text-text-primary">Adresse de livraison</p>
                   <p className="text-[11px] text-text-tertiary">Livraison sous 7–10 jours · {PRICE}</p>
                 </div>
               </div>
@@ -534,7 +563,7 @@ export default function NFCPage() {
                 <button onClick={() => setShowOrder(false)} className="btn-secondary flex-1 justify-center text-sm">Annuler</button>
                 <button onClick={() => setOrdered(true)} disabled={!address.trim()}
                   className="btn-primary flex-1 justify-center gap-1.5 text-sm disabled:opacity-50">
-                  <IconCheck size={14} /> Confirmer
+                  <IconCheck size={14} /> Confirmer la commande
                 </button>
               </div>
             </div>
