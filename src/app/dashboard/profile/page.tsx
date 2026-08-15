@@ -30,6 +30,7 @@ const BLANK_EXP = { title: '', company: '', city: '', startDate: '', endDate: ''
 const BLANK_EDU = { degree: '', field: '', startYear: '', endYear: '', isCurrent: false, orgSearch: '', orgId: '' }
 
 export default function ProfilePage() {
+  const [host,      setHost]      = useState('bcarte.vercel.app')
   const [tab,       setTab]       = useState<Tab>('infos')
   const [profile,   setProfile]   = useState<any>(null)
   const [loading,   setLoading]   = useState(true)
@@ -72,6 +73,8 @@ export default function ProfilePage() {
     setUploadingAvatar(false)
     e.target.value = ''
   }
+
+  useEffect(() => { setHost(window.location.host) }, [])
 
   /* load */
   useEffect(() => {
@@ -473,7 +476,7 @@ export default function ProfilePage() {
                 <div className="flex gap-2">
                   <div className="flex flex-1 items-center border-[1.5px] rounded-[10px] overflow-hidden transition-all focus-within:border-primary focus-within:shadow-[0_0_0_3px_rgba(108,71,255,0.10)]"
                     style={{ borderColor: slugError ? '#EF4444' : '#E2E0F0' }}>
-                    <span className="pl-3 pr-1 text-sm text-text-tertiary whitespace-nowrap select-none">bcarte.io/p/</span>
+                    <span className="pl-3 pr-1 text-sm text-text-tertiary whitespace-nowrap select-none">{host}/p/</span>
                     <input
                       className="flex-1 h-[42px] bg-transparent text-sm text-text-primary outline-none pr-3"
                       placeholder="mon-slug"
@@ -496,7 +499,7 @@ export default function ProfilePage() {
                 {slugError
                   ? <p className="text-xs text-red-500 mt-1.5">{slugError}</p>
                   : form.slug
-                    ? <p className="text-xs text-text-tertiary mt-1.5">Votre profil sera accessible sur <span className="text-primary font-medium">bcarte.io/p/{form.slug}</span></p>
+                    ? <p className="text-xs text-text-tertiary mt-1.5">Votre profil sera accessible sur <span className="text-primary font-medium">{host}/p/{form.slug}</span></p>
                     : <p className="text-xs text-text-tertiary mt-1.5">Choisissez un identifiant unique pour votre profil public (ex&nbsp;: mamadou-traore)</p>
                 }
               </div>
