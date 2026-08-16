@@ -110,29 +110,24 @@ function NFCCard({ name, title, email, phone, company, companyLogoUrl, gradient,
               <span style={{ fontWeight:900,fontSize:9,color:'rgba(255,255,255,0.65)',letterSpacing:'0.03em' }}>bcarte</span>
             </div>
 
-            {/* Company logo — glass container, no text */}
-            {(companyLogoUrl || company) && (
+            {/* Company name */}
+            {company && (
               <div style={{
-                width:62,height:62,borderRadius:16,flexShrink:0,
+                maxWidth:110,
                 background:'rgba(255,255,255,0.12)',
                 backdropFilter:'blur(12px)',
                 border:'1.5px solid rgba(255,255,255,0.28)',
-                boxShadow:'0 8px 24px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.35)',
-                display:'flex',alignItems:'center',justifyContent:'center',
-                overflow:'hidden',
+                borderRadius:10,
+                padding:'5px 10px',
+                boxShadow:'0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.3)',
               }}>
-                {companyLogoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={companyLogoUrl} alt={company} style={{
-                    width:44,height:44,objectFit:'contain',display:'block',
-                    filter:'drop-shadow(0 2px 8px rgba(0,0,0,0.35))',
-                  }} />
-                ) : (
-                  <span style={{
-                    color:'white',fontWeight:900,fontSize:20,letterSpacing:'-0.04em',
-                    textShadow:'0 2px 8px rgba(0,0,0,0.3)',
-                  }}>{initials(company)}</span>
-                )}
+                <span style={{
+                  color:'white',fontWeight:800,fontSize:11,
+                  letterSpacing:'0.01em',lineHeight:1.3,
+                  display:'block',textAlign:'center',
+                  overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',
+                  textShadow:'0 1px 6px rgba(0,0,0,0.3)',
+                }}>{company}</span>
               </div>
             )}
           </div>
