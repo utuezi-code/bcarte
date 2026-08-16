@@ -14,6 +14,8 @@ export default function DashboardPage() {
   const [slug,       setSlug]       = useState<string | null>(null)
   const [copied,     setCopied]     = useState(false)
   const [completion, setCompletion] = useState<{ pct: number; items: CheckItem[] } | null>(null)
+  const [viewCount,  setViewCount]  = useState<number | null>(null)
+  const [verifCounts, setVerifCounts] = useState({ confirmed: 0, pending: 0 })
 
   useEffect(() => {
     fetch('/api/me').then(r => r.ok ? r.json() : null).then(d => {
@@ -21,7 +23,16 @@ export default function DashboardPage() {
       if (d?.slug) setSlug(d.slug)
     })
     fetch('/api/profile').then(r => r.ok ? r.json() : null).then(d => {
-      if (d) setCompletion(computeCompletion(d))
+      if (!d) return
+      setCompletion(computeCompletion(d))
+      setViewCount(d.viewCount ?? 0)
+    })
+    fetch('/api/verifications').then(r => r.ok ? r.json() : null).then((v: any[]) => {
+      if (!v) return
+      setVerifCounts({
+        confirmed: v.filter(x => x.status === 'CONFIRMEE').length,
+        pending:   v.filter(x => x.status === 'EN_ATTENTE').length,
+      })
     })
   }, [])
 
@@ -117,9 +128,9 @@ export default function DashboardPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Vues ce mois',   value: '—', icon: IconEye,          color: '#6C47FF', bg: '#F0EDFF' },
-          { label: 'Vérifications',  value: '—', icon: IconCircleCheck,  color: '#059669', bg: '#ECFDF5' },
-          { label: 'En attente',     value: '—', icon: IconClock,        color: '#D97706', bg: '#FFFBEB' },
+          { label: 'Vues du profil', value: viewCount  ?? '…', icon: IconEye,         color: '#6C47FF', bg: '#F0EDFF' },
+          { label: 'Vérifications',  value: verifCounts.confirmed || (viewCount === null ? '…' : '0'), icon: IconCircleCheck, color: '#059669', bg: '#ECFDF5' },
+          { label: 'En attente',     value: verifCounts.pending   || (viewCount === null ? '…' : '0'), icon: IconClock,       color: '#D97706', bg: '#FFFBEB' },
         ].map(s => (
           <div key={s.label} className="card flex flex-col items-center py-4 gap-2 text-center">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: s.bg }}>
