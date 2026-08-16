@@ -16,6 +16,9 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
     return NextResponse.json({ _error: profileError?.message ?? 'not found' }, { status: 404 })
   }
 
+  /* increment view count — fire and forget, don't block response */
+  supabaseAdmin.rpc('increment_profile_view', { profile_id: profile.id }).then(() => {})
+
   /* experiences */
   const { data: experiences } = await supabaseAdmin
     .from('experiences')
