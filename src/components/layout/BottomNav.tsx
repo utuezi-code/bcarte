@@ -13,7 +13,6 @@ const PRO_TABS = [
   { href: '/dashboard',         label: 'Accueil',  icon: IconLayoutDashboard, exact: true },
   { href: '/dashboard/profile', label: 'Profil',   icon: IconUser },
   { href: '/explore',           label: 'Explorer', icon: IconCompass },
-  { href: '/dashboard/cv',      label: 'CV',       icon: IconFileText },
   { href: '/dashboard/nfc',     label: 'NFC',      icon: IconCreditCard },
 ]
 

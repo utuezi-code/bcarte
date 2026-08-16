@@ -22,7 +22,7 @@ export async function GET() {
 
   const { data: educations } = await supabaseAdmin
     .from('educations')
-    .select('*, organisation:organisations(name, slug)')
+    .select('*, organisation:organisations(name, slug, "logoUrl")')
     .eq('profileId', profile?.id ?? '')
 
   return NextResponse.json({
