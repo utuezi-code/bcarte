@@ -113,7 +113,7 @@ function NFCCard({ name, title, email, phone, company, companyLogoUrl, gradient,
             {/* Company name */}
             {company && (
               <div style={{
-                maxWidth:110,
+                maxWidth:120,
                 background:'rgba(255,255,255,0.12)',
                 backdropFilter:'blur(12px)',
                 border:'1.5px solid rgba(255,255,255,0.28)',
@@ -123,9 +123,9 @@ function NFCCard({ name, title, email, phone, company, companyLogoUrl, gradient,
               }}>
                 <span style={{
                   color:'white',fontWeight:800,fontSize:11,
-                  letterSpacing:'0.01em',lineHeight:1.3,
+                  letterSpacing:'0.01em',lineHeight:1.35,
                   display:'block',textAlign:'center',
-                  overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',
+                  whiteSpace:'normal',wordBreak:'break-word',
                   textShadow:'0 1px 6px rgba(0,0,0,0.3)',
                 }}>{company}</span>
               </div>
